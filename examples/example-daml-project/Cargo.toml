@@ -1,0 +1,14 @@
+[workspace]
+members = []
+resolver = "3"
+
+[package]
+name = "example-daml-project"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+canton = { path = "../../canton", features = ["full"] }
+
+[build-dependencies]
+canton = { path = "../../canton", features = ["codegen", "dpm-build"] }

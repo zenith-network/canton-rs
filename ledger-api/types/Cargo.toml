@@ -1,0 +1,22 @@
+[package]
+name = "ledger-api-types"
+version = "0.1.0"
+description = "Ledger API types"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["v2", "testing"]
+v2 = ["ledger-api-proto/v2", "ledger-api-value/v2"]
+testing = ["ledger-api-value/testing"]
+
+[dependencies]
+canton-types.workspace = true
+ledger-api-proto.workspace = true
+ledger-api-value.workspace = true
+nonempty.workspace = true
+protobuf-utils.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true

@@ -1,0 +1,10 @@
+module MyContracts where
+
+import DA.Set (Set)
+
+template MyTemplate
+  with
+    values : Set Int
+    owner : Party
+  where
+    signatory owner

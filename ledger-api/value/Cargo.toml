@@ -1,0 +1,20 @@
+[package]
+name = "ledger-api-value"
+version = "0.1.0"
+description = "Ledger API representation of Daml LF value"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["v2", "testing"]
+v2 = ["ledger-api-value-proto/v2"]
+testing = ["canton-types/testing"]
+derive = ["dep:ledger-api-value-derive"]
+
+[dependencies]
+canton-types.workspace = true
+chrono.workspace = true
+ledger-api-value-derive = { workspace = true, optional = true }
+ledger-api-value-proto.workspace = true
+protobuf-utils.workspace = true
+thiserror.workspace = true

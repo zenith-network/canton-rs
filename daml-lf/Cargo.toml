@@ -1,0 +1,31 @@
+[package]
+name = "daml-lf"
+version = "0.1.0"
+description = "Daml LF definitions"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["v2", "std"]
+std = ["daml-lf-archive-proto/std"]
+v2 = ["daml-lf-archive-proto/v2"]
+
+[dependencies]
+canton-types.workspace = true
+daml-lf-archive-proto.workspace = true
+daml-lf-version.workspace = true
+derive_more = { workspace = true, features = ["std", "debug"] }
+hex = { workspace = true, features = ["std"] }
+protobuf-utils.workspace = true
+sha2.workspace = true
+thiserror = { workspace = true }
+zip = { workspace = true, features = ["deflate"] }
+
+[dev-dependencies]
+criterion.workspace = true
+pretty_assertions.workspace = true
+rstest.workspace = true
+
+[[bench]]
+harness = false
+name = "manifest_parser"

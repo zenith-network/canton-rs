@@ -1,0 +1,88 @@
+Manifest-Version: 1.0
+Created-By: damlc
+Name: my-contrac-0.1.0
+Sdk-Version: 0.0.0
+Main-Dalf: my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc
+ 76f6cdb69a46bd4d23d5e/my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812
+ 428a6010efbc76f6cdb69a46bd4d23d5e.dalf
+Dalfs: my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6
+ cdb69a46bd4d23d5e/my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a
+ 6010efbc76f6cdb69a46bd4d23d5e.dalf, my-contrac-0.1.0-8b2fe88417a032ed2
+ 6641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-prim-c017ae1b1a3e
+ 49ed89f06d5ecfab284e4b98ff90e35840a2a8d09b354ae78cdd.dalf, my-contrac-
+ 0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e
+ /daml-prim-DA-Exception-ArithmeticError-ee33fb70918e7aaa3d3fc44d64a399
+ fb2bf5bcefc54201b1690ecd448551ba88.dalf, my-contrac-0.1.0-8b2fe88417a0
+ 32ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-prim-DA-Exce
+ ption-AssertionFailed-6da1f43a10a179524e840e7288b47bda213339b0552d92e8
+ 7ae811e52f59fc0e.dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd81
+ 2428a6010efbc76f6cdb69a46bd4d23d5e/daml-prim-DA-Exception-GeneralError
+ -f181cd661f7af3a60bdaae4b0285a2a67beb55d6910fc8431dbae21a5825ec0f.dalf
+ , my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6cdb6
+ 9a46bd4d23d5e/daml-prim-DA-Exception-PreconditionFailed-91e167fa7a256f
+ 21f990c526a0a0df840e99aeef0e67dc1f5415b0309486de74.dalf, my-contrac-0.
+ 1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/d
+ aml-prim-DA-Internal-Erased-0e4a572ab1fb94744abb02243a6bbed6c78fc6e3c8
+ d3f60c655f057692a62816.dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c16
+ 5dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-prim-DA-Internal-NatSyn-
+ e5411f3d75f072b944bd88e652112a14a3d409c491fd9a51f5f6eede6d3a3348.dalf,
+  my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6cdb69
+ a46bd4d23d5e/daml-prim-DA-Internal-PromotedText-ab068e2f920d0e06347975
+ c2a342b71f8b8e3b4be0f02ead9442caac51aa8877.dalf, my-contrac-0.1.0-8b2f
+ e88417a032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-prim
+ -DA-Types-5aee9b21b8e9a4c4975b5f4c4198e6e6e8469df49e2010820e792f393db8
+ 70f4.dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efb
+ c76f6cdb69a46bd4d23d5e/daml-prim-GHC-Prim-fcee8dfc1b81c449b421410edd50
+ 41c16ab59c45bbea85bcb094d1b17c3e9df7.dalf, my-contrac-0.1.0-8b2fe88417
+ a032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-prim-GHC-T
+ uple-19f0df5fdaf5a96e137b6ea885fdb378f37bd3166bd9a47ee11518e33fa09a20.
+ dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6
+ cdb69a46bd4d23d5e/daml-prim-GHC-Types-e7e0adfa881e7dbbb07da065ae54444d
+ a7c4bccebcb8872ab0cb5dcf9f3761ce.dalf, my-contrac-0.1.0-8b2fe88417a032
+ ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-stdlib-0.0.0-d
+ 0d3fa4126853cac43b445e2bfc28591f861e1271df3c7697b62bde5ca4a8ccd.dalf,
+ my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6cdb69a
+ 46bd4d23d5e/daml-stdlib-DA-Action-State-Type-a1fa18133ae48cbb616c4c148
+ e78e661666778c3087d099067c7fe1868cbb3a1.dalf, my-contrac-0.1.0-8b2fe88
+ 417a032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-stdlib-
+ DA-Date-Types-fa79192fe1cce03d7d8db36471dde4cf6c96e6d0f07e1c391dd49e35
+ 5af9b38c.dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a601
+ 0efbc76f6cdb69a46bd4d23d5e/daml-stdlib-DA-Internal-Any-6f8e6085f576986
+ 1ae7a40dccd618d6f747297d59b37cab89b93e2fa80b0c024.dalf, my-contrac-0.1
+ .0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/da
+ ml-stdlib-DA-Internal-Down-86d888f34152dae8729900966b44abcb466b9c11169
+ 9678de58032de601d2b04.dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165
+ dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-stdlib-DA-Internal-Fail-T
+ ypes-7adc4c2d07fa3a51173c843cba36e610c1168b2dbbf53076e20c0092eae8763d.
+ dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6
+ cdb69a46bd4d23d5e/daml-stdlib-DA-Internal-Interface-AnyView-Types-c280
+ cc3ef501d237efa7b1120ca3ad2d196e089ad596b666bed59a85f3c9a074.dalf, my-
+ contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6cdb69a46b
+ d4d23d5e/daml-stdlib-DA-Internal-Template-9e70a8b3510d617f8a136213f33d
+ 6a903a10ca0eeec76bb06ba55d1ed9680f69.dalf, my-contrac-0.1.0-8b2fe88417
+ a032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-stdlib-DA-
+ Logic-Types-cae345b5500ef6f84645c816f88b9f7a85a9f3c71697984abdf6849f81
+ e80324.dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010e
+ fbc76f6cdb69a46bd4d23d5e/daml-stdlib-DA-Monoid-Types-52854220dc1998847
+ 04958df38befd5492d78384a032fd7558c38f00e3d778a2.dalf, my-contrac-0.1.0
+ -8b2fe88417a032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml
+ -stdlib-DA-NonEmpty-Types-bde4bd30749e99603e5afa354706608601029e225d49
+ 83324d617825b634253a.dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165d
+ bd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-stdlib-DA-Random-Types-bfd
+ a48f9aa2c89c895cde538ec4b4946c7085959e031ad61bde616b9849155d7.dalf, my
+ -contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc76f6cdb69a46
+ bd4d23d5e/daml-stdlib-DA-Semigroup-Types-d095a2ccf6dd36b2415adc4fa676f
+ 9191ba63cd39828dc5207b36892ec350cbc.dalf, my-contrac-0.1.0-8b2fe88417a
+ 032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-stdlib-DA-S
+ et-Types-c3bb0c5d04799b3f11bad7c3c102963e115cf53da3e4afcbcfd9f06ebd82b
+ 4ff.dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428a6010efbc
+ 76f6cdb69a46bd4d23d5e/daml-stdlib-DA-Stack-Types-60c61c542207080e97e37
+ 8ab447cc355ecc47534b3a3ebbff307c4fb8339bc4d.dalf, my-contrac-0.1.0-8b2
+ fe88417a032ed26641c165dbd812428a6010efbc76f6cdb69a46bd4d23d5e/daml-std
+ lib-DA-Time-Types-b70db8369e1c461d5c70f1c86f526a29e9776c655e6ffc2560f9
+ 5b05ccb8b946.dalf, my-contrac-0.1.0-8b2fe88417a032ed26641c165dbd812428
+ a6010efbc76f6cdb69a46bd4d23d5e/daml-stdlib-DA-Validation-Types-3cde94f
+ e9be5c700fc1d9a8ad2277e2c1214609f8c52a5b4db77e466875b8cb7.dalf
+Format: daml-lf
+Encryption: non-encrypted
+

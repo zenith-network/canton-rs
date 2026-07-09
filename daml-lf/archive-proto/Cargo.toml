@@ -1,0 +1,17 @@
+[package]
+name = "daml-lf-archive-proto"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["v2", "std"]
+std = ["prost/std"]
+v2 = []
+
+[dependencies]
+daml-lf-version.workspace = true
+prost = { workspace = true, features = ["derive"] }
+
+[build-dependencies]
+prost-build.workspace = true

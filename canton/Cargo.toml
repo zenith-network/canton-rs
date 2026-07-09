@@ -1,0 +1,23 @@
+[package]
+name = "canton"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = []
+derive = ["ledger-api-value/derive"]
+daml-lf = ["dep:daml-lf"]
+codegen = ["dep:daml-lf-codegen"]
+ledger-api = ["dep:ledger-api"]
+dpm-build = ["dep:dpm-build"]
+full = ["derive", "daml-lf", "codegen", "ledger-api", "dpm-build"]
+
+[dependencies]
+canton-types = { workspace = true, default-features = true }
+daml-lf = { workspace = true, default-features = true, optional = true }
+daml-lf-codegen = { workspace = true, default-features = true, optional = true }
+dpm-build = { workspace = true, default-features = true, optional = true }
+ledger-api = { workspace = true, default-features = true, optional = true }
+ledger-api-types = { workspace = true, default-features = true }
+ledger-api-value = { workspace = true, default-features = true }

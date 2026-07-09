@@ -1,0 +1,28 @@
+[package]
+name = "ledger-api"
+version = "0.1.0"
+description = "Ledger API client implementation"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["v2"]
+tracing = []
+v2 = ["ledger-api-proto/v2-full", "ledger-api-types/v2"]
+
+[dependencies]
+ledger-api-proto.workspace = true
+ledger-api-types.workspace = true
+protobuf-utils.workspace = true
+thiserror.workspace = true
+tokio-stream.workspace = true
+tonic = { workspace = true, features = [
+  "channel",
+  "tls-ring",
+  "tls-webpki-roots",
+] }
+tonic-types.workspace = true
+
+[dev-dependencies]
+prost.workspace = true
+prost-types.workspace = true

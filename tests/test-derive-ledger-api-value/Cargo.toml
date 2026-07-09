@@ -1,0 +1,11 @@
+[workspace]
+
+[package]
+name = "test-derive-ledger-api-value"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+daml-lf-ledger-api-value = { path = "../../daml-lf-ledger-api-value", features = [
+  "derive",
+] }

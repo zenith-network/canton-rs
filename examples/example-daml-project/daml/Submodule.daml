@@ -1,0 +1,6 @@
+module Submodule where
+
+data MyExtraData = MyExtraData with
+  someValue : Int
+
+data Foo = Baz | Bar

@@ -1,0 +1,17 @@
+[package]
+name = "ledger-api-value-proto"
+version = "0.1.0"
+description = "Protobuf bindings for Ledger API representation of Daml LF value"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["v2"]
+v2 = []
+
+[dependencies]
+prost = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true, optional = true }
+
+[build-dependencies]
+prost-build.workspace = true

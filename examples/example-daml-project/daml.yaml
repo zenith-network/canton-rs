@@ -1,0 +1,9 @@
+sdk-version: 3.6.1-snapshot.20260611.81.0.vb9b28f28
+name: my-contracts
+version: 0.1.0
+source: daml
+dependencies:
+  - daml-prim
+  - daml-stdlib
+build-options:
+  - --target=2.3

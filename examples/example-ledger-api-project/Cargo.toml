@@ -1,0 +1,11 @@
+[workspace]
+members = []
+resolver = "3"
+
+[package]
+name = "example-ledger-api-project"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+canton = { path = "../../canton", features = ["derive", "ledger-api"] }

@@ -1,0 +1,84 @@
+[workspace]
+members = [
+  "canton",
+  "canton/types",
+  "daml-lf",
+  "daml-lf/archive-proto",
+  "daml-lf/codegen",
+  "daml-lf/version",
+  "dpm-build",
+  "ledger-api",
+  "ledger-api/proto",
+  "ledger-api/types",
+  "ledger-api/value",
+  "ledger-api/value/derive",
+  "ledger-api/value/proto",
+  "protobuf-utils",
+]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+anyhow = { version = "1.0.102", default-features = false }
+bigdecimal = { version = "0.4.10", default-features = false }
+chrono = { version = "0.4.45", default-features = false }
+clap = "4.6.1"
+criterion = { version = "0.8.2", default-features = false }
+derive_more = { version = "2.1.1", default-features = false }
+frunk = "0.5.0"
+heck = "0.5.0"
+hex = { version = "0.4.3", default-features = false }
+nonempty = { version = "0.12.0", default-features = false }
+pretty_assertions = "1.4.1"
+prettyplease = { version = "0.2.37", default-features = false }
+proc-macro2 = "1.0.106"
+prost = { version = "0.14.3", default-features = false }
+prost-build = { version = "0.14.3", default-features = false }
+prost-types = { version = "0.14.3", default-features = false }
+quote = "1.0.45"
+rstest = { version = "0.26.1", default-features = false }
+serde = { version = "1.0.228", default-features = false }
+serde_json = { version = "1.0.150", default-features = false }
+sha2 = { version = "0.11.0", default-features = false }
+syn = { version = "2.0.118", default-features = false }
+thiserror = { version = "2.0.18", default-features = false }
+tokio-stream = { version = "0.1.18", default-features = false }
+tonic = { version = "0.14.6", default-features = false }
+tonic-prost = { version = "0.14.6", default-features = false }
+tonic-prost-build = { version = "0.14.6", default-features = false }
+tonic-types = { version = "0.14.6", default-features = false }
+tracing = { version = "0.1.44", default-features = false }
+tracing-subscriber = { version = "0.3.23", default-features = false }
+tracing-test = "0.2.6"
+trybuild = "1.0.117"
+unicode-ident = { version = "1.0.24", default-features = false }
+unicode-normalization = { version = "0.1.25", default-features = false }
+which = { version = "8.0.4", default-features = false }
+zip = { version = "8.6.0", default-features = false }
+
+# Local workspace dependencies
+
+# Common Canton crates
+canton = { path = "canton", default-features = false }
+canton-types = { path = "canton/types", default-features = false }
+
+# Ledger API crates
+ledger-api = { path = "ledger-api", default-features = false }
+ledger-api-proto = { path = "ledger-api/proto", default-features = false }
+ledger-api-types = { path = "ledger-api/types", default-features = false }
+ledger-api-value = { path = "ledger-api/value", default-features = false }
+ledger-api-value-derive = { path = "ledger-api/value/derive", default-features = false }
+ledger-api-value-proto = { path = "ledger-api/value/proto", default-features = false }
+
+# Daml LF crates
+daml-lf = { path = "daml-lf", default-features = false }
+daml-lf-archive-proto = { path = "daml-lf/archive-proto", default-features = false }
+daml-lf-codegen = { path = "daml-lf/codegen", default-features = false }
+daml-lf-version = { path = "daml-lf/version", default-features = false }
+
+# Auxiliary crates
+dpm-build = { path = "dpm-build", default-features = false }
+protobuf-utils = { path = "protobuf-utils" }

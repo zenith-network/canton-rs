@@ -1,0 +1,46 @@
+[package]
+edition.workspace = true
+license.workspace = true
+name = "daml-lf-codegen"
+version = "0.1.0"
+
+[[bin]]
+name = "codegen-rust"
+path = "src/main.rs"
+required-features = ["format"]
+
+[features]
+default = ["v2", "format", "env"]
+format = ["dep:prettyplease"]
+v2 = ["daml-lf/v2"]
+
+# Enables resolving output directory through OUT_DIR env var
+# This is normally desired when using the crate from build.rs
+env = []
+
+[dependencies]
+anyhow.workspace = true
+canton-types.workspace = true
+clap = { workspace = true, features = ["derive"] }
+daml-lf.workspace = true
+heck.workspace = true
+prettyplease = { workspace = true, optional = true }
+proc-macro2.workspace = true
+quote.workspace = true
+syn = { workspace = true, features = [
+  "parsing",
+  "printing",
+  "extra-traits",
+  "full",
+] } # extra-traits enabled Debug
+thiserror.workspace = true
+tracing = { workspace = true, features = ["std", "attributes"] }
+tracing-subscriber = { workspace = true, features = ["fmt", "ansi"] }
+unicode-ident.workspace = true
+unicode-normalization.workspace = true
+
+[dev-dependencies]
+dpm-build.workspace = true
+pretty_assertions.workspace = true
+rstest.workspace = true
+tracing-test.workspace = true

@@ -1,0 +1,19 @@
+module MyContracts where
+
+data MyDataType = MyDataType
+  with
+    someValue : Int
+
+template MyTemplate
+  with
+    value : Int
+    owner : Party
+  where
+    signatory owner
+
+template MyTemplateWithCid
+  with
+    value : ContractId MyTemplate
+    owner : Party
+  where
+    signatory owner

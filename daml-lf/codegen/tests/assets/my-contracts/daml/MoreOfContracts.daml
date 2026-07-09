@@ -1,0 +1,19 @@
+module MoreOfContracts where
+
+import DA.Set (Set)
+
+template MyOtherTemplate
+  with
+    value : Set Int
+    owner : Party
+  where
+    signatory owner
+
+    nonconsuming choice MyChoice : ()
+      with
+        caller : Party
+      controller caller
+      do
+        pure ()
+
+data Foo = Baz | Bar

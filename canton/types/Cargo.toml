@@ -1,0 +1,19 @@
+[package]
+name = "canton-types"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["testing"]
+serde = []
+tracing = []
+testing = [] # Enables some testing helpers
+
+[dependencies]
+bigdecimal.workspace = true
+thiserror.workspace = true
+frunk.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true

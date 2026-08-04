@@ -57,6 +57,7 @@ trybuild = "1.0.117"
 unicode-ident = { version = "1.0.24", default-features = false }
 unicode-normalization = { version = "0.1.25", default-features = false }
 which = { version = "8.0.4", default-features = false }
+yaml_serde = { version = "0.10.4", default-features = false }
 zip = { version = "8.6.0", default-features = false }
 
 # Local workspace dependencies

@@ -26,7 +26,10 @@ pub use generator::GenOutput;
 use generator::Generator;
 
 /// Read `.dar` file from `dar_path` and generate code with given `config`
+///
+/// Intended for use in `build.rs` scripts
 pub fn generate(dar_path: impl AsRef<Path>, config: Config) -> Result<GenOutput, Error> {
+    println!("cargo::rerun-if-changed={}", dar_path.as_ref().display());
     let mut dar = DarFile::read_from(dar_path)?;
     Generator::generate(&mut dar, config)
 }

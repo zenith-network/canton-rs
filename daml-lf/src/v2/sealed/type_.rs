@@ -43,6 +43,15 @@ impl<'a> Type<'a> {
             Sum::Tapp(unsealed) => Self::Tapp(TApp { package, unsealed }),
         }
     }
+
+    /// Return type constructor ID if some
+    pub fn type_con_id(&self) -> Option<TypeConId<'a>> {
+        match self {
+            Type::Con(con) => Some(con.tycon()),
+            Type::Tapp(tapp) => tapp.lhs().type_con_id(),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy)]

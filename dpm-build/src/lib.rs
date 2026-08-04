@@ -4,10 +4,13 @@ use std::{
     env, error,
     ffi::OsStr,
     fmt,
+    fs::File,
     io::{self, Write as _},
     path::{Path, PathBuf},
     process::Command,
 };
+
+use serde::Deserialize;
 
 /// Build with default config
 pub fn build() -> Result<BuildResult, DpmError> {
@@ -45,8 +48,30 @@ struct ResolvedConfig {
     dpm_exe: PathBuf,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+pub struct DamlYaml {
+    // We don't care about the rest of the fields now
+    #[serde(default)]
+    pub source: Option<String>,
+}
+
 impl ResolvedConfig {
     fn build(&self) -> Result<BuildResult, DpmError> {
+        // If there is a known daml.yaml file and "source" is specified there,
+        // we put it under cargo::rerun-if-changed
+        if let Ok(file) = File::open(self.package_root.join("daml.yaml")) {
+            let source = yaml_serde::from_reader::<_, DamlYaml>(file)
+                .map(|daml_yaml| daml_yaml.source)
+                .ok()
+                .flatten();
+            if let Some(source) = source {
+                println!(
+                    "cargo::rerun-if-changed={}",
+                    self.package_root.join(source).display()
+                );
+            }
+        }
+
         let mut cmd = Command::new(&self.dpm_exe);
         cmd.env("DAML_PACKAGE", &self.package_root)
             .arg("build")

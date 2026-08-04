@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 use canton_types::PackageId;
 use daml_lf::{
@@ -12,7 +15,10 @@ use crate::{
     external_paths::ExternalPaths,
     helpers::{empty_mod, is_empty_mod, mod_with_items, push_module},
     type_sets::PackageTypeSet,
-    v2::module_generator::{ModuleGenError, ModuleGenerator},
+    v2::{
+        dotted_name_to_owned,
+        module_generator::{ModuleGenError, ModuleGenerator},
+    },
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -75,15 +81,21 @@ impl<'a> PackageGenerator<'a> {
         // If finally this is true, we emit empty module without the header
         let mut empty = true;
 
-        for (module_name, module_gen_set) in &self.gen_set.0 {}
+        let modules = self
+            .package
+            .modules()
+            .into_iter()
+            .map(|module| (dotted_name_to_owned(&module.name()), module))
+            .collect::<BTreeMap<_, _>>();
 
-        let modules = self.package.modules();
-        for module in modules {
+        for (module_name, module_gen_set) in &self.gen_set.0 {
+            let module = modules[module_name];
+
             let rmodule = ModuleGenerator::new(
                 self.package_identifiers.clone(),
                 self.external_paths.clone(),
                 module,
-                todo!(),
+                module_gen_set.clone(),
             )
             .gen_module()
             .map_err(|err| PackageGenError::ModuleGenError {

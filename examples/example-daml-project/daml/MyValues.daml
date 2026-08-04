@@ -1,0 +1,19 @@
+module MyValues where
+
+import DA.Set (Set)
+import DA.Set qualified as S
+
+template MyValues
+  with
+    values : Set Int
+    owner : Party
+  where
+    signatory owner
+
+    choice AddValue : ContractId MyValues
+      with
+        value : Int
+      controller owner
+      do
+        create this with
+          values = S.insert value values

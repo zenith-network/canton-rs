@@ -1,11 +1,11 @@
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     fs,
     path::{Path, PathBuf},
     sync::Arc,
 };
 
-use canton_types::{NonEmpty, PackageId};
+use canton_types::PackageId;
 use daml_lf::{
     dar::DarFile,
     package::{Package, SealedPackage, VersionedSealedPackage},
@@ -46,20 +46,18 @@ impl Generator {
         // FIXME: replace panic with error
         let main_package_id = Self::get_main_package_id(dar)?;
 
-        let package_identifiers = Arc::new(Self::generate_package_identifiers(
-            sealed_packages.keys().cloned(),
-        ));
+        let package_identifiers = Arc::new(Self::generate_package_identifiers(&sealed_packages));
 
         let external_paths = Arc::new(Default::default());
 
-        let gen_set = GenSetBuilder::build(
+        let genset = GenSetBuilder::build(
             &sealed_packages,
             main_package_id.clone(),
             GenMode::ResolveTemplates,
         );
 
         let mut files = Vec::new();
-        for (package_id, package_gen_set) in gen_set.0 {
+        for (package_id, package_gen_set) in genset {
             // Safety: gen set contains only existing packages
             let package = &sealed_packages[&package_id];
             let ident = &package_identifiers[&package_id];
@@ -84,7 +82,7 @@ impl Generator {
                             attrs: Vec::new(),
                             items: vec![syn::Item::Mod(pmodule)],
                         };
-                        let path = Self::package_file_path(&outdir, package);
+                        let path = Self::package_file_path(&outdir, ident);
                         Self::write_file(&file, &path)?;
                         files.push(path);
                     }
@@ -147,18 +145,8 @@ impl Generator {
         outdir.as_ref().join(format!("main_package.rs"))
     }
 
-    fn package_file_path<'a>(
-        outdir: impl AsRef<Path>,
-        sealed_package: &SealedPackage<'a>,
-    ) -> PathBuf {
-        match sealed_package.versioned() {
-            VersionedSealedPackage::V2(package) => {
-                let metadata = package.metadata();
-                let filename = format!("{}-{}.rs", metadata.name(), metadata.version());
-                let filepath = outdir.as_ref().join(filename);
-                filepath
-            }
-        }
+    fn package_file_path(outdir: impl AsRef<Path>, package_ident: &Ident) -> PathBuf {
+        outdir.as_ref().join(format!("{package_ident}.rs"))
     }
 
     fn write_file<'a>(file: &syn::File, path: impl AsRef<Path>) -> Result<(), Error> {
@@ -171,15 +159,60 @@ impl Generator {
         Ok(())
     }
 
-    fn generate_package_identifiers<'a>(
-        packages: impl Iterator<Item = PackageId>,
+    fn generate_package_identifiers(
+        packages: &BTreeMap<PackageId, SealedPackage<'_>>,
     ) -> HashMap<PackageId, Ident> {
+        let packages = packages
+            .iter()
+            .map(|(package_id, package)| {
+                let (name, version) = Self::package_name_and_version(package);
+                (package_id.clone(), name.to_owned(), version.to_owned())
+            })
+            .collect::<Vec<_>>();
+
+        let mut name_counts = HashMap::<String, usize>::new();
+        let mut name_version_counts = HashMap::<(String, String), usize>::new();
+        for (_, name, version) in &packages {
+            *name_counts.entry(name.clone()).or_default() += 1;
+            *name_version_counts
+                .entry((name.clone(), version.clone()))
+                .or_default() += 1;
+        }
+
         packages
-            .map(|pid| {
-                let ident = crate::ident::generate_snake_ident(format!("package_{pid}"));
-                (pid, ident)
+            .into_iter()
+            .map(|(package_id, name, version)| {
+                let name_version_count = name_version_counts[&(name.clone(), version.clone())];
+                let ident = if name_counts[&name] == 1 {
+                    crate::ident::generate_snake_ident(&name)
+                } else if name_version_count == 1 {
+                    crate::ident::generate_snake_ident(format!("{name}_{version}"))
+                } else {
+                    crate::ident::generate_snake_ident(format!(
+                        "{name}_{version}_{}",
+                        Self::short_package_id(&package_id),
+                    ))
+                };
+                (package_id, ident)
             })
             .collect::<HashMap<_, _>>()
+    }
+
+    fn package_name_and_version<'a>(sealed_package: &SealedPackage<'a>) -> (&'a str, &'a str) {
+        match sealed_package.versioned() {
+            VersionedSealedPackage::V2(package) => {
+                let metadata = package.metadata();
+                (metadata.name(), metadata.version())
+            }
+        }
+    }
+
+    fn short_package_id(package_id: &PackageId) -> &str {
+        let package_id = package_id.as_str();
+        match package_id.char_indices().nth(8) {
+            Some((idx, _)) => &package_id[..idx],
+            None => package_id,
+        }
     }
 }
 

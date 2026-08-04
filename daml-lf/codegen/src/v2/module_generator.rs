@@ -2,8 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use canton_types::{PackageId, errors::PackageIdError};
 use daml_lf::v2::sealed::{
-    BuiltinType, DefDataType, FieldWithType, Kind, Module, SelfOrImportedPackageId, Type,
-    TypeVarWithKind,
+    BuiltinType, DefDataType, DefTemplate, FieldWithType, Kind, Module, SelfOrImportedPackageId,
+    TemplateChoice, Type, TypeVarWithKind,
     def_data_type::{DataCons, EnumConstructors, Fields},
     type_::{Con, TApp},
 };
@@ -99,6 +99,25 @@ impl<'a> ModuleGenerator<'a> {
         package_root_path
     }
 
+    fn is_choice(&self, dt: DefDataType<'a>) -> Option<(TemplateChoice<'a>, DefTemplate<'a>)> {
+        let module_name = self.module.name();
+        for template in self.module.templates() {
+            for choice in template.choices() {
+                let choice_type = choice.arg_binder().type_();
+                if let Some(type_con_id) = choice_type.type_con_id() {
+                    let module_id = type_con_id.module();
+                    if module_id.package_id().is_self()
+                        && module_id.module_name() == module_name
+                        && type_con_id.name() == dt.name()
+                    {
+                        return Some((choice, template));
+                    }
+                }
+            }
+        }
+        None
+    }
+
     /// Generate module content
     ///
     /// Does not include module definition (`mod X { ... }`)
@@ -130,6 +149,11 @@ impl<'a> ModuleGenerator<'a> {
         for dt in data_types {
             items.push(self.gen_item(dt)?);
 
+            if let Some((choice, template)) = self.is_choice(dt) {
+                let choice_impls = self.gen_choice_impl(dt, template, choice)?;
+                items.extend(choice_impls);
+            }
+
             // TODO: check if dt is template
             // TODO: check if dt is choice
         }
@@ -137,8 +161,37 @@ impl<'a> ModuleGenerator<'a> {
         Ok(mod_with_items(ident, items))
     }
 
-    fn types_to_generate(&self) -> Vec<DefDataType<'a>> {
-        todo!()
+    fn gen_choice_impl(
+        &self,
+        dt: DefDataType<'a>,
+        template: DefTemplate<'a>,
+        choice: TemplateChoice<'a>,
+    ) -> Result<Vec<syn::Item>, ModuleGenError> {
+        let name = ident::generate_camel_ident(dt.name().tail());
+        let template_name = ident::generate_camel_ident(template.tycon_name().tail());
+        let consuming = choice.consuming();
+        let choice_name = choice.name();
+        let ret_type = self.gen_type(choice.ret_type())?;
+
+        let choice_impl_tokens = quote! {
+            impl ::canton::types::Choice<#template_name> for #name {
+                const CONSUMING: bool = #consuming;
+                const NAME: ::canton::types::Name = ::canton::types::Name::new_static_unchecked(#choice_name);
+                type Result = #ret_type;
+            }
+        };
+        let choice_impl: syn::Item = syn::parse2(choice_impl_tokens)?;
+
+        let choice_value_impl_tokens = quote! {
+            impl ::canton::ledger_api::types::v2::ChoiceValue<#template_name> for #name {}
+        };
+        let choice_value_impl: syn::Item = syn::parse2(choice_value_impl_tokens)?;
+
+        if let Some(_key) = template.key() {
+            todo!("gen choice with key")
+        }
+
+        Ok(vec![choice_impl, choice_value_impl])
     }
 
     fn gen_header(&self) -> Result<Vec<syn::Item>, ModuleGenError> {
@@ -153,6 +206,12 @@ impl<'a> ModuleGenerator<'a> {
     /// Generate Rust item (struct, enum, ...) declaration
     fn gen_item(&self, dt: DefDataType<'a>) -> Result<syn::Item, ModuleGenError> {
         let name = dt.name();
+
+        let template = self
+            .module
+            .templates()
+            .into_iter()
+            .find(|template| template.tycon_name() == name);
 
         if !name.base().is_empty() {
             todo!("multi-segment name of a data type constructor: {dt:?}")
@@ -175,7 +234,7 @@ impl<'a> ModuleGenerator<'a> {
         );
 
         let entity_id = ident::generate_camel_ident(name);
-        let attrs = self.gen_item_level_attrs(name)?;
+        let attrs = self.gen_item_level_attrs(name, template)?;
         let generics = self.gen_generic_params(params);
 
         match cons {
@@ -200,7 +259,12 @@ impl<'a> ModuleGenerator<'a> {
     /// #[derive(Clone, Debug, ::canton::ledger_api::types::value::v2::Value)]
     /// #[value(package_id = super::PACKAGE_ID, module_name = MODULE_NAME, name = "MyName")]
     /// ```
-    fn gen_item_level_attrs(&self, name: &'a str) -> Result<Vec<syn::Attribute>, ModuleGenError> {
+    fn gen_item_level_attrs(
+        &self,
+        name: &'a str,
+        template: Option<DefTemplate<'a>>,
+    ) -> Result<Vec<syn::Attribute>, ModuleGenError> {
+        let module_name = self.module.name().into_iter().collect::<Vec<_>>().join(".");
         let path = self.package_root_path();
         let derive_attr = syn::Attribute {
             style: syn::AttrStyle::Outer,
@@ -210,11 +274,15 @@ impl<'a> ModuleGenerator<'a> {
             pound_token: Default::default(),
             bracket_token: Default::default(),
         };
+        let is_template = template.is_some();
+        let meta = syn::parse2(if is_template {
+            quote! { value(package_id = #path::PACKAGE_ID, package_name = #path::PACKAGE_NAME, module_name = #module_name, name = #name, template) }
+        } else {
+            quote! { value(package_id = #path::PACKAGE_ID, package_name = #path::PACKAGE_NAME, module_name = #module_name, name = #name) }
+        })?;
         let value_attr = syn::Attribute {
             style: syn::AttrStyle::Outer,
-            meta: syn::parse2(
-                quote! { value(package_id = #path::PACKAGE_ID, module_name = MODULE_NAME, name = #name) },
-            )?,
+            meta,
             pound_token: Default::default(),
             bracket_token: Default::default(),
         };

@@ -1,0 +1,9 @@
+[package]
+name = "simple-workflow"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+my-contracts.workspace = true
+canton = { workspace = true, features = ["full"] }
+tokio = { workspace = true, features = ["full"] }

@@ -14,4 +14,4 @@ pub use traits::{IntoRecord, IntoValue, Record, TryFromRecord, TryFromValue, Val
 // TODO: maybe it will be convenient to have a dedicated representations for verbose and non-verbose
 
 #[cfg(feature = "derive")]
-pub use ledger_api_value_derive::Value;
+pub use ledger_api_value_derive::{HasIdentifier, Value};

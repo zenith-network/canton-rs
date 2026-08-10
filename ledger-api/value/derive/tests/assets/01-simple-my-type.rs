@@ -1,14 +1,14 @@
-use canton::types::{Value, value::traits};
+use canton::ledger_api::types::value::v2::{HasIdentifier, Value};
 
-#[derive(Value)]
-#[value(package_id = "ff", module_name = "A.B.C")]
+#[derive(HasIdentifier, Value)]
+#[identifier(package_id = "ffff", package_name = "my-pack", module = "A.B.C")]
 pub struct MyType {
     value: i64,
-    #[value(name = "otherValue")]
+    #[name = "otherValue"]
     other_value: String,
 }
 
-fn test<V: traits::Value>(_value: V) {}
+fn test<V: Value>(_value: V) {}
 
 fn main() {
     let m = MyType {

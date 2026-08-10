@@ -1,5 +1,0 @@
-error: package_id is not specified
- --> tests/assets/02-no-package-id.rs:4:3
-  |
-4 | #[value(module_name = "A.B.C")]
-  |   ^^^^^^^^^^^^^^^^

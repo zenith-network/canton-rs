@@ -1,5 +1,0 @@
-error: bad entity name: unexpected character '.' in NameString
- --> tests/assets/03-bad-struct-name.rs:4:69
-  |
-4 | #[value(package_id = "ff", module_name = "A.B.C", name = "My.Type")]
-  |                                                                     ^^^^^^^^^

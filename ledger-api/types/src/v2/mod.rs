@@ -37,3 +37,6 @@ pub use transaction_format::TransactionFormat;
 pub use transaction_shape::{AcsDelta, LedgerEffects, TransactionShape, TxShape};
 pub use update::Update;
 pub use update_format::UpdateFormat;
+
+#[cfg(feature = "derive")]
+pub use ledger_api_types_derive::{Choice, Template};

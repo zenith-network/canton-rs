@@ -1,5 +1,3 @@
-use frunk::Coprod;
-
 use crate::{Choice, Name, Template, TemplateWithKey};
 
 pub struct TestTemplate;

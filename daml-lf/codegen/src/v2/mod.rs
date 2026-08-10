@@ -3,7 +3,6 @@ use daml_lf::v2::sealed::DottedName;
 
 use crate::ids::OwnedDottedName;
 
-pub mod gen_set;
 pub mod module_deps_resolver;
 pub mod module_gen_set_builder;
 pub mod module_generator;

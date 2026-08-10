@@ -16,8 +16,9 @@ pub enum PackageIdAny {
 }
 
 impl PackageIdAny {
-    pub fn new(value: String) -> Result<Self, PackageIdAnyError> {
+    pub fn new(mut value: String) -> Result<Self, PackageIdAnyError> {
         if value.starts_with(DISCRIMINATOR) {
+            value.remove(0);
             Self::new_name(value)
         } else {
             Self::new_id(value)
@@ -77,7 +78,7 @@ impl PackageIdAny {
 
     pub fn parse(input: impl AsRef<str>) -> Result<Self, PackageIdAnyError> {
         let input = input.as_ref();
-        if input.starts_with(DISCRIMINATOR) {
+        if let Some(input) = input.strip_prefix(DISCRIMINATOR) {
             Self::new_name(input.to_owned())
         } else {
             Self::new_id(input.to_owned())

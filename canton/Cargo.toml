@@ -6,7 +6,7 @@ license.workspace = true
 
 [features]
 default = []
-derive = ["ledger-api-value/derive"]
+derive = ["ledger-api-value/derive", "ledger-api-types/derive"]
 daml-lf = ["dep:daml-lf"]
 codegen = ["dep:daml-lf-codegen"]
 ledger-api = ["dep:ledger-api"]

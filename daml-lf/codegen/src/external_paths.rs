@@ -59,6 +59,7 @@ impl UnresolvedExternalPaths {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct ExternalPaths {
     pub extern_packages: HashMap<PackageId, syn::Path>,

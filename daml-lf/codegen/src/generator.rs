@@ -41,7 +41,10 @@ impl Generator {
         let outdir = config.get_outdir()?;
 
         let packages = Self::read_packages(dar)?;
+
         let sealed_packages = Self::seal_packages(&packages)?;
+
+        let mut type_attrs = config.resolve_type_attributes(&sealed_packages)?;
 
         // FIXME: replace panic with error
         let main_package_id = Self::get_main_package_id(dar)?;
@@ -58,6 +61,7 @@ impl Generator {
 
         let mut files = Vec::new();
         for (package_id, package_gen_set) in genset {
+            let ptype_attrs = type_attrs.remove(&package_id).unwrap_or_default();
             // Safety: gen set contains only existing packages
             let package = &sealed_packages[&package_id];
             let ident = &package_identifiers[&package_id];
@@ -73,6 +77,7 @@ impl Generator {
                         Arc::clone(&package_identifiers),
                         Arc::clone(&external_paths),
                         package_gen_set,
+                        ptype_attrs,
                     );
                     let pmodule = pgen.gen_package()?;
 

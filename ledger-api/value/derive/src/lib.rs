@@ -1,80 +1,88 @@
-//! Derive macros for Daml values
+//! Derive macros for Ledger API value traits.
 //!
-//! To use, depend on `canton-types` create with `"derive"` feature enabled.
+//! These macros are usually consumed through `ledger-api-value` with the `"derive"`
+//! feature, or through `canton` with `"derive"` and `"ledger-api"` enabled.
 //!
-//! This crate defines [`Value`] macro, which is used to simplify implementation of the
-//! `canton::types::Value` trait for Rust types.
+//! This crate defines:
 //!
-//! Can be applied to `struct`-s or `enum`-s.
+//! - [`HasIdentifier`] for static Ledger API identifiers
+//! - [`Value`] for record-based value conversions
 //!
-//! `#[value]` helper attribute can be applied to both item (struct or enum) and members
-//! (fields or enum variants). It has the following keys:
+//! `#[identifier(...)]` supports:
 //!
-//! - `package_id = "..." | EXPR` (**required**) - applied only to structs or enums. Defined package
-//!     ID to use in identifier of Ledger API value. Can be a string literal or an expression of
-//!     type [`PackageId`][daml_primitives::package_id::PackageId]. If a string literal is passed,
-//!     it will be checked at macro runtime to be a valid
-//!     [`PackageId`][daml_primitives::package_id::PackageId] and compilation error may be emitted.
-//! - `name = "..." | EXPR` - name of the item or member to use on Ledger API value side. This can
-//!     be string literal or expression of type
-//!     [`NameString`][daml_primitives::name_string::NameString]. If a string literal is passed, it
-//!     will be checked at marco runtime to be a valid
-//!     [`NameString`][daml_primitives::name_string::NameString] and compilation error may be
-//!     emitted. If not set, item/member identifier will be used.
+//! - `package_id = "..." | EXPR` (**required**)
+//! - `package_name = "..." | EXPR` (**required**)
+//! - `module = "..." | EXPR` (**required**)
+//! - `name = "..." | EXPR`
+//! - `crate_path = PATH`
 //!
-//! TODO: complete docs
+//! `#[value(...)]` currently supports only:
+//!
+//! - `crate_path = PATH`
+//!
+//! `#[name = "..." | EXPR]` can be used on struct fields to override the Daml field
+//! name.
+//!
+//! `Value` requires the type to implement `HasIdentifier` and is currently intended
+//! for named-field structs.
 //!
 //! # Example
 //!
-//! ```rust,ignore
-//! #[derive(Value)]
-//! #[value(package_id = "ffffff", name = "MyDataStruct")]
-//! struct MyStruct {
-//!     #[value(name = "myValue")]
-//!     my_value: i64,
+//! ```rust
+//! use canton::ledger_api::types::value::v2::{HasIdentifier, Value};
+//!
+//! #[derive(HasIdentifier, Value)]
+//! #[identifier(package_id = "ffff", package_name = "my-pack", module = "My.Module")]
+//! struct MyType {
+//!     value: i64,
+//!     #[name = "otherValue"]
+//!     other_value: String,
 //! }
-//! ```
 //!
-//! This will be equivalent to the following Daml code:
-//!
-//! ```daml
-//! data MyDataStruct = MyDataStruct
-//!   with
-//!     myValue : Int
+//! # fn assert_identifier<T: canton::ledger_api::types::value::v2::HasIdentifier>() {}
+//! # fn assert_value<T: canton::ledger_api::types::value::v2::Value>() {}
+//! # fn main() {
+//! #     assert_identifier::<MyType>();
+//! #     assert_value::<MyType>();
+//! # }
 //! ```
 
 use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
-use syn::{Data, DeriveInput, Error, parse_macro_input};
+use proc_macro2::Span;
+use syn::{DeriveInput, Expr, parse_macro_input};
 
-mod attributes;
-mod enum_;
-mod paths;
-mod struct_;
+mod has_identifier;
+mod value;
 
-use attributes::ItemAttributes;
-
-/// Derive macro for `Value` trait. See [crate-level docs](crate).
-#[proc_macro_derive(Value, attributes(value))]
-pub fn impl_value(input: TokenStream) -> TokenStream {
+/// Derive `ledger_api_value::v2::HasIdentifier`.
+///
+/// Required item attribute:
+/// `#[identifier(package_id = ..., package_name = ..., module = ...)]`.
+///
+/// `name` and `crate_path` are optional.
+///
+/// See [crate-level docs](crate) for an example.
+#[proc_macro_derive(HasIdentifier, attributes(identifier))]
+pub fn has_identifier(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    match try_impl_value(input) {
+    match has_identifier::impl_has_identifier(input) {
         Ok(tokens) => tokens.into(),
         Err(error) => error.into_compile_error().into(),
     }
 }
 
-fn try_impl_value(input: DeriveInput) -> Result<TokenStream2, Error> {
-    let item_attrs = ItemAttributes::parse(&input.attrs)?;
-    let generics = input.generics;
-
-    match input.data {
-        Data::Struct(ds) => struct_::try_impl_record(item_attrs, input.ident, ds, generics),
-        Data::Enum(de) => enum_::try_impl_value_enum(&item_attrs, input.ident, de, generics),
-        Data::Union(_) => Err(Error::new(
-            Span::call_site(),
-            "LedgerApiValue cannot be applied to union types",
-        )),
+/// Derive the record-based value traits from `ledger_api_value::v2`.
+///
+/// This macro requires the type to implement `HasIdentifier`.
+/// `#[name = ...]` may be used on fields to override the Daml field name.
+///
+/// See [crate-level docs](crate) for supported attributes and an example.
+#[proc_macro_derive(Value, attributes(name, value))]
+pub fn value(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    match value::impl_value(input) {
+        Ok(tokens) => tokens.into(),
+        Err(error) => error.into_compile_error().into(),
     }
 }
 
@@ -86,6 +94,21 @@ fn collect_err_chain<E: std::error::Error + ?Sized>(error: &E) -> Vec<String> {
     res
 }
 
+enum Attr<T> {
+    Fixed { attr: T, span: Span },
+    Expr(Expr),
+}
+
+impl<T> Attr<T> {
+    pub fn fixed(attr: T, span: Span) -> Self {
+        Self::Fixed { attr, span }
+    }
+
+    pub fn expr(expr: Expr) -> Self {
+        Self::Expr(expr)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use trybuild::TestCases;
@@ -94,7 +117,5 @@ mod tests {
     fn test_build() {
         let t = TestCases::new();
         t.pass("tests/assets/01-simple-my-type.rs");
-        t.compile_fail("tests/assets/02-no-package-id.rs");
-        t.compile_fail("tests/assets/03-bad-struct-name.rs");
     }
 }

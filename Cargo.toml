@@ -2,6 +2,7 @@
 members = [
   "canton",
   "canton/types",
+  "canton-paths",
   "daml-lf",
   "daml-lf/archive-proto",
   "daml-lf/codegen",
@@ -10,6 +11,7 @@ members = [
   "ledger-api",
   "ledger-api/proto",
   "ledger-api/types",
+  "ledger-api/types/derive",
   "ledger-api/value",
   "ledger-api/value/derive",
   "ledger-api/value/proto",
@@ -44,6 +46,7 @@ serde = { version = "1.0.228", default-features = false }
 serde_json = { version = "1.0.150", default-features = false }
 sha2 = { version = "0.11.0", default-features = false }
 syn = { version = "2.0.118", default-features = false }
+tempfile = { version = "3.27.0", default-features = false }
 thiserror = { version = "2.0.18", default-features = false }
 tokio-stream = { version = "0.1.18", default-features = false }
 tonic = { version = "0.14.6", default-features = false }
@@ -64,12 +67,14 @@ zip = { version = "8.6.0", default-features = false }
 
 # Common Canton crates
 canton = { path = "canton", default-features = false }
+canton-paths = { path = "canton-paths" }
 canton-types = { path = "canton/types", default-features = false }
 
 # Ledger API crates
 ledger-api = { path = "ledger-api", default-features = false }
 ledger-api-proto = { path = "ledger-api/proto", default-features = false }
 ledger-api-types = { path = "ledger-api/types", default-features = false }
+ledger-api-types-derive = { path = "ledger-api/types/derive", default-features = false }
 ledger-api-value = { path = "ledger-api/value", default-features = false }
 ledger-api-value-derive = { path = "ledger-api/value/derive", default-features = false }
 ledger-api-value-proto = { path = "ledger-api/value/proto", default-features = false }

@@ -1,4 +1,5 @@
 use std::{
+    error::Error,
     fmt::{self, Write as _},
     num::NonZeroUsize,
     str::FromStr,
@@ -192,10 +193,26 @@ impl PartialEq<&[&String]> for DottedName {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-#[error("invalid dotted name: {kind}")]
+#[derive(Debug)]
 pub struct DottedNameError {
     kind: DottedNameErrorKind,
+}
+
+impl fmt::Display for DottedNameError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("invalid dotted name: ")?;
+        self.kind.fmt(f)
+    }
+}
+
+impl Error for DottedNameError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        if let DottedNameErrorKind::NameError { source, .. } = &self.kind {
+            Some(source)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

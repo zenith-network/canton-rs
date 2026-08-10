@@ -8,15 +8,15 @@ use canton_types::errors::{
 };
 use protobuf_utils::{InvalidProtoFieldValue, MissingProtoField};
 
-use canton_types::PackageId;
-
-use crate::v2::{Identifier, value::ValueKind};
+use crate::v2::value::ValueKind;
 
 /// Aggregated error for compound types implementing
 /// [`TryFromValue`][crate::v2::traits::TryFromValue] (e.g. `Option<T>`)
 #[derive(Debug, thiserror::Error)]
 pub enum AggregatedValueError<E> {
+    #[error(transparent)]
     ValueKindError(#[from] ValueKindError),
+    #[error(transparent)]
     Other(E),
 }
 
@@ -24,8 +24,11 @@ pub enum AggregatedValueError<E> {
 /// [`TryFromValue`][crate::v2::traits::TryFromValue] (e.g. `BTreeMap<K, V>`)
 #[derive(Debug, thiserror::Error)]
 pub enum Aggregated2ValueError<E1, E2> {
+    #[error(transparent)]
     ValueKindError(#[from] ValueKindError),
+    #[error(transparent)]
     Other1(E1),
+    #[error(transparent)]
     Other2(E2),
 }
 
@@ -43,35 +46,94 @@ impl ValueKindError {
     }
 }
 
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("unexpected identifier: expected '{expected}', got '{got}'")]
+pub struct UnexpectedIdentifier {
+    pub expected: String,
+    pub got: String,
+}
+
+impl UnexpectedIdentifier {
+    pub fn new(expected: String, got: String) -> Self {
+        Self { expected, got }
+    }
+}
+
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("unexpected number of record fields: expected {expected}, got {got}")]
+pub struct UnexpectedRecordSize {
+    pub expected: usize,
+    pub got: usize,
+}
+
+impl UnexpectedRecordSize {
+    pub fn new(expected: usize, got: usize) -> Self {
+        Self { expected, got }
+    }
+}
+
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("unexpected label on record: expected '{expected}', got '{got}'")]
+pub struct UnexpectedLabel {
+    pub expected: String,
+    pub got: String,
+}
+
+impl UnexpectedLabel {
+    pub fn new(expected: String, got: String) -> Self {
+        Self { expected, got }
+    }
+}
+
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("unexpected constructor name: '{got}'")]
+pub struct UnexpectedConstructorName {
+    pub got: String,
+}
+
+impl UnexpectedConstructorName {
+    pub fn new(got: String) -> Self {
+        Self { got }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TryFromRecordError {
+    #[error(transparent)]
+    UnexpectedIdentifier(#[from] UnexpectedIdentifier),
+    #[error(transparent)]
+    UnexpectedLength(#[from] UnexpectedRecordSize),
+    #[error(transparent)]
+    UnexpectedLabel(#[from] UnexpectedLabel),
+    #[error("failed to convert field")]
+    FieldError(#[source] Box<dyn std::error::Error + 'static + Send + Sync>),
+}
+
+impl TryFromRecordError {
+    pub fn field_error(error: impl std::error::Error + 'static + Send + Sync) -> Self {
+        Self::FieldError(Box::new(error))
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TryFromEnumError {
+    #[error(transparent)]
+    ValueKindError(#[from] ValueKindError),
+    #[error(transparent)]
+    UnexpectedIdentifier(#[from] UnexpectedIdentifier),
+    #[error(transparent)]
+    UnexpectedConstructorName(#[from] UnexpectedConstructorName),
+}
+
 /// Error on converting record value to a tuple
 #[derive(Debug, thiserror::Error)]
 pub enum TupleFromRecordError {
-    #[error("unexpected record identifier: expected '{expected}', got '{got}'")]
-    UnexpectedIdentifier { expected: String, got: String },
-    #[error("unexpected length of the tuple: expected {expected}, got {got}")]
-    UnexpectedLength { expected: usize, got: usize },
-    #[error("unexpected label on record: expected '{expected}', got '{got}'")]
-    UnexpectedLabel { expected: String, got: String },
-}
-
-impl TupleFromRecordError {
-    pub fn unexpected_identifier(
-        expected: &Identifier<PackageId>,
-        got: &Identifier<PackageId>,
-    ) -> Self {
-        Self::UnexpectedIdentifier {
-            expected: expected.to_string(),
-            got: got.to_string(),
-        }
-    }
-
-    pub fn unexpected_length(expected: usize, got: usize) -> Self {
-        Self::UnexpectedLength { expected, got }
-    }
-
-    pub fn unexpected_label(expected: String, got: String) -> Self {
-        Self::UnexpectedLabel { expected, got }
-    }
+    #[error(transparent)]
+    UnexpectedIdentifier(#[from] UnexpectedIdentifier),
+    #[error(transparent)]
+    UnexpectedLength(#[from] UnexpectedRecordSize),
+    #[error(transparent)]
+    UnexpectedLabel(#[from] UnexpectedLabel),
 }
 
 /// Error on converting record value to a tuple (T1, T2)
@@ -85,6 +147,24 @@ pub enum Tuple2Error<E1, E2> {
     T2Error(E2),
 }
 
+impl<E1, E2> From<UnexpectedIdentifier> for Tuple2Error<E1, E2> {
+    fn from(value: UnexpectedIdentifier) -> Self {
+        Self::TupleFromRecordError(value.into())
+    }
+}
+
+impl<E1, E2> From<UnexpectedRecordSize> for Tuple2Error<E1, E2> {
+    fn from(value: UnexpectedRecordSize) -> Self {
+        Self::TupleFromRecordError(value.into())
+    }
+}
+
+impl<E1, E2> From<UnexpectedLabel> for Tuple2Error<E1, E2> {
+    fn from(value: UnexpectedLabel) -> Self {
+        Self::TupleFromRecordError(value.into())
+    }
+}
+
 /// Error on converting record value to a tuple (T1, T2, T3)
 #[derive(Debug, thiserror::Error)]
 pub enum Tuple3Error<E1, E2, E3> {
@@ -96,6 +176,24 @@ pub enum Tuple3Error<E1, E2, E3> {
     T2Error(E2),
     #[error(transparent)]
     T3Error(E3),
+}
+
+impl<E1, E2, E3> From<UnexpectedIdentifier> for Tuple3Error<E1, E2, E3> {
+    fn from(value: UnexpectedIdentifier) -> Self {
+        Self::TupleFromRecordError(value.into())
+    }
+}
+
+impl<E1, E2, E3> From<UnexpectedRecordSize> for Tuple3Error<E1, E2, E3> {
+    fn from(value: UnexpectedRecordSize) -> Self {
+        Self::TupleFromRecordError(value.into())
+    }
+}
+
+impl<E1, E2, E3> From<UnexpectedLabel> for Tuple3Error<E1, E2, E3> {
+    fn from(value: UnexpectedLabel) -> Self {
+        Self::TupleFromRecordError(value.into())
+    }
 }
 
 /// Helper trait for creating [`ValueError`] from source error with a message

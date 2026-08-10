@@ -5,13 +5,13 @@
 
 use std::collections::BTreeMap;
 
-use canton_types::{ContractId, DottedName, Name, NonEmpty, PackageId, PartyId};
+use canton_types::{ContractId, DottedName, Name, NonEmpty, Numeric, PackageId, PartyId};
 
 use crate::v2::{
     Identifier, IntoRecord, IntoValue, Record, TryFromRecord, TryFromValue, Value,
     errors::{
         Aggregated2ValueError, AggregatedValueError, Tuple2Error, Tuple3Error,
-        TupleFromRecordError, ValueKindError,
+        UnexpectedIdentifier, UnexpectedLabel, UnexpectedRecordSize, ValueKindError,
     },
     value,
 };
@@ -143,27 +143,22 @@ impl<T1: TryFromValue, T2: TryFromValue> TryFromRecord for (T1, T2) {
         if let Some(identifier) = identifier {
             let expected_identifier = tuple_id::<2>();
             if identifier != expected_identifier {
-                return Err(TupleFromRecordError::unexpected_identifier(
-                    &expected_identifier,
-                    &identifier,
+                return Err(UnexpectedIdentifier::new(
+                    expected_identifier.to_string(),
+                    identifier.to_string(),
                 )
                 .into());
             }
         }
 
         let fields = <[value::RecordField; 2]>::try_from(record.fields)
-            .map_err(|orig| TupleFromRecordError::unexpected_length(2, orig.len()))?;
+            .map_err(|orig| UnexpectedRecordSize::new(2, orig.len()))?;
 
         for (idx, field) in fields.iter().enumerate() {
             if let Some(label) = &field.label {
                 let expected = format!("_{idx}");
-                // TODO: this should be comparable without .as_str(), need to add impl to NameString
-                if label.as_str() != expected {
-                    return Err(TupleFromRecordError::unexpected_label(
-                        expected,
-                        label.as_str().to_owned(),
-                    )
-                    .into());
+                if label != expected {
+                    return Err(UnexpectedLabel::new(expected, label.as_str().to_owned()).into());
                 }
             }
         }
@@ -210,27 +205,24 @@ impl<T1: TryFromValue, T2: TryFromValue, T3: TryFromValue> TryFromRecord for (T1
         if let Some(identifier) = identifier {
             let expected_identifier = tuple_id::<3>();
             if identifier != expected_identifier {
-                return Err(TupleFromRecordError::unexpected_identifier(
-                    &expected_identifier,
-                    &identifier,
-                )
-                .into());
+                return Err(Tuple3Error::TupleFromRecordError(
+                    UnexpectedIdentifier::new(
+                        expected_identifier.to_string(),
+                        identifier.to_string(),
+                    )
+                    .into(),
+                ));
             }
         }
 
         let fields = <[value::RecordField; 3]>::try_from(record.fields)
-            .map_err(|orig| TupleFromRecordError::unexpected_length(3, orig.len()))?;
+            .map_err(|orig| UnexpectedRecordSize::new(3, orig.len()))?;
 
         for (idx, field) in fields.iter().enumerate() {
             if let Some(label) = &field.label {
                 let expected = format!("_{idx}");
-                // TODO: this should be comparable without .as_str(), need to add impl to NameString
-                if label.as_str() != expected {
-                    return Err(TupleFromRecordError::unexpected_label(
-                        expected,
-                        label.as_str().to_owned(),
-                    )
-                    .into());
+                if label != expected {
+                    return Err(UnexpectedLabel::new(expected, label.as_str().to_owned()).into());
                 }
             }
         }
@@ -358,3 +350,21 @@ impl<T> TryFromValue for ContractId<T> {
 }
 
 impl<T> Value for ContractId<T> {}
+
+// Numeric
+
+impl IntoValue for Numeric {
+    fn into_value(self) -> value::Value {
+        value::Value::Numeric(self)
+    }
+}
+
+impl TryFromValue for Numeric {
+    type Error = ValueKindError;
+
+    fn try_from_value(value: value::Value) -> Result<Self, Self::Error> {
+        value.into_numeric()
+    }
+}
+
+impl Value for Numeric {}

@@ -98,6 +98,17 @@ impl Value {
         }
     }
 
+    pub fn into_numeric(self) -> Result<Numeric, ValueKindError> {
+        if let Value::Numeric(value) = self {
+            Ok(value)
+        } else {
+            Err(ValueKindError {
+                expected: ValueKind::Numeric,
+                got: self.kind(),
+            })
+        }
+    }
+
     pub fn into_party(self) -> Result<PartyId, ValueKindError> {
         if let Value::Party(value) = self {
             Ok(value)

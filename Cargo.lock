@@ -171,6 +171,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "canton-paths"
+version = "0.1.0"
+dependencies = [
+ "canton",
+ "prettyplease",
+ "syn",
+ "tempfile",
+ "trybuild",
+]
+
+[[package]]
 name = "canton-types"
 version = "0.1.0"
 dependencies = [
@@ -382,6 +393,7 @@ name = "daml-lf-codegen"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "canton-paths",
  "canton-types",
  "clap",
  "daml-lf",
@@ -901,11 +913,23 @@ version = "0.1.0"
 dependencies = [
  "canton-types",
  "ledger-api-proto",
+ "ledger-api-types-derive",
  "ledger-api-value",
  "nonempty",
  "pretty_assertions",
  "protobuf-utils",
  "thiserror",
+]
+
+[[package]]
+name = "ledger-api-types-derive"
+version = "0.1.0"
+dependencies = [
+ "canton-paths",
+ "canton-types",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -925,6 +949,7 @@ name = "ledger-api-value-derive"
 version = "0.1.0"
 dependencies = [
  "canton",
+ "canton-paths",
  "canton-types",
  "pretty_assertions",
  "prettyplease",

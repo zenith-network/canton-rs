@@ -20,6 +20,7 @@ env = []
 
 [dependencies]
 anyhow.workspace = true
+canton-paths.workspace = true
 canton-types.workspace = true
 clap = { workspace = true, features = ["derive"] }
 daml-lf.workspace = true

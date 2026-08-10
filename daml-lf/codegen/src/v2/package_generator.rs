@@ -3,12 +3,12 @@ use std::{
     sync::Arc,
 };
 
-use canton_types::PackageId;
+use canton_types::{NonEmpty, PackageId};
 use daml_lf::{
     proto::daml_lf_version::Version,
     v2::sealed::{PackageMetadata, SealedPackage},
 };
-use syn::Ident;
+use syn::{Attribute, Ident};
 use tracing::debug;
 
 use crate::{
@@ -39,6 +39,7 @@ pub struct PackageGenerator<'a> {
     package_identifiers: Arc<HashMap<PackageId, Ident>>,
     external_paths: Arc<ExternalPaths>,
     gen_set: PackageTypeSet,
+    type_attributes: HashMap<NonEmpty<String>, HashMap<NonEmpty<String>, Vec<Attribute>>>,
 }
 
 impl<'a> PackageGenerator<'a> {
@@ -50,6 +51,7 @@ impl<'a> PackageGenerator<'a> {
         package_identifiers: Arc<HashMap<PackageId, Ident>>,
         external_paths: Arc<ExternalPaths>,
         gen_set: PackageTypeSet,
+        type_attributes: HashMap<NonEmpty<String>, HashMap<NonEmpty<String>, Vec<Attribute>>>,
     ) -> Self {
         Self {
             daml_lf_version,
@@ -59,6 +61,7 @@ impl<'a> PackageGenerator<'a> {
             package_identifiers,
             external_paths,
             gen_set,
+            type_attributes,
         }
     }
 
@@ -89,6 +92,7 @@ impl<'a> PackageGenerator<'a> {
             .collect::<BTreeMap<_, _>>();
 
         for (module_name, module_gen_set) in &self.gen_set.0 {
+            let mtype_attrs = self.type_attributes.remove(module_name).unwrap_or_default();
             let module = modules[module_name];
 
             let rmodule = ModuleGenerator::new(
@@ -96,6 +100,7 @@ impl<'a> PackageGenerator<'a> {
                 self.external_paths.clone(),
                 module,
                 module_gen_set.clone(),
+                mtype_attrs,
             )
             .gen_module()
             .map_err(|err| PackageGenError::ModuleGenError {

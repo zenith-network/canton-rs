@@ -9,10 +9,12 @@ license.workspace = true
 default = ["v2", "testing"]
 v2 = ["ledger-api-proto/v2", "ledger-api-value/v2"]
 testing = ["ledger-api-value/testing"]
+derive = ["dep:ledger-api-types-derive"]
 
 [dependencies]
 canton-types.workspace = true
 ledger-api-proto.workspace = true
+ledger-api-types-derive = { workspace = true, optional = true }
 ledger-api-value.workspace = true
 nonempty.workspace = true
 protobuf-utils.workspace = true

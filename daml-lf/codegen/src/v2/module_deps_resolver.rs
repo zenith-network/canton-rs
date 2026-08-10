@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+// FIXME: remove after local dep matrix is used. Just suppressing the warning for now.
+
 use std::collections::{BTreeMap, HashMap};
 
 use canton_types::PackageId;

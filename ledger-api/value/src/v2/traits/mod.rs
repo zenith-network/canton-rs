@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use crate::v2::{errors::AggregatedValueError, value};
 
 // Not using default conversion traits to avoid conflicts on auto-implementations
@@ -7,7 +9,7 @@ pub trait IntoValue {
 }
 
 pub trait TryFromValue: Sized {
-    type Error;
+    type Error: Error + Send + Sync + 'static;
 
     fn try_from_value(value: value::Value) -> Result<Self, Self::Error>;
 }
@@ -20,7 +22,7 @@ pub trait IntoRecord {
 }
 
 pub trait TryFromRecord: Sized {
-    type Error;
+    type Error: Error + Send + Sync + 'static;
 
     fn try_from_record(record: value::Record) -> Result<Self, Self::Error>;
 }

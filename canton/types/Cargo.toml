@@ -10,7 +10,7 @@ serde = []
 testing = [] # Enables some testing helpers
 
 [dependencies]
-bigdecimal.workspace = true
+bigdecimal = { workspace = true, features = ["std"] }
 thiserror.workspace = true
 
 [dev-dependencies]

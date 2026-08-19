@@ -110,7 +110,7 @@ impl CreatedEvent {
         let expected_id = T::identifier_with_package_id();
         let expected_package_name = T::package_name();
 
-        if expected_id == self.template_id {
+        if expected_id != self.template_id {
             return Err(CastError {});
         }
         if expected_package_name != self.package_name {
@@ -141,7 +141,7 @@ impl CreatedEvent {
         let expected_id = T::identifier_with_package_id();
         let expected_package_name = T::package_name();
 
-        if expected_id == self.template_id {
+        if expected_id != self.template_id {
             return Err(CastError {});
         }
         if expected_package_name != self.package_name {
@@ -302,7 +302,7 @@ impl ArchivedEvent {
         let expected_id = T::identifier_with_package_id();
         let expected_package_name = T::package_name();
 
-        if expected_id == self.template_id {
+        if expected_id != self.template_id {
             return Err(CastError {});
         }
         if expected_package_name != self.package_name {
@@ -407,7 +407,7 @@ impl ExercisedEvent {
         let expected_id = T::identifier_with_package_id();
         let expected_package_name = T::package_name();
 
-        if expected_id == self.template_id {
+        if expected_id != self.template_id {
             return Err(CastError {});
         }
         if expected_package_name != self.package_name {

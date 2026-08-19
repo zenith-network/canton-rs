@@ -70,7 +70,7 @@ fn short_pkg_id<T: PackageIdentifier>(pkg_id: &T) -> &str {
 impl<T: PackageIdentifier> From<Identifier<T>> for proto::Identifier {
     fn from(value: Identifier<T>) -> Self {
         Self {
-            package_id: value.package_id.to_string(),
+            package_id: value.package_id.encode_proto(),
             module_name: value.module_name.join(),
             entity_name: value.entity_name.join(),
         }

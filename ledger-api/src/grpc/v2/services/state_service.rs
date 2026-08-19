@@ -94,7 +94,7 @@ impl StateServiceClient {
 
 #[derive(Clone, Debug)]
 pub struct ActiveContractResponse {
-    pub workflow_id: LedgerString,
+    pub workflow_id: Option<LedgerString>,
     pub stream_continuation_token: Option<Vec<u8>>,
     pub contract_entry: ContractEntry,
 }
@@ -104,9 +104,13 @@ impl TryFrom<GetActiveContractsResponse> for ActiveContractResponse {
 
     fn try_from(value: GetActiveContractsResponse) -> Result<Self, Self::Error> {
         Ok(ActiveContractResponse {
-            workflow_id: LedgerString::new(value.workflow_id)
-                .validated_of::<GetActiveContractsResponse>("workflow_id")
-                .no_msg()?,
+            workflow_id: (!value.workflow_id.is_empty())
+                .then(|| {
+                    LedgerString::new(value.workflow_id)
+                        .validated_of::<GetActiveContractsResponse>("workflow_id")
+                        .no_msg()
+                })
+                .transpose()?,
             stream_continuation_token: (!value.stream_continuation_token.is_empty())
                 .then_some(value.stream_continuation_token),
             contract_entry: value

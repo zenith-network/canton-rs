@@ -59,7 +59,9 @@ impl ResolvedConfig {
     fn build(&self) -> Result<BuildResult, DpmError> {
         // If there is a known daml.yaml file and "source" is specified there,
         // we put it under cargo::rerun-if-changed
-        if let Ok(file) = File::open(self.package_root.join("daml.yaml")) {
+        let daml_yaml_path = self.package_root.join("daml.yaml");
+        println!("cargo::rerun-if-changed={}", daml_yaml_path.display());
+        if let Ok(file) = File::open(&daml_yaml_path) {
             let source = yaml_serde::from_reader::<_, DamlYaml>(file)
                 .map(|daml_yaml| daml_yaml.source)
                 .ok()

@@ -62,7 +62,7 @@ impl From<Status> for CantonError {
 ///
 /// This is a parsed version of [`tonic::Status`], using gRPC Richer Error Model.
 #[derive(Clone, Debug, Error)]
-#[error("{message} ({category_id}, {error_code_id})")]
+#[error("{message} (category: {category_id:#}, code: {error_code_id})")]
 pub struct CantonGrpcError {
     error_code_id: ErrorCodeId,
     category_id: CategoryId,

@@ -373,7 +373,7 @@ impl From<CategoryId> for i32 {
 impl fmt::Display for CategoryId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
-            write!(f, "{}: {}", self.as_i32(), self.description())
+            write!(f, "{}", self.description())
         } else {
             self.as_i32().fmt(f)
         }

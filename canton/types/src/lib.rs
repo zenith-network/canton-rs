@@ -58,16 +58,4 @@ pub struct AnyTemplate;
 pub use bigdecimal;
 pub use bigdecimal::BigDecimal;
 
-pub use frunk;
-
 // TODO: add serde support
-// TODO: add tracing support
-
-// #[macro_export]
-// macro_rules! cons {
-//     () => { crate::EmptyList };
-
-//     ($head:ty $(, $tail:ty)* $(,)?) => {
-//         crate::Cons<$head, crate::cons!($($tail),*)>
-//     };
-// }

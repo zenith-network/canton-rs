@@ -1,5 +1,5 @@
 use ledger_api_proto::com::daml::ledger::api::v2::{
-    self as proto, GetActiveContractsRequest, GetLedgerEndRequest,
+    GetActiveContractsRequest, GetActiveContractsResponse, GetLedgerEndRequest,
     state_service_client as svc_proto,
 };
 use ledger_api_types::{
@@ -9,28 +9,50 @@ use ledger_api_types::{
 };
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 use tokio_stream::{Stream, StreamExt as _};
+use tonic::Status;
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{
+    client::InterceptedService,
+    error::CantonError,
+    retry::{RetryConfig, RetryHandler},
+};
 
 /// Wrapped for [`svc_proto::StateServiceClient`]
+#[derive(Clone, Debug)]
 pub struct StateServiceClient {
     service: svc_proto::StateServiceClient<InterceptedService>,
+    retry_handler: RetryHandler,
 }
 
 impl StateServiceClient {
     /// Create a wrapper from underlying tonic service client
-    pub fn from_tonic(service: svc_proto::StateServiceClient<InterceptedService>) -> Self {
-        Self { service }
+    pub fn new(
+        service: svc_proto::StateServiceClient<InterceptedService>,
+        retry_handler: RetryHandler,
+    ) -> Self {
+        Self {
+            service,
+            retry_handler,
+        }
     }
 
+    /// Set retry config for the client
+    pub fn set_retry_config(&mut self, retry_config: RetryConfig) {
+        self.retry_handler = retry_config.into_handler();
+    }
+
+    /// Get the current ledger end.
+    ///
+    /// Subscriptions started with the returned offset will serve events after this RPC was called.
     pub async fn get_ledger_end(&mut self) -> Result<i64, CantonError> {
-        Ok(self
-            .service
-            .get_ledger_end(GetLedgerEndRequest {})
-            .await
-            .map_err(CantonError::from)?
-            .into_inner()
-            .offset)
+        let request = GetLedgerEndRequest {};
+        let response = self
+            .retry_handler
+            .call(&self.service, &request, |mut svc, req| async move {
+                svc.get_ledger_end(req).await
+            })
+            .await?;
+        Ok(response.offset)
     }
 
     /// Returns a stream of the snapshot of the active contracts and incomplete (un)assignments at a
@@ -46,22 +68,27 @@ impl StateServiceClient {
         event_format: EventFormat,
         stream_continuation_token: Option<Vec<u8>>,
     ) -> Result<impl Stream<Item = Result<ActiveContractResponse, CantonError>>, CantonError> {
-        Ok(self
-            .service
-            .get_active_contracts(GetActiveContractsRequest {
-                active_at_offset,
-                event_format: Some(event_format.into()),
-                stream_continuation_token,
+        let request = GetActiveContractsRequest {
+            active_at_offset,
+            event_format: Some(event_format.into()),
+            stream_continuation_token,
+        };
+
+        let streaming = self
+            .retry_handler
+            .call(&self.service, &request, |mut svc, req| async move {
+                svc.get_active_contracts(req).await
             })
-            .await
-            .map_err(CantonError::from)?
-            .into_inner()
-            .map(|result| {
-                result
-                    .map_err(CantonError::from)?
-                    .try_into()
-                    .map_err(CantonError::value_error)
-            }))
+            .await?;
+
+        let converter = |result: Result<GetActiveContractsResponse, Status>| {
+            result
+                .map_err(CantonError::from)?
+                .try_into()
+                .map_err(CantonError::value_error)
+        };
+
+        Ok(streaming.map(converter))
     }
 }
 
@@ -72,22 +99,22 @@ pub struct ActiveContractResponse {
     pub contract_entry: ContractEntry,
 }
 
-impl TryFrom<proto::GetActiveContractsResponse> for ActiveContractResponse {
+impl TryFrom<GetActiveContractsResponse> for ActiveContractResponse {
     type Error = ValueError;
 
-    fn try_from(value: proto::GetActiveContractsResponse) -> Result<Self, Self::Error> {
+    fn try_from(value: GetActiveContractsResponse) -> Result<Self, Self::Error> {
         Ok(ActiveContractResponse {
             workflow_id: LedgerString::new(value.workflow_id)
-                .validated_of::<proto::GetActiveContractsResponse>("workflow_id")
+                .validated_of::<GetActiveContractsResponse>("workflow_id")
                 .no_msg()?,
             stream_continuation_token: (!value.stream_continuation_token.is_empty())
                 .then_some(value.stream_continuation_token),
             contract_entry: value
                 .contract_entry
-                .required_of::<proto::GetActiveContractsResponse>("contract_entry")
+                .required_of::<GetActiveContractsResponse>("contract_entry")
                 .no_msg()?
                 .try_into()
-                .validated_of::<proto::GetActiveContractsResponse>("contract_entry")
+                .validated_of::<GetActiveContractsResponse>("contract_entry")
                 .no_msg()?,
         })
     }

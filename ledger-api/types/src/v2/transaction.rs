@@ -6,6 +6,7 @@ use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
 /// Ledger transaction
+#[derive(Clone, Debug)]
 pub struct Transaction<E> {
     pub update_id: LedgerString,
     pub command_id: Option<LedgerString>,

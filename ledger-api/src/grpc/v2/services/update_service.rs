@@ -14,7 +14,11 @@ use protobuf_utils::RequiredProtoField as _;
 use tokio_stream::{Stream, StreamExt as _};
 use tonic::Status;
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{
+    client::InterceptedService,
+    error::CantonError,
+    retry::{RetryConfig, RetryHandler},
+};
 
 // FIXME: add topology tx type
 /// Update type of [`UpdateServiceClient::get_updates()`]
@@ -28,12 +32,24 @@ pub type SingleUpdate<S> = Update<Transaction<<S as TxShape>::Event>, Reassignme
 /// Wrapped for [`svc_proto::UpdateServiceClient`]
 pub struct UpdateServiceClient {
     service: svc_proto::UpdateServiceClient<InterceptedService>,
+    retry_handler: RetryHandler,
 }
 
 impl UpdateServiceClient {
     /// Create a wrapper from underlying tonic service client
-    pub fn from_tonic(service: svc_proto::UpdateServiceClient<InterceptedService>) -> Self {
-        Self { service }
+    pub fn new(
+        service: svc_proto::UpdateServiceClient<InterceptedService>,
+        retry_handler: RetryHandler,
+    ) -> Self {
+        Self {
+            service,
+            retry_handler,
+        }
+    }
+
+    /// Set retry config for the client
+    pub fn set_retry_config(&mut self, retry_config: RetryConfig) {
+        self.retry_handler = retry_config.into_handler();
     }
 
     /// Read the ledger's filtered update stream for the specified contents and filters.
@@ -48,17 +64,21 @@ impl UpdateServiceClient {
         end_inclusive: Option<i64>,
         update_format: UpdateFormat<S>,
     ) -> Result<impl Stream<Item = Result<StreamingUpdate<S>, CantonError>>, CantonError> {
+        let request = GetUpdatesRequest {
+            begin_exclusive,
+            end_inclusive,
+            update_format: Some(update_format.into()),
+            descending_order: false,
+        };
+
         let streaming = self
-            .service
-            .get_updates(GetUpdatesRequest {
-                begin_exclusive,
-                end_inclusive,
-                update_format: Some(update_format.into()),
-                descending_order: false,
+            .retry_handler
+            .call(&self.service, &request, |mut svc, req| async move {
+                svc.get_updates(req).await
             })
-            .await
-            .map_err(CantonError::from)?
-            .into_inner();
+            .await?;
+        // we only retry on the initial request
+        // getting items from the stream cannot be retries, the user has to re-create the stream
 
         let converter = |result: Result<GetUpdatesResponse, Status>| -> Result<
             StreamingUpdate<S>,
@@ -86,14 +106,19 @@ impl UpdateServiceClient {
         update_id: LedgerString,
         update_format: UpdateFormat<S>,
     ) -> Result<SingleUpdate<S>, CantonError> {
-        self.service
-            .get_update_by_id(GetUpdateByIdRequest {
-                update_id: update_id.into(),
-                update_format: Some(update_format.into()),
+        let request = GetUpdateByIdRequest {
+            update_id: update_id.into(),
+            update_format: Some(update_format.into()),
+        };
+
+        let response = self
+            .retry_handler
+            .call(&self.service, &request, |mut svc, req| async move {
+                svc.get_update_by_id(req).await
             })
-            .await
-            .map_err(CantonError::from)?
-            .into_inner()
+            .await?;
+
+        response
             .update
             .required_of::<GetUpdateResponse>("update")
             .no_msg()
@@ -112,14 +137,19 @@ impl UpdateServiceClient {
         offset: i64,
         update_format: UpdateFormat<S>,
     ) -> Result<SingleUpdate<S>, CantonError> {
-        self.service
-            .get_update_by_offset(GetUpdateByOffsetRequest {
-                offset,
-                update_format: Some(update_format.into()),
+        let request = GetUpdateByOffsetRequest {
+            offset,
+            update_format: Some(update_format.into()),
+        };
+
+        let response = self
+            .retry_handler
+            .call(&self.service, &request, |mut svc, req| async move {
+                svc.get_update_by_offset(req).await
             })
-            .await
-            .map_err(CantonError::from)?
-            .into_inner()
+            .await?;
+
+        response
             .update
             .required_of::<GetUpdateResponse>("update")
             .no_msg()
@@ -144,19 +174,22 @@ impl UpdateServiceClient {
         update_format: UpdateFormat<S>,
         page_token: Option<PageToken>,
     ) -> Result<Page<SingleUpdate<S>>, CantonError> {
+        let request = GetUpdatesPageRequest {
+            begin_offset_exclusive: begin_exclusive,
+            end_offset_inclusive: end_inclusive,
+            max_page_size,
+            update_format: Some(update_format.into()),
+            descending_order: false,
+            page_token: page_token.map(Into::into),
+        };
+
         let response = self
-            .service
-            .get_updates_page(GetUpdatesPageRequest {
-                begin_offset_exclusive: begin_exclusive,
-                end_offset_inclusive: end_inclusive,
-                max_page_size: max_page_size,
-                update_format: Some(update_format.into()),
-                descending_order: false,
-                page_token: page_token.map(Into::into),
+            .retry_handler
+            .call(&self.service, &request, |mut svc, req| async move {
+                svc.get_updates_page(req).await
             })
-            .await
-            .map_err(CantonError::from)?
-            .into_inner();
+            .await?;
+
         Ok(Page {
             items: response
                 .updates
@@ -176,47 +209,4 @@ impl UpdateServiceClient {
             next_page_token: response.next_page_token.map(|inner| PageToken::new(inner)),
         })
     }
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // #[allow(dead_code)]
-    // async fn compilation_test_1(mut client: UpdateServiceClient) {
-    //     let update_format = UpdateFormat::new();
-
-    //     let mut stream = client.get_updates(0, None, update_format).await.unwrap();
-
-    //     while let Some(update) = stream.try_next().await.unwrap() {
-    //         match update {
-    //             Update::OffsetCheckpoint(checkpoint) => {
-    //                 println!("Offset checkpoint: {}", checkpoint.offset);
-    //             }
-    //         }
-    //     }
-    // }
-
-    // #[allow(dead_code)]
-    // async fn compilation_test_2(mut client: UpdateServiceClient) {
-    //     use ledger_api_types::v2::{
-    //         AcsDelta,
-    //         formats::static_::{EventFormat, TransactionFormat},
-    //     };
-
-    //     let event_format = EventFormat::new();
-    //     let txformat = TransactionFormat::<AcsDelta>::new(event_format);
-    //     let update_format = UpdateFormat::new().include_transactions(txformat);
-
-    //     let mut stream = client.get_updates(0, None, update_format).await.unwrap();
-
-    //     while let Some(update) = stream.try_next().await.unwrap() {
-    //         match update {
-    //             Update::Transaction(_) => todo!(),
-    //             Update::Reassignment(_) => todo!(),
-    //             Update::OffsetCheckpoint(_) => todo!(),
-    //             Update::TopologyTransaction(_) => todo!(),
-    //         }
-    //     }
-    // }
 }

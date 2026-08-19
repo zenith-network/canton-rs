@@ -19,6 +19,7 @@ ledger-api-value.workspace = true
 nonempty.workspace = true
 protobuf-utils.workspace = true
 thiserror.workspace = true
+uuid = { workspace = true, features = ["std", "v7"] }
 
 [dev-dependencies]
 pretty_assertions.workspace = true

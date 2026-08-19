@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tonic::service::Interceptor;
 
 /// Trait for types that can provide a JWT bearer token.
@@ -36,11 +38,16 @@ impl AuthInterceptor {
 }
 
 impl Interceptor for AuthInterceptor {
-    fn call(&mut self, mut request: tonic::Request<()>) -> Result<tonic::Request<()>, tonic::Status> {
+    fn call(
+        &mut self,
+        mut request: tonic::Request<()>,
+    ) -> Result<tonic::Request<()>, tonic::Status> {
         if let Some(ref token) = self.token {
-            let value = format!("Bearer {token}")
-                .parse()
-                .map_err(|_| tonic::Status::internal("invalid auth token"))?;
+            let value = format!("Bearer {token}").parse().map_err(|parse_error| {
+                let mut err = tonic::Status::internal("invalid auth token");
+                err.set_source(Arc::new(parse_error));
+                err
+            })?;
             request.metadata_mut().insert("authorization", value);
         }
         Ok(request)

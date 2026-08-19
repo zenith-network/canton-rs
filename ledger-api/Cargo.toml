@@ -15,6 +15,7 @@ ledger-api-proto.workspace = true
 ledger-api-types.workspace = true
 protobuf-utils.workspace = true
 thiserror.workspace = true
+tokio = { workspace = true, features = ["time"] }
 tokio-stream.workspace = true
 tonic = { workspace = true, features = [
   "channel",
@@ -22,6 +23,7 @@ tonic = { workspace = true, features = [
   "tls-webpki-roots",
 ] }
 tonic-types.workspace = true
+tower = { workspace = true, features = ["retry"] }
 
 [dev-dependencies]
 prost.workspace = true

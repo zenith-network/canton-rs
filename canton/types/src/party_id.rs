@@ -2,6 +2,7 @@ use std::{
     borrow::{Borrow, Cow},
     fmt,
     ops::Deref,
+    str::FromStr,
 };
 
 /// Max party ID length
@@ -130,6 +131,14 @@ impl TryFrom<String> for PartyId {
 impl From<PartyId> for String {
     fn from(value: PartyId) -> Self {
         value.0
+    }
+}
+
+impl FromStr for PartyId {
+    type Err = PartyIdError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(s.to_owned())
     }
 }
 

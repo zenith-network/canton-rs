@@ -2,6 +2,7 @@ use std::{
     borrow::{Borrow, Cow},
     fmt,
     ops::Deref,
+    str::FromStr,
 };
 
 /// Max user ID length
@@ -144,6 +145,14 @@ impl TryFrom<String> for UserId {
 impl From<UserId> for String {
     fn from(value: UserId) -> Self {
         value.0
+    }
+}
+
+impl FromStr for UserId {
+    type Err = UserIdError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(s.to_owned())
     }
 }
 

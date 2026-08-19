@@ -70,6 +70,18 @@ impl<T> AsRef<str> for ContractId<T> {
     }
 }
 
+impl<T> PartialEq<str> for ContractId<T> {
+    fn eq(&self, other: &str) -> bool {
+        self.value == other
+    }
+}
+
+impl<T> PartialEq<String> for ContractId<T> {
+    fn eq(&self, other: &String) -> bool {
+        &self.value == other
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 #[error("invalid contract ID: {0}")]
 pub struct ContractIdError(#[from] LedgerStringError);

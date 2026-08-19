@@ -1,13 +1,14 @@
-use std::time::Duration;
+use std::{error::Error as _, time::Duration};
 
 use ledger_api_types::value::v2::errors::ValueError;
 use thiserror::Error;
 use tonic_types::StatusExt as _;
 
 mod category_id;
+mod error_code_id;
 
-pub mod error_code_id;
 pub use category_id::{CategoryId, Code, UnknownCategoryId};
+pub use error_code_id::ErrorCodeId;
 
 // Re-export for convenience, because it's exposed in public API here
 pub use tonic::Status;
@@ -23,17 +24,18 @@ pub enum ClientBuildError {
 /// Error during interaction with Canton API
 #[derive(Debug, Error)]
 pub enum CantonError {
-    /// This variant is a proper error returned from Canton gRPC API.
-    #[error(transparent)]
+    /// This variant is a proper enriched error returned from Canton gRPC API
+    #[error("Ledger API returned an error")]
     CantonGrpc(#[from] CantonGrpcError),
 
-    /// This error variant is only returned when the client failed to properly parse an error
-    /// returned by Ledger API. It should be considered as unexpected behavior of the API.
-    #[error("unrecognized error returned from Canton API")]
+    /// This error variant is returned when the client failed to properly parse an error returned by
+    /// Ledger API
+    #[error("failed to query Ledger API")]
     Raw(#[source] Status),
 
-    /// This error occurs when the response was received, but it failed to be properly parsed by SDK
-    #[error("failed to parse response from Canton API")]
+    /// This error occurs when the response was received, but it failed to be properly parsed by
+    /// the client
+    #[error("failed to parse response from Ledger API")]
     ValueError(#[from] ValueError),
 }
 
@@ -45,6 +47,9 @@ impl CantonError {
 
 impl From<Status> for CantonError {
     fn from(status: Status) -> Self {
+        if status.source().is_some() {
+            // this means that the error was sythesized and not directly returned from the server
+        }
         if let Some(error) = CantonGrpcError::from_status(&status) {
             Self::CantonGrpc(error)
         } else {
@@ -56,31 +61,15 @@ impl From<Status> for CantonError {
 /// Error returned from Ledger gRPC API.
 ///
 /// This is a parsed version of [`tonic::Status`], using gRPC Richer Error Model.
-#[derive(Debug, Error)]
-#[error("{message}")]
+#[derive(Clone, Debug, Error)]
+#[error("{message} ({category_id}, {error_code_id})")]
 pub struct CantonGrpcError {
-    /// Unique non-empty string containing at most 63 characters: upper-case letters, underscores
-    /// or digits. Identifies corresponding error code ID.
-    ///
-    /// Some of the common values are defined in [`error_code_id`].
-    pub error_code_id: String,
-
-    /// Small integer identifying the corresponding error category.
-    pub category_id: CategoryId,
-
-    /// Correlation ID.
-    pub correlation_id: String,
-
-    /// Message targeted at a human reader. Should never be parsed by applications, as the
-    /// description might change in future releases to improve clarity.
-    pub message: String,
-
-    /// Recommended retry interval when the error is retryable
-    pub retry_delay: Option<Duration>,
-
-    /// Identifies the resource involved in the failure (contract, contract key, package, party,
-    /// synchronizer, etc.)
-    pub resource_info: Option<ResourceInfo>,
+    error_code_id: ErrorCodeId,
+    category_id: CategoryId,
+    correlation_id: String,
+    message: String,
+    retry_delay: Option<Duration>,
+    resource_info: Option<ResourceInfo>,
 }
 
 impl CantonGrpcError {
@@ -91,7 +80,7 @@ impl CantonGrpcError {
     pub fn from_status(status: &Status) -> Option<Self> {
         // ErrorInfo is documented as mandatory, therefore if not found, we return None
         let mut error_info = status.get_details_error_info()?;
-        let error_code_id = error_info.reason;
+        let error_code_id = ErrorCodeId::from_string(error_info.reason);
         let category_id = error_info
             .metadata
             .remove("category")?
@@ -117,6 +106,38 @@ impl CantonGrpcError {
             retry_delay,
             resource_info: status.get_details_resource_info(),
         })
+    }
+
+    /// Error code ID.
+    pub fn error_code_id(&self) -> &ErrorCodeId {
+        &self.error_code_id
+    }
+
+    /// Small integer identifying the corresponding error category.
+    pub fn category_id(&self) -> CategoryId {
+        self.category_id
+    }
+
+    /// Correlation ID
+    pub fn correlation_id(&self) -> &str {
+        &self.correlation_id
+    }
+
+    /// Message targeted at a human reader. Should never be parsed by applications, as the
+    /// description might change in future releases to improve clarity.
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    /// Recommended retry interval when the error is retryable
+    pub fn retry_delay(&self) -> Option<Duration> {
+        self.retry_delay
+    }
+
+    /// Identifies the resource involved in the failure (contract, contract key, package, party,
+    /// synchronizer, etc.)
+    pub fn resource_info(&self) -> Option<&ResourceInfo> {
+        self.resource_info.as_ref()
     }
 }
 

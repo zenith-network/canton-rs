@@ -6,4 +6,4 @@ license.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive", "std"] }
-yaml_serde = { workspace = true }
+yaml_serde.workspace = true

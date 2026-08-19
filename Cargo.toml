@@ -48,19 +48,22 @@ sha2 = { version = "0.11.0", default-features = false }
 syn = { version = "2.0.118", default-features = false }
 tempfile = { version = "3.27.0", default-features = false }
 thiserror = { version = "2.0.18", default-features = false }
+tokio = { version = "1.53.1", default-features = false }
 tokio-stream = { version = "0.1.18", default-features = false }
 tonic = { version = "0.14.6", default-features = false }
 tonic-prost = { version = "0.14.6", default-features = false }
 tonic-prost-build = { version = "0.14.6", default-features = false }
 tonic-types = { version = "0.14.6", default-features = false }
+tower = { version = "0.5.3", default-features = false }
 tracing = { version = "0.1.44", default-features = false }
 tracing-subscriber = { version = "0.3.23", default-features = false }
 tracing-test = "0.2.6"
 trybuild = "1.0.117"
 unicode-ident = { version = "1.0.24", default-features = false }
 unicode-normalization = { version = "0.1.25", default-features = false }
+uuid = { version = "1.24.1", default-features = false }
 which = { version = "8.0.4", default-features = false }
-yaml_serde = { version = "0.10.4", default-features = false }
+yaml_serde = "0.10.4"
 zip = { version = "8.6.0", default-features = false }
 
 # Local workspace dependencies

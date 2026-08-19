@@ -117,6 +117,12 @@ impl PartialEq<&str> for LedgerString {
     }
 }
 
+impl PartialEq<String> for LedgerString {
+    fn eq(&self, other: &String) -> bool {
+        &self.0 == other
+    }
+}
+
 impl PartialEq<Cow<'_, str>> for LedgerString {
     fn eq(&self, other: &Cow<'_, str>) -> bool {
         self.0.eq(other)

@@ -8,6 +8,7 @@ use ledger_api_value::v2::{
     Identifier, IntoValue as _,
     value::{Record, Value},
 };
+use uuid::Uuid;
 
 use crate::v2::{ChoiceByKeyValue, ChoiceValue, TemplateValue, TemplateValueWithKey};
 
@@ -50,6 +51,11 @@ impl Commands {
         }
     }
 
+    pub fn with_read_as(&mut self, party: PartyId) -> &mut Self {
+        self.read_as.push(party);
+        self
+    }
+
     pub fn with_workflow_id(&mut self, workflow_id: Option<LedgerString>) -> &mut Self {
         self.workflow_id = workflow_id;
         self
@@ -65,8 +71,22 @@ impl Commands {
         self
     }
 
-    pub fn with_command(mut self, command: Command) -> Self {
+    pub fn with_command(&mut self, command: Command) -> &mut Self {
         self.commands.push(command);
+        self
+    }
+
+    pub fn with_submission_id(&mut self, submission_id: Option<LedgerString>) -> &mut Self {
+        self.submission_id = submission_id;
+        self
+    }
+
+    /// Set submission ID to randomly generated UUIDv7
+    pub fn with_random_submission_id(&mut self) -> &mut Self {
+        self.submission_id = Some(
+            LedgerString::new(Uuid::now_v7().to_string())
+                .expect("UUIDv7 must always be a valid LedgerString"),
+        );
         self
     }
 

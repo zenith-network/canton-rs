@@ -14,6 +14,7 @@ mod transaction_format;
 mod transaction_shape;
 mod update;
 mod update_format;
+mod version;
 
 pub use acs::{ActiveContract, ContractEntry, IncompleteAssigned, IncompleteUnassigned};
 pub use commands::{
@@ -23,8 +24,8 @@ pub use commands::{
 pub use empty::Empty;
 pub use event_format::EventFormat;
 pub use events::{
-    AcsDeltaEvent, Archived, ArchivedEvent, Created, CreatedEvent, Event, Exercised,
-    ExercisedEvent, LedgerEffectEvent,
+    AcsDeltaEvent, Archived, ArchivedEvent, CastError, Created, CreatedEvent, CreatedWithKey,
+    Event, Exercised, ExercisedEvent, LedgerEffectEvent,
 };
 pub use filters::{CumulativeFilter, Filters, InterfaceFilter, TemplateFilter, WildcardFilter};
 pub use offset_checkpoint::{OffsetCheckpoint, SynchronizerTime};
@@ -37,6 +38,7 @@ pub use transaction_format::TransactionFormat;
 pub use transaction_shape::{AcsDelta, LedgerEffects, TransactionShape, TxShape};
 pub use update::Update;
 pub use update_format::UpdateFormat;
+pub use version::FeaturesDescriptor;
 
 #[cfg(feature = "derive")]
 pub use ledger_api_types_derive::{Choice, Template};

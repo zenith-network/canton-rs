@@ -6,6 +6,7 @@ use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use nonempty::NonEmpty;
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
+#[derive(Clone, Debug)]
 pub struct Reassignment {
     pub update_id: LedgerString,
     pub command_id: Option<LedgerString>,
@@ -79,6 +80,7 @@ impl TryFrom<proto::Reassignment> for Reassignment {
     }
 }
 
+#[derive(Clone, Debug)]
 pub enum ReassignmentEvent {
     Unassigned(UnassignedEvent),
     Assigned(AssignedEvent),
@@ -100,6 +102,7 @@ impl TryFrom<proto::ReassignmentEvent> for ReassignmentEvent {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct UnassignedEvent {
     pub reassignment_id: LedgerString,
     pub contract_id: ContractId,
@@ -113,6 +116,7 @@ impl TryFrom<proto::UnassignedEvent> for UnassignedEvent {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct AssignedEvent {}
 
 impl TryFrom<proto::AssignedEvent> for AssignedEvent {

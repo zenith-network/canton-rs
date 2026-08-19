@@ -4,8 +4,10 @@ use tonic::transport::{Channel, ClientTlsConfig, Endpoint};
 use crate::grpc::v2::{
     auth::AuthInterceptor,
     error::ClientBuildError,
+    retry::{RetryConfig, RetryHandler},
     services::{
         CommandServiceClient, PackageServiceClient, StateServiceClient, UpdateServiceClient,
+        VersionServiceClient,
     },
 };
 
@@ -35,6 +37,7 @@ pub struct CantonClientBuilder {
     tls_config: Option<ClientTlsConfig>,
     token: Option<String>,
     max_decoding_message_size: Option<usize>,
+    retry_config: RetryConfig,
 }
 
 impl CantonClientBuilder {
@@ -44,6 +47,7 @@ impl CantonClientBuilder {
             tls_config: None,
             token: None,
             max_decoding_message_size: None,
+            retry_config: RetryConfig::default(),
         }
     }
 
@@ -62,6 +66,12 @@ impl CantonClientBuilder {
     /// If not set, defaults to [`CantonClient::DEFAULT_MAX_RECV_MESSAGE_SIZE`].
     pub fn with_max_decoding_message_size(mut self, size: usize) -> Self {
         self.max_decoding_message_size = Some(size);
+        self
+    }
+
+    /// Retry configuration of the client
+    pub fn with_retry_config(mut self, retry_config: RetryConfig) -> Self {
+        self.retry_config = retry_config;
         self
     }
 
@@ -115,6 +125,7 @@ impl CantonClientBuilder {
             channel,
             interceptor,
             max_decoding_message_size,
+            retry_handler: self.retry_config.into_handler(),
         }
     }
 }
@@ -125,6 +136,7 @@ pub struct CantonClient {
     channel: InnerChannel,
     interceptor: AuthInterceptor,
     max_decoding_message_size: usize,
+    retry_handler: RetryHandler,
 }
 
 impl CantonClient {
@@ -135,43 +147,72 @@ impl CantonClient {
         CantonClientBuilder::new(endpoint)
     }
 
+    /// Set a new retry configuration for the client
+    ///
+    /// Note that although the underlying channel is shared among the cloned clients, retry configs
+    /// are not - each copy of the client will have it's own one. So changing this config here won't
+    /// affect other clients created before.
+    pub fn set_retry_config(&mut self, retry_config: RetryConfig) {
+        self.retry_handler = retry_config.into_handler();
+    }
+
+    /// Reference to the retry configuration of the client
+    pub fn retry_config(&self) -> &RetryConfig {
+        self.retry_handler.config()
+    }
+
     pub fn command(&self) -> CommandServiceClient {
-        CommandServiceClient::from_tonic(
+        CommandServiceClient::new(
             proto::command_service_client::CommandServiceClient::with_interceptor(
                 self.channel.clone(),
                 self.interceptor.clone(),
             )
             .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
         )
     }
 
     pub fn update(&self) -> UpdateServiceClient {
-        UpdateServiceClient::from_tonic(
+        UpdateServiceClient::new(
             proto::update_service_client::UpdateServiceClient::with_interceptor(
                 self.channel.clone(),
                 self.interceptor.clone(),
             )
             .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
         )
     }
 
     pub fn state(&self) -> StateServiceClient {
-        StateServiceClient::from_tonic(
+        StateServiceClient::new(
             proto::state_service_client::StateServiceClient::with_interceptor(
                 self.channel.clone(),
                 self.interceptor.clone(),
             )
             .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
         )
     }
 
     pub fn package(&self) -> PackageServiceClient {
-        PackageServiceClient::from_tonic(
+        PackageServiceClient::new(
             proto::package_service_client::PackageServiceClient::with_interceptor(
                 self.channel.clone(),
                 self.interceptor.clone(),
             )
             .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
+        )
+    }
+
+    pub fn version(&self) -> VersionServiceClient {
+        VersionServiceClient::new(
+            proto::version_service_client::VersionServiceClient::with_interceptor(
+                self.channel.clone(),
+                self.interceptor.clone(),
+            )
+            .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
         )
     }
 }

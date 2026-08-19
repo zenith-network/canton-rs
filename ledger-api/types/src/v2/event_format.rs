@@ -21,6 +21,21 @@ impl EventFormat {
             verbose: false,
         }
     }
+
+    pub fn with_filter(mut self, party_id: PartyId, filter: Filters) -> Self {
+        self.filters_by_party.insert(party_id, filter);
+        self
+    }
+
+    pub fn with_filter_for_any(mut self, filter: Filters) -> Self {
+        self.filters_for_any_party = Some(filter);
+        self
+    }
+
+    pub fn with_verbose(mut self, verbose: bool) -> Self {
+        self.verbose = verbose;
+        self
+    }
 }
 
 impl From<EventFormat> for proto::EventFormat {

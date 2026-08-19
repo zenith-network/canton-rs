@@ -5,42 +5,63 @@ use ledger_api_proto::com::daml::ledger::api::v2::{
 use ledger_api_types::{canton_types::PackageId, value::v2::errors::IntoValueError as _};
 use protobuf_utils::InvalidProtoField as _;
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{
+    client::InterceptedService,
+    error::CantonError,
+    retry::{RetryConfig, RetryHandler},
+};
 
 /// Wrapped for [`svc_proto::StateServiceClient`]
 pub struct PackageServiceClient {
     service: svc_proto::PackageServiceClient<InterceptedService>,
+    retry_handler: RetryHandler,
 }
 
 impl PackageServiceClient {
     /// Create a wrapper from underlying tonic service client
-    pub fn from_tonic(service: svc_proto::PackageServiceClient<InterceptedService>) -> Self {
-        Self { service }
+    pub fn new(
+        service: svc_proto::PackageServiceClient<InterceptedService>,
+        retry_handler: RetryHandler,
+    ) -> Self {
+        Self {
+            service,
+            retry_handler,
+        }
+    }
+
+    /// Set retry config for the client
+    pub fn set_retry_config(&mut self, retry_config: RetryConfig) {
+        self.retry_handler = retry_config.into_handler();
     }
 
     /// Returns the contents of a single package
     pub async fn get_package(&mut self, package_id: PackageId) -> Result<Vec<u8>, CantonError> {
-        Ok(self
-            .service
-            .get_package(GetPackageRequest {
-                package_id: package_id.into(),
+        let request = GetPackageRequest {
+            package_id: package_id.into(),
+        };
+
+        let response = self
+            .retry_handler
+            .call(&self.service, &request, |mut svc, req| async move {
+                svc.get_package(req).await
             })
-            .await
-            .map_err(CantonError::from)?
-            .into_inner()
-            .archive_payload)
+            .await?;
+
+        Ok(response.archive_payload)
     }
 
     /// Returns `true` if package status is `Regirstered`
     pub async fn package_registered(&mut self, package_id: PackageId) -> Result<bool, CantonError> {
+        let request = GetPackageStatusRequest {
+            package_id: package_id.into(),
+        };
+
         let response = self
-            .service
-            .get_package_status(GetPackageStatusRequest {
-                package_id: package_id.into(),
+            .retry_handler
+            .call(&self.service, &request, |mut svc, req| async move {
+                svc.get_package_status(req).await
             })
-            .await
-            .map_err(CantonError::from)?
-            .into_inner();
+            .await?;
 
         // FIXME: replace unwrap with error
         let status = proto::PackageStatus::try_from(response.package_status).unwrap();
@@ -51,11 +72,12 @@ impl PackageServiceClient {
     /// Returns the identifiers of all supported packages
     pub async fn list_packages(&mut self) -> Result<Vec<PackageId>, CantonError> {
         let response = self
-            .service
-            .list_packages(ListPackagesRequest {})
-            .await
-            .map_err(CantonError::from)?
-            .into_inner();
+            .retry_handler
+            .call(&self.service, &(), |mut svc, _| async move {
+                svc.list_packages(ListPackagesRequest {}).await
+            })
+            .await?;
+
         response
             .package_ids
             .into_iter()
@@ -67,9 +89,5 @@ impl PackageServiceClient {
                     .map_err(CantonError::value_error)
             })
             .collect::<Result<_, _>>()
-    }
-
-    pub async fn list_vetted_packages(&mut self) {
-        todo!()
     }
 }

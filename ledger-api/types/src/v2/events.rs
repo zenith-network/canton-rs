@@ -3,16 +3,17 @@ use std::time::SystemTime;
 use canton_types::{ContractId, Name, PackageId, PackageName, PartyId};
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::{
-    Identifier, TryFromValue as _,
+    Identifier, TryFromValue,
     errors::{IntoValueError as _, ValueError},
     value::{Record, Value},
 };
 use nonempty::NonEmpty;
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
-use crate::v2::{ChoiceValue, Empty, TemplateValue};
+use crate::v2::{ChoiceValue, Empty, TemplateValue, TemplateValueWithKey};
 
 /// Generic event type
+#[derive(Clone, Debug)]
 pub enum Event<C = Empty, A = Empty, E = Empty> {
     Created(C),
     Archived(A),
@@ -56,6 +57,23 @@ pub struct Created<T: TemplateValue> {
     pub offset: i64,
     pub node_id: i32,
     pub contract_id: ContractId<T>,
+    pub create_arguments: T,
+    pub created_event_blob: Vec<u8>,
+    pub witness_parties: NonEmpty<PartyId>,
+    pub signatories: NonEmpty<PartyId>,
+    pub observers: Vec<PartyId>,
+    pub created_at: SystemTime,
+    pub acs_delta: bool,
+}
+
+/// `Created` event for a template with key
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CreatedWithKey<T: TemplateValueWithKey> {
+    pub offset: i64,
+    pub node_id: i32,
+    pub contract_id: ContractId<T>,
+    pub contract_key: T::Key,
+    pub contract_key_hash: Vec<u8>,
     pub create_arguments: T,
     pub created_event_blob: Vec<u8>,
     pub witness_parties: NonEmpty<PartyId>,
@@ -109,6 +127,42 @@ impl CreatedEvent {
             offset: self.offset,
             node_id: self.node_id,
             contract_id,
+            create_arguments,
+            created_event_blob: self.created_event_blob,
+            witness_parties: self.witness_parties,
+            signatories: self.signatories,
+            observers: self.observers,
+            created_at: self.created_at,
+            acs_delta: self.acs_delta,
+        })
+    }
+
+    pub fn cast_keyed<T: TemplateValueWithKey>(self) -> Result<CreatedWithKey<T>, CastError> {
+        let expected_id = T::identifier_with_package_id();
+        let expected_package_name = T::package_name();
+
+        if expected_id == self.template_id {
+            return Err(CastError {});
+        }
+        if expected_package_name != self.package_name {
+            return Err(CastError {});
+        }
+        let create_arguments = match T::try_from_record(self.create_arguments) {
+            Ok(value) => value,
+            Err(_) => return Err(CastError {}),
+        };
+
+        let contract_id = self.contract_id.into_typed();
+
+        let contract_key = TryFromValue::try_from_value(self.contract_key.ok_or(CastError {})?)
+            .map_err(|_| CastError {})?;
+
+        Ok(CreatedWithKey {
+            offset: self.offset,
+            node_id: self.node_id,
+            contract_id,
+            contract_key,
+            contract_key_hash: self.contract_key_hash,
             create_arguments,
             created_event_blob: self.created_event_blob,
             witness_parties: self.witness_parties,

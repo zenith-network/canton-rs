@@ -2,6 +2,7 @@ use ledger_api_proto::{com::daml::ledger::api::v2 as proto, prost::Name as _};
 use ledger_api_value::v2::errors::ValueError;
 
 /// Type which has no value.
+#[derive(Debug)]
 pub enum Empty {}
 
 macro_rules! impl_unexpected_variant {

@@ -63,10 +63,17 @@ impl CommandServiceClient {
                     }
                     // if submission ID is not set, leave it empty for all attempts
 
+                    // TODO: do some logging here, including submission ID
+
                     let request = SubmitAndWaitRequest {
                         commands: Some(cmds.into()),
                     };
 
+                    // FIXME: If this encounters network error _after_ the command will actually be
+                    // handled, we won't get the result, but on the next iterations we will face
+                    // DUPLICATE_COMMAND errors. From that error directly we can only recover
+                    // completion offset, but not update ID. So this probably means we need to
+                    // change the output type of this function and handle this case properly.
                     svc.submit_and_wait(request).await
                 },
             )

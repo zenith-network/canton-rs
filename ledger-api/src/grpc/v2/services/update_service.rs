@@ -30,6 +30,7 @@ pub type StreamingUpdate<S> =
 pub type SingleUpdate<S> = Update<Transaction<<S as TxShape>::Event>, Reassignment, Empty, Empty>;
 
 /// Wrapped for [`svc_proto::UpdateServiceClient`]
+#[derive(Clone, Debug)]
 pub struct UpdateServiceClient {
     service: svc_proto::UpdateServiceClient<InterceptedService>,
     retry_handler: RetryHandler,

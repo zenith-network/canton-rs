@@ -1,5 +1,6 @@
 mod acs;
 mod commands;
+mod completion;
 mod empty;
 mod event_format;
 mod events;
@@ -21,6 +22,7 @@ pub use commands::{
     Command, Commands, Create, CreateAndExercise, CreateAndExerciseCommand, CreateCommand,
     Exercise, ExerciseByKey, ExerciseByKeyCommand, ExerciseCommand,
 };
+pub use completion::Completion;
 pub use empty::Empty;
 pub use event_format::EventFormat;
 pub use events::{

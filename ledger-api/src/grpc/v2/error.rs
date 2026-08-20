@@ -1,6 +1,6 @@
-use std::{error::Error as _, time::Duration};
+use std::{collections::HashMap, error::Error as _, time::Duration};
 
-use ledger_api_types::value::v2::errors::ValueError;
+use ledger_api_types::{canton_types::LedgerString, value::v2::errors::ValueError};
 use thiserror::Error;
 use tonic_types::StatusExt as _;
 
@@ -70,6 +70,7 @@ pub struct CantonGrpcError {
     message: String,
     retry_delay: Option<Duration>,
     resource_info: Option<ResourceInfo>,
+    metadata: HashMap<String, String>,
 }
 
 impl CantonGrpcError {
@@ -105,6 +106,7 @@ impl CantonGrpcError {
             message: message.trim().to_owned(),
             retry_delay,
             resource_info: status.get_details_resource_info(),
+            metadata: error_info.metadata,
         })
     }
 
@@ -138,6 +140,31 @@ impl CantonGrpcError {
     /// synchronizer, etc.)
     pub fn resource_info(&self) -> Option<&ResourceInfo> {
         self.resource_info.as_ref()
+    }
+
+    /// If the error code ID is `DUPLICATE_COMMAND`, then this is expected to be se to the
+    /// completion offset of the succeeded command.
+    ///
+    /// Note: this will also return `None`, if completion offset failed to be parsed as `i64`
+    pub fn completion_offset(&self) -> Option<i64> {
+        self.metadata
+            .get("completion_offset")
+            .map(|offset| offset.parse::<i64>().ok())
+            .flatten()
+    }
+
+    /// If the error code ID is `DUPLICATE_COMMAND`, then this is expected to be se to the
+    /// submission ID of the succeeded command.
+    ///
+    /// Note: this will also return `None`, if submission ID failed to be parsed as `LedgerString`
+    pub fn existing_submission_id(&self) -> Option<LedgerString> {
+        self.metadata
+            .get("existing_submission_id")
+            .cloned()
+            .map(LedgerString::new)
+            .transpose()
+            .ok()
+            .flatten()
     }
 }
 

@@ -55,6 +55,8 @@ pub enum ErrorCodeId {
     NotConnectedToSynchronizer,
     SynchronizerIsNotAvailable,
 
+    DamlFailure,
+
     /// Fallback variant when converting from a raw string
     Unknown(String),
 }
@@ -94,6 +96,7 @@ impl ErrorCodeId {
             Self::NotConnectedToAnySynchronizer => "NOT_CONNECTED_TO_ANY_SYNCHRONIZER",
             Self::NotConnectedToSynchronizer => "NOT_CONNECTED_TO_SYNCHRONIZER",
             Self::SynchronizerIsNotAvailable => "SYNCHRONIZER_IS_NOT_AVAILABLE",
+            Self::DamlFailure => "DAML_FAILURE",
             Self::Unknown(s) => s.as_str(),
         }
     }
@@ -132,6 +135,7 @@ impl ErrorCodeId {
             "NOT_CONNECTED_TO_ANY_SYNCHRONIZER" => Self::NotConnectedToAnySynchronizer,
             "NOT_CONNECTED_TO_SYNCHRONIZER" => Self::NotConnectedToSynchronizer,
             "SYNCHRONIZER_IS_NOT_AVAILABLE" => Self::SynchronizerIsNotAvailable,
+            "DAML_FAILURE" => Self::DamlFailure,
             _ => Self::Unknown(s),
         }
     }

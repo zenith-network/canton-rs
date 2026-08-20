@@ -1,5 +1,7 @@
+use std::{mem, time::Duration};
+
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
-use tonic::transport::{Channel, ClientTlsConfig, Endpoint};
+use tonic::transport::{Channel, Endpoint};
 
 use crate::grpc::v2::{
     auth::AuthInterceptor,
@@ -10,6 +12,8 @@ use crate::grpc::v2::{
         VersionServiceClient,
     },
 };
+
+pub use tonic::transport::ClientTlsConfig;
 
 #[cfg(not(feature = "tracing"))]
 type InnerChannel = Channel;
@@ -38,6 +42,8 @@ pub struct CantonClientBuilder {
     token: Option<String>,
     max_decoding_message_size: Option<usize>,
     retry_config: RetryConfig,
+    http2_keep_alive_interval: Duration,
+    keep_alive_timeout: Duration,
 }
 
 impl CantonClientBuilder {
@@ -48,6 +54,8 @@ impl CantonClientBuilder {
             token: None,
             max_decoding_message_size: None,
             retry_config: RetryConfig::default(),
+            http2_keep_alive_interval: CantonClient::DEFAULT_HTTP2_KEEP_ALIVE_INTERVAL,
+            keep_alive_timeout: CantonClient::DEFAULT_KEEP_ALIVE_TIMEOUT,
         }
     }
 
@@ -75,9 +83,19 @@ impl CantonClientBuilder {
         self
     }
 
+    /// Override HTTP/2 keep-alive tuning.
+    ///
+    /// `interval` is how often PING frames are sent; `timeout` is how long to
+    /// wait for the corresponding PONG before considering the connection dead.
+    pub fn with_http2_keep_alive(mut self, interval: Duration, timeout: Duration) -> Self {
+        self.http2_keep_alive_interval = interval;
+        self.keep_alive_timeout = timeout;
+        self
+    }
+
     /// Build the client, connected to the API
     pub async fn connect(mut self) -> Result<CantonClient, ClientBuildError> {
-        let endpoint = Self::build_endpoint(self.endpoint.clone(), self.tls_config.take())?;
+        let endpoint = self.build_endpoint()?;
         let channel = endpoint.connect().await?;
 
         #[cfg(feature = "tracing")]
@@ -93,18 +111,18 @@ impl CantonClientBuilder {
     ///
     /// If you want to establish connection immediately, use [`CantonClientBuilder::connect`].
     pub fn connect_lazy(mut self) -> Result<CantonClient, ClientBuildError> {
-        let endpoint = Self::build_endpoint(self.endpoint.clone(), self.tls_config.take())?;
+        let endpoint = self.build_endpoint()?;
         let channel = endpoint.connect_lazy();
         Ok(self.build_client_with_channel(channel))
     }
 
-    fn build_endpoint(
-        endpoint: String,
-        tls_config: Option<ClientTlsConfig>,
-    ) -> Result<Endpoint, ClientBuildError> {
-        let mut endpoint = Endpoint::from_shared(endpoint)?;
+    fn build_endpoint(&mut self) -> Result<Endpoint, ClientBuildError> {
+        let mut endpoint = Endpoint::from_shared(mem::take(&mut self.endpoint))?
+            .http2_keep_alive_interval(self.http2_keep_alive_interval)
+            .keep_alive_timeout(self.keep_alive_timeout)
+            .keep_alive_while_idle(true);
 
-        if let Some(tls) = tls_config {
+        if let Some(tls) = self.tls_config.take() {
             endpoint = endpoint.tls_config(tls)?;
         }
 
@@ -142,6 +160,14 @@ pub struct CantonClient {
 impl CantonClient {
     /// 128 MiB (default for Canton client, used in original Scala client code)
     pub const DEFAULT_MAX_RECV_MESSAGE_SIZE: usize = 0x8000000;
+
+    /// Default HTTP/2 PING interval. Without keep-alive, a server-side
+    /// participant restart (e.g. Canton losing its Postgres connection) can
+    /// leave streaming RPCs like the update service silently hung — the
+    /// client re-connects, `next().await` blocks forever, and no error is
+    /// ever surfaced. Pinging every 20s bounds detection to ~30s.
+    pub const DEFAULT_HTTP2_KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(20);
+    pub const DEFAULT_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
 
     pub fn builder(endpoint: impl Into<String>) -> CantonClientBuilder {
         CantonClientBuilder::new(endpoint)

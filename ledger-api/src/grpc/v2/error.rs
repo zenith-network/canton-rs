@@ -26,7 +26,7 @@ pub enum ClientBuildError {
 pub enum CantonError {
     /// This variant is a proper enriched error returned from Canton gRPC API
     #[error("Ledger API returned an error")]
-    CantonGrpc(#[from] CantonGrpcError),
+    CantonGrpc(#[from] DecodedCantonError),
 
     /// This error variant is returned when the client failed to properly parse an error returned by
     /// Ledger API
@@ -50,7 +50,7 @@ impl From<Status> for CantonError {
         if status.source().is_some() {
             // this means that the error was synthesized and not directly returned from the server
         }
-        if let Some(error) = CantonGrpcError::from_status(&status) {
+        if let Some(error) = DecodedCantonError::from_status(&status) {
             Self::CantonGrpc(error)
         } else {
             Self::Raw(status)
@@ -63,7 +63,7 @@ impl From<Status> for CantonError {
 /// This is a parsed version of [`tonic::Status`], using gRPC Richer Error Model.
 #[derive(Clone, Debug, Error)]
 #[error("{message} (category: {category_id:#}, code: {error_code_id})")]
-pub struct CantonGrpcError {
+pub struct DecodedCantonError {
     error_code_id: ErrorCodeId,
     category_id: CategoryId,
     correlation_id: String,
@@ -73,7 +73,7 @@ pub struct CantonGrpcError {
     metadata: HashMap<String, String>,
 }
 
-impl CantonGrpcError {
+impl DecodedCantonError {
     /// Construct error from [`tonic::Status`].
     ///
     /// If the status doesn't match the expected format, returns `None`.

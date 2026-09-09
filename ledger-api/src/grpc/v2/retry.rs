@@ -9,7 +9,7 @@ use tower::retry::{
     budget::{Budget as _, TpsBudget},
 };
 
-use crate::grpc::v2::error::{CantonError, CantonGrpcError};
+use crate::grpc::v2::error::{CantonError, DecodedCantonError};
 
 pub use tower::retry::{backoff, budget};
 
@@ -193,7 +193,7 @@ impl RetryConfig {
     }
 
     fn retry_canton_grpc(
-        error: &CantonGrpcError,
+        error: &DecodedCantonError,
         policy: &mut CantonRetryPolicy,
         attempt: usize,
     ) -> Option<Sleep> {

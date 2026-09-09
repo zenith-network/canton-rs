@@ -26,7 +26,7 @@ pub enum ClientBuildError {
 pub enum CantonError {
     /// This variant is a proper enriched error returned from Canton gRPC API
     #[error("Ledger API returned an error")]
-    CantonGrpc(#[from] DecodedCantonError),
+    Decoded(#[from] DecodedCantonError),
 
     /// This error variant is returned when the client failed to properly parse an error returned by
     /// Ledger API
@@ -51,7 +51,7 @@ impl From<Status> for CantonError {
             // this means that the error was synthesized and not directly returned from the server
         }
         if let Some(error) = DecodedCantonError::from_status(&status) {
-            Self::CantonGrpc(error)
+            Self::Decoded(error)
         } else {
             Self::Raw(status)
         }

@@ -175,7 +175,7 @@ impl RetryConfig {
     /// Returns an optional delay future
     pub fn retry_after(&mut self, error: &CantonError, attempt: usize) -> Option<Sleep> {
         match error {
-            CantonError::CantonGrpc(error) => self
+            CantonError::Decoded(error) => self
                 .canton
                 .as_mut()
                 .map(|policy| Self::retry_canton_grpc(error, policy, attempt))

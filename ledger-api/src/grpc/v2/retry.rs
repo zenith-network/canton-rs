@@ -66,7 +66,7 @@ impl RetryPolicy {
         }
     }
 
-    /// Set the limitat to given budget
+    /// Set the limit to given budget
     pub fn with_budget(mut self, budget: Arc<TpsBudget>) -> Self {
         self.limitation = Some(RetryLimitation::Tps(budget));
         self

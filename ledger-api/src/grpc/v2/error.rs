@@ -48,7 +48,7 @@ impl CantonError {
 impl From<Status> for CantonError {
     fn from(status: Status) -> Self {
         if status.source().is_some() {
-            // this means that the error was sythesized and not directly returned from the server
+            // this means that the error was synthesized and not directly returned from the server
         }
         if let Some(error) = CantonGrpcError::from_status(&status) {
             Self::CantonGrpc(error)

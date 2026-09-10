@@ -260,13 +260,13 @@ impl RetryHandler {
         S: Clone,
         Req: Clone,
         Resp,
-        F: Fn(S, Req) -> Fut,
+        F: FnMut(S, Req) -> Fut,
         Fut: Future<Output = Result<Response<Resp>, Status>>,
     >(
         &mut self,
         service: &S,
         request: &Req,
-        func: F,
+        mut func: F,
     ) -> Result<Resp, CantonError> {
         let mut attempt = 0;
 
@@ -300,13 +300,13 @@ impl RetryHandler {
         S: Clone,
         Req: Clone,
         Resp,
-        F: Fn(S, Req, usize) -> Fut,
+        F: FnMut(S, Req, usize) -> Fut,
         Fut: Future<Output = Result<Response<Resp>, Status>>,
     >(
         &mut self,
         service: &S,
         request: &Req,
-        func: F,
+        mut func: F,
     ) -> Result<Resp, CantonError> {
         let mut attempt = 0;
 

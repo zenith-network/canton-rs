@@ -11,7 +11,7 @@ use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
 use crate::grpc::v2::{
     client::InterceptedService,
-    error::CantonError,
+    error::{CantonError, ErrorCodeId},
     retry::{RetryConfig, RetryHandler},
 };
 
@@ -41,55 +41,99 @@ impl CommandServiceClient {
 
     /// Submits a single composite command and waits for its result. Propagates the gRPC error of
     /// failed submissions including Daml interpretation errors.
+    ///
+    /// ## Notes on retry behavior
+    ///
+    /// - If the submission ID is set in the `commands`, it will be re-generated to random UUIDv7
+    /// on retry to avoid duplication.
+    /// - If the RPC call encountered `DUPLICATE_COMMAND` error, the function will attempt to
+    /// determine, was it our submission or not. If it can see, that it was our submission within
+    /// this function call, it will return `Ok(_)`. Otherwise original `DUPLICATE_COMMAND` error
+    /// will be returned. Check relies on metadata fields `existing_submission_id` and
+    /// `completion_offset` being set on error info. If they are missing, the function cannot
+    /// determine the output and original error will be returned.
     pub async fn submit_and_wait(
         &mut self,
         commands: Commands,
     ) -> Result<UpdateIdAndOffset, CantonError> {
-        let response = self
+        // We use this list in case of DUPLICATE_COMMAND error to determine if it was our local
+        // submission which succeeded or not
+        let mut submission_ids_used: Vec<LedgerString> = Vec::new();
+
+        let result = self
             .retry_handler
-            .call_with_attempt(
-                &self.service,
-                &commands,
-                |mut svc, mut cmds, attempt| async move {
-                    // we want to avoid retries with the same submission ID
-                    // that's why we check if it's set and modify it on retries
-                    if cmds.submission_id.is_some() {
-                        if attempt == 0 {
-                            // leave it as it is on the first attempt
-                        } else {
-                            // re-generate it to avoid sending the same submission ID
-                            cmds.with_random_submission_id();
-                        }
+            .call_with_attempt(&self.service, &commands, |mut svc, mut cmds, attempt| {
+                // we want to avoid retries with the same submission ID
+                // that's why we check if it's set and modify it on retries
+                if cmds.submission_id.is_some() {
+                    if attempt == 0 {
+                        // leave it as it is on the first attempt
+                    } else {
+                        // re-generate it to avoid sending the same submission ID
+                        cmds.with_random_submission_id();
                     }
-                    // if submission ID is not set, leave it empty for all attempts
+                }
+                // if submission ID is not set, leave it empty for all attempts
 
-                    // TODO: do some logging here, including submission ID
+                // store used submission ID
+                if let Some(submission_id) = &cmds.submission_id {
+                    submission_ids_used.push(submission_id.clone());
+                }
 
-                    let request = SubmitAndWaitRequest {
-                        commands: Some(cmds.into()),
-                    };
+                // TODO: do some logging here, including submission ID
 
-                    // FIXME: If this encounters network error _after_ the command will actually be
-                    // handled, we won't get the result, but on the next iterations we will face
-                    // DUPLICATE_COMMAND errors. From that error directly we can only recover
-                    // completion offset, but not update ID. So this probably means we need to
-                    // change the output type of this function and handle this case properly.
-                    svc.submit_and_wait(request).await
-                },
-            )
-            .await?;
+                let request = SubmitAndWaitRequest {
+                    commands: Some(cmds.into()),
+                };
 
-        Ok(UpdateIdAndOffset {
-            update_id: LedgerString::new(response.update_id)
-                .validated_of::<SubmitAndWaitResponse>("update_id")
-                .no_msg()
-                .map_err(CantonError::value_error)?,
-            completion_offset: response.completion_offset,
-        })
+                // Since DUPLICATE_COMMAND errors are non-retryable, we can skip catching this error
+                // here - it will be rejected by retry policy anyway
+                // So in case of DUPLICATE_COMMAND we immediately return Err(_) here
+                async move { svc.submit_and_wait(request).await }
+            })
+            .await;
+
+        match result {
+            Ok(response) => Ok(UpdateIdAndOffset {
+                update_id: LedgerString::new(response.update_id)
+                    .validated_of::<SubmitAndWaitResponse>("update_id")
+                    .no_msg()
+                    .map_err(CantonError::value_error)?,
+                completion_offset: response.completion_offset,
+            }),
+
+            // This is the case, when we got DUPLICATE_COMMAND and the submission ID is known.
+            // We also require completion offset to be defined, otherwise we can't construct output.
+            Err(CantonError::Decoded(decoded))
+                if matches!(decoded.error_code_id(), ErrorCodeId::DuplicateCommand)
+                    && let Some(id) = decoded.existing_submission_id()
+                    && submission_ids_used.contains(&id)
+                    && let Some(offset) = decoded.completion_offset() =>
+            {
+                // The command was submitted previously by this function
+                // So we can return Ok
+                Ok(UpdateIdAndOffset {
+                    update_id: id,
+                    completion_offset: offset,
+                })
+            }
+
+            // Other errors are returned
+            Err(error) => Err(error),
+        }
     }
 
     /// Submits a single composite command, waits for its result, and returns the transaction.
     /// Propagates the gRPC error of failed submissions including Daml interpretation errors.
+    ///
+    /// ## Notes on retry behavior
+    ///
+    /// - If the submission ID is set in the `commands`, it will be re-generated to random UUIDv7
+    /// on retry to avoid duplication.
+    /// - Unlike [`Self::submit_and_wait`], in case of `DUPLICATE_COMMAND` the error will be
+    /// returned as it is. This is done because unlike `submit_and_wait`, this function cannot
+    /// reconstruct the result (committed transaction). So the user has to catch this error and
+    /// reconstruct the transaction himself.
     pub async fn submit_and_wait_for_transaction<S: TxShape>(
         &mut self,
         commands: Commands,

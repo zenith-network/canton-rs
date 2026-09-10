@@ -180,7 +180,7 @@ impl DamlFailure {
                 //  "User failure: <error_id> (error category <category>): <FailureStatus.message>"
                 if let Some((_, rest)) = msg.split_once(':') {
                     if let Some((_, msg)) = rest.split_once(':') {
-                        failure_message = Some(msg.to_owned());
+                        failure_message = Some(msg.trim().to_owned());
                     }
                 }
             }

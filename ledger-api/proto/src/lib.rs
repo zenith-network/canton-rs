@@ -35,6 +35,9 @@ pub mod com {
         }
     }
 }
+// This feature gate expresses the fact that google.rpc is generated only as a dependency of the
+// main protobuf set above. We don't need it to be here all the time.
+#[cfg(feature = "v2")]
 pub mod google {
     pub mod rpc {
         tonic::include_proto!("google.rpc");

@@ -7,7 +7,7 @@ use tower::Service;
 
 /// A tower [`Service`] wrapper that traces every gRPC call with method name,
 /// elapsed time, and success/error status.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct GrpcTracing<S> {
     inner: S,
 }

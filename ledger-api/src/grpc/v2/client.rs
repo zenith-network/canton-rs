@@ -27,8 +27,8 @@ pub(crate) type InterceptedService =
 ///
 /// # Example
 /// ```no_run
-/// # async fn example() -> ledger_api::grpc::error::Result<()> {
-/// # use ledger_api::grpc::CantonClientBuilder;
+/// # async fn example() -> Result<(), ledger_api::grpc::v2::error::ClientBuildError> {
+/// # use ledger_api::grpc::v2::client::CantonClientBuilder;
 /// let client = CantonClientBuilder::new("https://localhost:5001")
 ///     .with_token("my-jwt-token")
 ///     .connect()

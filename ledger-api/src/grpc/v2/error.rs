@@ -323,8 +323,10 @@ impl fmt::Display for DamlFailure {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(message) = &self.failure_message {
             write!(f, "{message} (category: {:#})", self.category_id)
+        } else if let Some(message) = &self.message {
+            write!(f, "{message}")
         } else {
-            todo!()
+            write!(f, "{}", self.full_message)
         }
     }
 }

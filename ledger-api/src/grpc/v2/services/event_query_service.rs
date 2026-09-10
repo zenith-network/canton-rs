@@ -17,7 +17,7 @@ use crate::grpc::v2::{
     retry::{RetryConfig, RetryHandler},
 };
 
-/// Wrapped for [`svc_proto::CommandCompletionServiceClient`]
+/// Wrapped for [`svc_proto::EventQueryServiceClient`]
 ///
 /// Query events by contract ID.
 #[derive(Clone, Debug)]

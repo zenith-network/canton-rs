@@ -11,7 +11,7 @@ use crate::grpc::v2::{
     retry::{RetryConfig, RetryHandler},
 };
 
-/// Wrapped for [`svc_proto::StateServiceClient`]
+/// Wrapped for [`svc_proto::PackageServiceClient`]
 #[derive(Clone, Debug)]
 pub struct PackageServiceClient {
     service: svc_proto::PackageServiceClient<InterceptedService>,

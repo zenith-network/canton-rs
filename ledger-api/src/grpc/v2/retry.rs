@@ -296,6 +296,7 @@ impl RetryHandler {
         }
     }
 
+    /// Same as [`Self::call`], but the closure has access to attempt number
     pub async fn call_with_attempt<
         S: Clone,
         Req: Clone,

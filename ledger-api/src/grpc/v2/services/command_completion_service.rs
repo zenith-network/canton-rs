@@ -92,8 +92,6 @@ impl CommandCompletionServiceClient {
             .await?;
 
         // we don't retry on item errors, user is supposed to re-create the stream in that case
-        // TODO: Remove this attribute when CantonError size issue is fixed
-        #[allow(clippy::result_large_err)]
         let convertor =
             |response: Result<CompletionStreamResponse, Status>| -> Result<CompletionResponse, CantonError> {
                 response

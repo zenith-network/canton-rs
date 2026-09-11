@@ -7,10 +7,11 @@ license.workspace = true
 
 [features]
 default = ["v2"]
-tracing = []
+tracing = ["dep:tracing", "dep:http"]
 v2 = ["ledger-api-proto/v2-full", "ledger-api-types/v2"]
 
 [dependencies]
+http = { workspace = true, optional = true }
 ledger-api-proto.workspace = true
 ledger-api-types.workspace = true
 protobuf-utils.workspace = true
@@ -24,6 +25,7 @@ tonic = { workspace = true, features = [
 ] }
 tonic-types.workspace = true
 tower = { workspace = true, features = ["retry"] }
+tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
 prost.workspace = true

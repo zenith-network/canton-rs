@@ -18,7 +18,7 @@ pub use tonic::transport::ClientTlsConfig;
 #[cfg(not(feature = "tracing"))]
 type InnerChannel = Channel;
 #[cfg(feature = "tracing")]
-type InnerChannel = crate::tracing_layer::GrpcTracing<Channel>;
+type InnerChannel = crate::grpc::v2::tracing_layer::GrpcTracing<Channel>;
 
 pub(crate) type InterceptedService =
     tonic::service::interceptor::InterceptedService<InnerChannel, AuthInterceptor>;
@@ -132,7 +132,7 @@ impl CantonClientBuilder {
 
     fn build_client_with_channel(self, channel: Channel) -> CantonClient {
         #[cfg(feature = "tracing")]
-        let channel = crate::tracing_layer::GrpcTracing::new(channel);
+        let channel = crate::grpc::v2::tracing_layer::GrpcTracing::new(channel);
 
         let interceptor = AuthInterceptor::new(self.token);
 

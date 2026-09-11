@@ -326,7 +326,10 @@ impl RetryHandler {
                 .map_err(CantonError::from);
 
             match result {
-                Ok(response) => return Ok(response.into_inner()),
+                Ok(response) => {
+                    self.config.success();
+                    return Ok(response.into_inner());
+                }
                 Err(error) => {
                     let Some(delay) = self.config.retry_after(&error, attempt) else {
                         return Err(error);

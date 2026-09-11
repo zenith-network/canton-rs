@@ -10,6 +10,9 @@ use syn::parse::Parser as _;
 
 use crate::external_paths::{ExternalPathsError, UnresolvedExternalPaths};
 
+pub type ResolvedTypeAttrs =
+    HashMap<PackageId, HashMap<NonEmpty<String>, HashMap<NonEmpty<String>, Vec<syn::Attribute>>>>;
+
 #[derive(Clone, Debug)]
 pub struct Config {
     pub(crate) outdir: Option<PathBuf>,
@@ -127,13 +130,7 @@ impl Config {
     pub(crate) fn resolve_type_attributes(
         &self,
         packages: &BTreeMap<PackageId, SealedPackage>,
-    ) -> Result<
-        HashMap<
-            PackageId,
-            HashMap<NonEmpty<String>, HashMap<NonEmpty<String>, Vec<syn::Attribute>>>,
-        >,
-        ConfigError,
-    > {
+    ) -> Result<ResolvedTypeAttrs, ConfigError> {
         let mut resolved = HashMap::<
             PackageId,
             HashMap<NonEmpty<String>, HashMap<NonEmpty<String>, Vec<syn::Attribute>>>,

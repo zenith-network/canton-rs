@@ -7,6 +7,10 @@ use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 use crate::v2::CreatedEvent;
 
 #[derive(Clone, Debug)]
+// TODO: Since last two variants are not yet implemented, there is no point to check this at the
+//       moment. This attribute needs to be removed after IncompleteUnassigned and
+//       IncompleteAssigned are implemented.
+#[allow(clippy::large_enum_variant)]
 pub enum ContractEntry {
     ActiveContract(ActiveContract),
     IncompleteUnassigned(IncompleteUnassigned),

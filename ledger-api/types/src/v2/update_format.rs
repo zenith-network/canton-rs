@@ -2,7 +2,7 @@ use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 
 use crate::v2::{EventFormat, TopologyFormat, TransactionFormat, TransactionShape, TxShape};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct UpdateFormat<S: TxShape = TransactionShape> {
     pub include_transactions: Option<TransactionFormat<S>>,
     pub include_reassignments: Option<EventFormat>,

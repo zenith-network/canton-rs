@@ -65,7 +65,7 @@ pub fn sanitize_ident(input: impl AsRef<str>) -> Ident {
         if is_xid_continue(first) {
             output.push(first);
         } else {
-            output.push(first);
+            output.push('_');
         }
     } else {
         output.push(first);
@@ -89,25 +89,70 @@ pub mod kw {
     ///
     /// Reference: https://doc.rust-lang.org/reference/keywords.html#strict-keywords
     pub fn is_strict(input: impl AsRef<str>) -> bool {
-        match input.as_ref() {
-            "_" | "as" | "async" | "await" | "break" | "const" | "continue" | "crate" | "dyn"
-            | "else" | "enum" | "extern" | "false" | "fn" | "for" | "if" | "impl" | "in"
-            | "let" | "loop" | "match" | "mod" | "move" | "mut" | "pub" | "ref" | "return"
-            | "self" | "Self" | "static" | "struct" | "super" | "trait" | "true" | "type"
-            | "unsafe" | "use" | "where" | "while" => true,
-            _ => false,
-        }
+        matches!(
+            input.as_ref(),
+            "_" | "as"
+                | "async"
+                | "await"
+                | "break"
+                | "const"
+                | "continue"
+                | "crate"
+                | "dyn"
+                | "else"
+                | "enum"
+                | "extern"
+                | "false"
+                | "fn"
+                | "for"
+                | "if"
+                | "impl"
+                | "in"
+                | "let"
+                | "loop"
+                | "match"
+                | "mod"
+                | "move"
+                | "mut"
+                | "pub"
+                | "ref"
+                | "return"
+                | "self"
+                | "Self"
+                | "static"
+                | "struct"
+                | "super"
+                | "trait"
+                | "true"
+                | "type"
+                | "unsafe"
+                | "use"
+                | "where"
+                | "while",
+        )
     }
 
     /// Returns `true` if input is a reserved keyword
     ///
     /// Reference: https://doc.rust-lang.org/reference/keywords.html#reserved-keywords
     pub fn is_reserved(input: impl AsRef<str>) -> bool {
-        match input.as_ref() {
-            "abstract" | "become" | "box" | "do" | "final" | "gen" | "macro" | "override"
-            | "priv" | "try" | "typeof" | "unsized" | "virtual" | "yield" => true,
-            _ => false,
-        }
+        matches!(
+            input.as_ref(),
+            "abstract"
+                | "become"
+                | "box"
+                | "do"
+                | "final"
+                | "gen"
+                | "macro"
+                | "override"
+                | "priv"
+                | "try"
+                | "typeof"
+                | "unsized"
+                | "virtual"
+                | "yield",
+        )
     }
 
     /// Returns `true` is input is `RESERVED_RAW_IDENTIFIER` (subset of strict keywords):
@@ -115,10 +160,7 @@ pub mod kw {
     ///
     /// Reference: https://doc.rust-lang.org/reference/identifiers.html#raw-identifiers
     pub fn is_reserved_raw(input: impl AsRef<str>) -> bool {
-        match input.as_ref() {
-            "_" | "crate" | "self" | "Self" | "super" => true,
-            _ => false,
-        }
+        matches!(input.as_ref(), "_" | "crate" | "self" | "Self" | "super",)
     }
 }
 

@@ -11,17 +11,17 @@ use syn::{Ident, Item, ItemMod, Visibility};
 /// Notes:
 ///
 /// 1. A module with given identifier exists not more than once in the tree.
-///     E.g things like:
-///     ```rust,ignore
-///     #[cfg(unix)]
-///     mod A {};
-///     #[cfg(windows)]
-///     mod A {};
-///     ```
-///     are not handled properly.
+///    E.g things like:
+///    ```rust,ignore
+///    #[cfg(unix)]
+///    mod A {};
+///    #[cfg(windows)]
+///    mod A {};
+///    ```
+///    are not handled properly.
 /// 2. Name collisions with other items are not handled gracefully.
-///     E.g. if there is a `mod Foo {}` or even `struct Foo`, this function will not report an error
-///     if creating `mod Foo {}`.
+///    E.g. if there is a `mod Foo {}` or even `struct Foo`, this function will not report an error
+///    if creating `mod Foo {}`.
 /// 3. File-based modules are not considered (`mod my_mod;`)
 pub fn push_module(mut root: &mut ItemMod, parent_path: &[&str], module: ItemMod) {
     for module_name in parent_path {

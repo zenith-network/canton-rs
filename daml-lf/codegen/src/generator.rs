@@ -2,7 +2,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     fs,
     path::{Path, PathBuf},
-    sync::Arc,
+    rc::Rc,
 };
 
 use canton_types::PackageId;
@@ -37,7 +37,7 @@ pub struct GenOutput {
 pub struct Generator {}
 
 impl Generator {
-    pub fn generate<'a>(dar: &'a mut DarFile, config: Config) -> Result<GenOutput, Error> {
+    pub fn generate(dar: &mut DarFile, config: Config) -> Result<GenOutput, Error> {
         let outdir = config.get_outdir()?;
 
         let packages = Self::read_packages(dar)?;
@@ -49,9 +49,9 @@ impl Generator {
         // FIXME: replace panic with error
         let main_package_id = Self::get_main_package_id(dar)?;
 
-        let package_identifiers = Arc::new(Self::generate_package_identifiers(&sealed_packages));
+        let package_identifiers = Rc::new(Self::generate_package_identifiers(&sealed_packages));
 
-        let external_paths = Arc::new(Default::default());
+        let external_paths = Rc::new(Default::default());
 
         let genset = GenSetBuilder::build(
             &sealed_packages,
@@ -74,8 +74,8 @@ impl Generator {
                         package.package_id().clone(),
                         sealed,
                         ident.clone(),
-                        Arc::clone(&package_identifiers),
-                        Arc::clone(&external_paths),
+                        Rc::clone(&package_identifiers),
+                        Rc::clone(&external_paths),
                         package_gen_set,
                         ptype_attrs,
                     );
@@ -125,7 +125,7 @@ impl Generator {
             .map_err(Into::into)
     }
 
-    fn get_main_package_id<'a, 'b>(dar: &mut DarFile) -> Result<PackageId, Error> {
+    fn get_main_package_id(dar: &mut DarFile) -> Result<PackageId, Error> {
         let main_dalf = dar.main_dalf()?;
         Ok(main_dalf.hash().to_package_id())
     }
@@ -147,16 +147,16 @@ impl Generator {
     }
 
     fn main_file_path(outdir: impl AsRef<Path>) -> PathBuf {
-        outdir.as_ref().join(format!("main_package.rs"))
+        outdir.as_ref().join("main_package.rs")
     }
 
     fn package_file_path(outdir: impl AsRef<Path>, package_ident: &Ident) -> PathBuf {
         outdir.as_ref().join(format!("{package_ident}.rs"))
     }
 
-    fn write_file<'a>(file: &syn::File, path: impl AsRef<Path>) -> Result<(), Error> {
+    fn write_file(file: &syn::File, path: impl AsRef<Path>) -> Result<(), Error> {
         let output = cfg_select! {
-            feature = "format" => prettyplease::unparse(&file),
+            feature = "format" => prettyplease::unparse(file),
             _ => quote::ToTokens::into_token_stream(file).to_string(),
         };
 

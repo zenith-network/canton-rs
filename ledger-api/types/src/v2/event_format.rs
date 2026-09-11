@@ -6,7 +6,7 @@ use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use crate::v2::Filters;
 
 /// Runtime-defined event format
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct EventFormat {
     pub filters_by_party: HashMap<PartyId, Filters>,
     pub filters_for_any_party: Option<Filters>,

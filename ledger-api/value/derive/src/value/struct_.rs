@@ -28,9 +28,9 @@ pub fn try_impl_record(
         "tuple structs are not allowed"
     );
 
-    let into_record_impl = into_record_impl(&item_attrs, &ident, &ds, &generics)?;
-    let try_from_record_impl = try_from_record_impl(&item_attrs, &ident, &ds, &generics)?;
-    let record_impl = record_impl(&item_attrs, &ident, &ds, &generics)?;
+    let into_record_impl = into_record_impl(item_attrs, ident, ds, generics)?;
+    let try_from_record_impl = try_from_record_impl(item_attrs, ident, ds, generics)?;
+    let record_impl = record_impl(item_attrs, ident, ds, generics)?;
 
     let output = quote! {
         #[automatically_derived]

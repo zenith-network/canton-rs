@@ -81,6 +81,8 @@ impl UpdateServiceClient {
         // we only retry on the initial request
         // getting items from the stream cannot be retries, the user has to re-create the stream
 
+        // TODO: Remove this attribute when CantonError size issue is fixed
+        #[allow(clippy::result_large_err)]
         let converter = |result: Result<GetUpdatesResponse, Status>| -> Result<
             StreamingUpdate<S>,
             CantonError,
@@ -191,6 +193,8 @@ impl UpdateServiceClient {
             })
             .await?;
 
+        // TODO: Remove this attribute when CantonError size issue is fixed
+        #[allow(clippy::result_large_err)]
         Ok(Page {
             items: response
                 .updates
@@ -207,7 +211,7 @@ impl UpdateServiceClient {
                 .collect::<Result<_, _>>()?,
             lowest_page_offset_exclusive: response.lowest_page_offset_exclusive,
             highest_page_offset_inclusive: response.highest_page_offset_inclusive,
-            next_page_token: response.next_page_token.map(|inner| PageToken::new(inner)),
+            next_page_token: response.next_page_token.map(PageToken::new),
         })
     }
 }

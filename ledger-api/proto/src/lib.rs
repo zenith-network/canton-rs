@@ -1,3 +1,11 @@
+// We want to keep the protobuf code aligned with the upstream, so we don't want to change it to fix
+// these issues. That's why we simply silence the warnings.
+#[allow(
+    clippy::large_enum_variant,
+    clippy::doc_overindented_list_items,
+    clippy::doc_lazy_continuation,
+    reason = "Generated code"
+)]
 pub mod com {
     pub mod daml {
         pub mod ledger {

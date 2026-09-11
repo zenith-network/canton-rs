@@ -21,6 +21,9 @@ pub enum ClientBuildError {
     Transport(#[from] tonic::transport::Error),
 }
 
+// TODO: Fix issues with error sizes - they are too big for enum variants. Probably we want to Box
+//       internal implementation.
+
 /// Error during interaction with Canton API
 #[derive(Debug, Error)]
 pub enum CantonError {
@@ -41,8 +44,8 @@ pub enum CantonError {
     /// [Canton docs] say:
     ///
     /// > Some errors are redacted for security. The API response omits sensitive details, but the
-    /// full error message appears in server-side logs. Work with your operator if you need the
-    /// complete error context.
+    /// > full error message appears in server-side logs. Work with your operator if you need the
+    /// > complete error context.
     ///
     /// [Canton docs]: https://docs.canton.network/appdev/reference/error-codes
     #[error("Ledger API returned a redacted error (sensitive details were omitted)")]
@@ -136,7 +139,7 @@ impl RedactedCantonError {
     ///
     /// This is either a correlation ID or trace ID.
     pub fn request_id(&self) -> Option<&str> {
-        self.request_id.as_ref().map(String::as_str)
+        self.request_id.as_deref()
     }
 }
 
@@ -159,6 +162,9 @@ pub struct DamlFailure {
 
 impl DamlFailure {
     /// On error returns original `decoded` error value
+    // TODO: For now just allow large error variant. We need to work on optimizing it anyway in the
+    //       future (Box-ing the entire thing probably) anyway. This attribute may be removed after.
+    #[allow(clippy::result_large_err)]
     pub fn from_decoded(decoded: DecodedCantonError) -> Result<Self, DecodedCantonError> {
         if matches!(decoded.error_code_id, ErrorCodeId::DamlFailure) {
             let DecodedCantonError {
@@ -175,14 +181,13 @@ impl DamlFailure {
             let error_id = metadata.remove("error_id");
 
             let mut failure_message = None;
-            if let Some(msg) = &message {
-                // Assuming format like:
-                //  "User failure: <error_id> (error category <category>): <FailureStatus.message>"
-                if let Some((_, rest)) = msg.split_once(':') {
-                    if let Some((_, msg)) = rest.split_once(':') {
-                        failure_message = Some(msg.trim().to_owned());
-                    }
-                }
+            // Assuming format like:
+            //  "User failure: <error_id> (error category <category>): <FailureStatus.message>"
+            if let Some(msg) = &message
+                && let Some((_, rest)) = msg.split_once(':')
+                && let Some((_, msg)) = rest.split_once(':')
+            {
+                failure_message = Some(msg.trim().to_owned());
             }
 
             Ok(Self {
@@ -231,7 +236,7 @@ impl DamlFailure {
     ///
     /// [FailureStatus]: https://docs.canton.network/appdev/reference/daml-standard-library/da-fail#data-failurestatus
     pub fn error_id(&self) -> Option<&str> {
-        self.error_id.as_ref().map(String::as_str)
+        self.error_id.as_deref()
     }
 
     /// Correlation ID
@@ -242,12 +247,12 @@ impl DamlFailure {
     /// Canton 3.6.0 it may be missing if both correlation ID and trace ID are not provided.
     /// For that reason this method returns `Option`.
     pub fn correlation_id(&self) -> Option<&str> {
-        self.correlation_id.as_ref().map(String::as_str)
+        self.correlation_id.as_deref()
     }
 
     /// Trace ID
     pub fn trace_id(&self) -> Option<&str> {
-        self.trace_id.as_ref().map(String::as_str)
+        self.trace_id.as_deref()
     }
 
     /// Full original error message from [`tonic::Status`]
@@ -272,7 +277,7 @@ impl DamlFailure {
     /// User failure: my.app/balance-err (error category 9): Balance too low
     /// ```
     pub fn message(&self) -> Option<&str> {
-        self.message.as_ref().map(String::as_str)
+        self.message.as_deref()
     }
 
     /// "Best-effort" parsed message from Daml application
@@ -290,7 +295,7 @@ impl DamlFailure {
     ///
     /// [message]: https://docs.canton.network/appdev/reference/daml-standard-library/da-fail#param-message
     pub fn failure_message(&self) -> Option<&str> {
-        self.failure_message.as_ref().map(String::as_str)
+        self.failure_message.as_deref()
     }
 
     /// Return [`Self::failure_message()`] if it is `Some`. If not, check [`Self::message`].
@@ -374,8 +379,7 @@ impl DecodedCantonError {
         let trace_id = metadata.remove("tid");
         let definite_answer = metadata
             .remove("definite_answer")
-            .map(|v| v.parse::<bool>().ok())
-            .flatten();
+            .and_then(|v| v.parse::<bool>().ok());
 
         let correlation_id = status
             .get_details_request_info()
@@ -383,8 +387,7 @@ impl DecodedCantonError {
 
         let retry_delay = status
             .get_details_retry_info()
-            .map(|retry_info| retry_info.retry_delay)
-            .flatten();
+            .and_then(|retry_info| retry_info.retry_delay);
 
         let resources = status
             .get_error_details_vec()
@@ -434,7 +437,7 @@ impl DecodedCantonError {
     ///
     /// - `true` means the rejection is definitive, Canton knows that command was not accepted;
     /// - `false` means the outcome may be uncertain and command processing may have succeeded
-    /// despite returned error
+    ///   despite returned error
     /// - `None` means that the concept doesn't apply to the error type
     ///
     /// Mainly used for command-related RPC methods.
@@ -444,10 +447,10 @@ impl DecodedCantonError {
     /// # Examples
     ///
     /// - If request timed out before observing the results, the error will be returned and `false`
-    /// will be set. User may check, whether the command actually succeeded or not, before applying
-    /// retry policies.
+    ///   will be set. User may check, whether the command actually succeeded or not, before applying
+    ///   retry policies.
     /// - If `DUPLICATE_COMMAND` is returned, Canton knows for sure that this call failed and `true`
-    /// will be set.
+    ///   will be set.
     pub fn definite_answer(&self) -> Option<bool> {
         self.definite_answer
     }
@@ -460,12 +463,12 @@ impl DecodedCantonError {
     /// Canton 3.6.0 it may be missing if both correlation ID and trace ID are not provided.
     /// For that reason this method returns `Option`.
     pub fn correlation_id(&self) -> Option<&str> {
-        self.correlation_id.as_ref().map(String::as_str)
+        self.correlation_id.as_deref()
     }
 
     /// Trace ID
     pub fn trace_id(&self) -> Option<&str> {
-        self.trace_id.as_ref().map(String::as_str)
+        self.trace_id.as_deref()
     }
 
     /// Full original error message from [`tonic::Status`]
@@ -490,7 +493,7 @@ impl DecodedCantonError {
     /// A command with the given command id has already been successfully processed
     /// ```
     pub fn message(&self) -> Option<&str> {
-        self.message.as_ref().map(String::as_str)
+        self.message.as_deref()
     }
 
     /// Returns [`Self::message()`] if it is `Some`, otherwise fallback to [`Self::full_message`]
@@ -530,8 +533,7 @@ impl DecodedCantonError {
     pub fn completion_offset(&self) -> Option<i64> {
         self.metadata
             .get("completion_offset")
-            .map(|offset| offset.parse::<i64>().ok())
-            .flatten()
+            .and_then(|offset| offset.parse::<i64>().ok())
     }
 
     /// Existing submission ID extracted from `ErrorInfo` metadata

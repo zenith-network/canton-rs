@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, rc::Rc};
 
 use canton_paths::Paths;
 use canton_types::{NonEmpty, PackageId, errors::PackageIdError};
@@ -29,8 +29,8 @@ pub enum ModuleGenError {
 }
 
 pub struct ModuleGenerator<'a> {
-    package_identifiers: Arc<HashMap<PackageId, Ident>>,
-    _external_paths: Arc<ExternalPaths>,
+    package_identifiers: Rc<HashMap<PackageId, Ident>>,
+    _external_paths: Rc<ExternalPaths>,
     module: Module<'a>,
     gen_set: ModuleTypeSet,
     paths: Paths,
@@ -66,8 +66,8 @@ pub struct ModuleGenerator<'a> {
 
 impl<'a> ModuleGenerator<'a> {
     pub fn new(
-        package_identifiers: Arc<HashMap<PackageId, Ident>>,
-        external_paths: Arc<ExternalPaths>,
+        package_identifiers: Rc<HashMap<PackageId, Ident>>,
+        external_paths: Rc<ExternalPaths>,
         module: Module<'a>,
         gen_set: ModuleTypeSet,
         type_attributes: HashMap<NonEmpty<String>, Vec<syn::Attribute>>,
@@ -734,22 +734,19 @@ impl<'a> ModuleGenerator<'a> {
 
     /// If given type is defined in this module, find it's DefDataType
     fn find_def_data_type(module: Module<'a>, type_: Type<'a>) -> Option<DefDataType<'a>> {
-        type_
-            .type_con_id()
-            .map(|type_con_id| {
-                let module_id = type_con_id.module();
-                let is_local =
-                    module_id.package_id().is_self() && module_id.module_name() == module.name();
-                is_local.then(|| {
-                    let type_name = type_con_id.name();
-                    module
-                        .data_types()
-                        .into_iter()
-                        .find(|dt| dt.name() == type_name)
-                        .expect("type must be known")
-                })
+        type_.type_con_id().and_then(|type_con_id| {
+            let module_id = type_con_id.module();
+            let is_local =
+                module_id.package_id().is_self() && module_id.module_name() == module.name();
+            is_local.then(|| {
+                let type_name = type_con_id.name();
+                module
+                    .data_types()
+                    .into_iter()
+                    .find(|dt| dt.name() == type_name)
+                    .expect("type must be known")
             })
-            .flatten()
+        })
     }
 }
 

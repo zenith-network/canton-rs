@@ -31,9 +31,7 @@ fn main() -> anyhow::Result<()> {
     init_tracing(&cli);
 
     let mut config = Config::default();
-    config
-        .outdir(&cli.outdir)
-        .sdk_types(!cli.no_sdk_types);
+    config.outdir(&cli.outdir).sdk_types(!cli.no_sdk_types);
 
     generate(&cli.dar, config)?;
 

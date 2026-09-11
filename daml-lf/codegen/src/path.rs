@@ -1,8 +1,10 @@
 //! Utilities to generate Rust paths (e.g. `foo::bar::baz`)
 //!
-//! TODO: this may be way more sofisticated
+//! TODO: this may be way more sophisticated
 //!
-//! Reference: https://doc.rust-lang.org/reference/paths.html
+//! See [reference].
+//!
+//! [reference]: https://doc.rust-lang.org/reference/paths.html
 
 use heck::ToSnakeCase;
 use proc_macro2::TokenStream;

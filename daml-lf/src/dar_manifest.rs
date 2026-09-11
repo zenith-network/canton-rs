@@ -8,7 +8,9 @@ use parser::{ParseError, parse_manifest};
 /// syntactically compatible with JAR manifest files. However they follow their own semantic rules
 /// about the attributes names.
 ///
-/// Reference: https://docs.oracle.com/en/java/javase/24/docs/specs/jar/jar.html#jar-manifest
+/// See [reference].
+///
+/// [reference]: https://docs.oracle.com/en/java/javase/24/docs/specs/jar/jar.html#jar-manifest
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DarManifest {
     /// Version of the manifest file
@@ -16,7 +18,7 @@ pub struct DarManifest {
     /// Optional, but normally set to `1.0`.
     pub version: Option<String>,
 
-    /// Name of the entiry, which created the manifest
+    /// Name of the entity, which created the manifest
     ///
     /// For compiled `.dar` files normally set to `damlc`.
     pub created_by: Option<String>,

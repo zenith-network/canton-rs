@@ -9,7 +9,7 @@ use tower::retry::{
     budget::{Budget as _, TpsBudget},
 };
 
-use crate::grpc::v2::error::{CantonError, CantonGrpcError};
+use crate::grpc::v2::error::{CantonError, DecodedCantonError};
 
 pub use tower::retry::{backoff, budget};
 
@@ -175,7 +175,7 @@ impl RetryConfig {
     /// Returns an optional delay future
     pub fn retry_after(&mut self, error: &CantonError, attempt: usize) -> Option<Sleep> {
         match error {
-            CantonError::CantonGrpc(error) => self
+            CantonError::Decoded(error) => self
                 .canton
                 .as_mut()
                 .map(|policy| Self::retry_canton_grpc(error, policy, attempt))
@@ -193,7 +193,7 @@ impl RetryConfig {
     }
 
     fn retry_canton_grpc(
-        error: &CantonGrpcError,
+        error: &DecodedCantonError,
         policy: &mut CantonRetryPolicy,
         attempt: usize,
     ) -> Option<Sleep> {

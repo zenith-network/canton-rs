@@ -26,7 +26,7 @@ pub enum ClientBuildError {
 pub enum CantonError {
     /// This variant is a proper enriched error returned from Canton gRPC API
     #[error("Ledger API returned an error")]
-    CantonGrpc(#[from] CantonGrpcError),
+    Decoded(#[from] DecodedCantonError),
 
     /// This error variant is returned when the client failed to properly parse an error returned by
     /// Ledger API
@@ -50,8 +50,8 @@ impl From<Status> for CantonError {
         if status.source().is_some() {
             // this means that the error was sythesized and not directly returned from the server
         }
-        if let Some(error) = CantonGrpcError::from_status(&status) {
-            Self::CantonGrpc(error)
+        if let Some(error) = DecodedCantonError::from_status(&status) {
+            Self::Decoded(error)
         } else {
             Self::Raw(status)
         }
@@ -63,7 +63,7 @@ impl From<Status> for CantonError {
 /// This is a parsed version of [`tonic::Status`], using gRPC Richer Error Model.
 #[derive(Clone, Debug, Error)]
 #[error("{message} (category: {category_id:#}, code: {error_code_id})")]
-pub struct CantonGrpcError {
+pub struct DecodedCantonError {
     error_code_id: ErrorCodeId,
     category_id: CategoryId,
     correlation_id: String,
@@ -73,7 +73,7 @@ pub struct CantonGrpcError {
     metadata: HashMap<String, String>,
 }
 
-impl CantonGrpcError {
+impl DecodedCantonError {
     /// Construct error from [`tonic::Status`].
     ///
     /// If the status doesn't match the expected format, returns `None`.
@@ -250,16 +250,16 @@ mod tests {
         Status::with_details(code, message, rpc.encode_to_vec().into())
     }
 
-    fn assert_parses_as_canton_grpc(input: Status) {
+    fn assert_parses_as_canton_decoded(input: Status) {
         use std::assert_matches;
 
         let output = CantonError::from(input);
-        assert_matches!(output, CantonError::CantonGrpc(..));
+        assert_matches!(output, CantonError::Decoded(..));
     }
 
     #[test]
     fn parses_missing_field_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::InvalidArgument,
             "MISSING_FIELD(8,cor-id-1): The submitted command is missing a mandatory field: command_id",
             vec![
@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn parses_package_not_found_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::NotFound,
             "PACKAGE_NOT_FOUND(11,cor-id-1): Could not find package.",
             vec![
@@ -297,7 +297,7 @@ mod tests {
 
     #[test]
     fn parses_duplicate_command_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::AlreadyExists,
             "DUPLICATE_COMMAND(10,cor-id-1): A command with the given command id has already been successfully processed",
             vec![
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn parses_participant_pruned_data_accessed_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::FailedPrecondition,
             "PARTICIPANT_PRUNED_DATA_ACCESSED(9,cor-id-1): Active contracts request at offset 42 precedes pruned offset 17",
             vec![
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn parses_request_time_out_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::DeadlineExceeded,
             "REQUEST_TIME_OUT(3,cor-id-1): Timed out while awaiting for a completion corresponding to a command submission.",
             vec![
@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn parses_participant_backpressure_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::Aborted,
             "PARTICIPANT_BACKPRESSURE(2,cor-id-1): The participant is overloaded: Some buffer is full",
             vec![
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn parses_service_not_running_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::Unavailable,
             "SERVICE_NOT_RUNNING(1,cor-id-1): Command Service is not running.",
             vec![
@@ -387,7 +387,7 @@ mod tests {
 
     #[test]
     fn parses_unauthenticated_redacted_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::Unauthenticated,
             REDACTED_WITH_REQ,
             vec![req(REQ_ID)],
@@ -396,7 +396,7 @@ mod tests {
 
     #[test]
     fn parses_permission_denied_redacted_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::PermissionDenied,
             REDACTED_WITH_REQ,
             vec![req(REQ_ID)],
@@ -405,12 +405,12 @@ mod tests {
 
     #[test]
     fn parses_internal_redacted_error() {
-        assert_parses_as_canton_grpc(ledger_status(Code::Internal, REDACTED_NO_REQ, vec![]));
+        assert_parses_as_canton_decoded(ledger_status(Code::Internal, REDACTED_NO_REQ, vec![]));
     }
 
     #[test]
     fn parses_malformed_request_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::InvalidArgument,
             "MALFORMED_REQUEST(8,cor-id-1): Malformed request",
             vec![
@@ -436,7 +436,7 @@ mod tests {
 
     #[test]
     fn parses_submission_already_in_flight_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::Aborted,
             "SUBMISSION_ALREADY_IN_FLIGHT(2,cor-id-1): A submission with the given change ID (user ID, command ID, actAs) and submission ID is already in flight",
             vec![
@@ -452,7 +452,7 @@ mod tests {
 
     #[test]
     fn parses_offset_after_ledger_end_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::OutOfRange,
             "OFFSET_AFTER_LEDGER_END(12,cor-id-1): Absolute offset (12345678) is after ledger end (42)",
             vec![
@@ -468,7 +468,7 @@ mod tests {
 
     #[test]
     fn parses_invalid_updates_page_token_error() {
-        assert_parses_as_canton_grpc(ledger_status(
+        assert_parses_as_canton_decoded(ledger_status(
             Code::InvalidArgument,
             "INVALID_UPDATES_PAGE_TOKEN(8,cor-id-1): The submitted command contains an invalid page token. Tokens used in GetUpdatesPage requests must be taken from a valid GetUpdatesPageResponse and used with the same EventFormat settings, the same begin and end with the same Canton participant running the same Canton version. Next page token was generated by a different Canton version",
             vec![

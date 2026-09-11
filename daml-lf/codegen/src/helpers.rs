@@ -124,8 +124,8 @@ mod tests {
         "pub mod root { pub mod alpha { pub mod beta { pub mod gamma { pub struct Added ; } } } }"
     )]
     #[case(
-        "pub mod root { pub mod alpha { pub mod beta { } } }",
-        "alpha",
+        "pub mod root { pub const EXISTING : u8 = 1 ; pub mod alpha { } }",
+        "",
         "pub mod alpha { pub struct Added ; pub enum Choice { Left , Right } }",
         "pub mod root { pub const EXISTING : u8 = 1 ; pub mod alpha { pub struct Added ; pub enum Choice { Left , Right } } }"
     )]

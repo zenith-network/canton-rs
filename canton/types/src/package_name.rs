@@ -68,9 +68,10 @@ impl fmt::Display for PackageName {
     /// If alternate flag (`#`) is set, this formatting will contain discriminator `#`:
     ///
     /// ```rust,no_run
-    /// # let package_name = daml_primitives::package_name::PackageName::new_unchecked("");
-    /// format!("{}", package_name) // "mypackage"
-    /// format!("{:#}", package_name) // "#mypackage"
+    /// # fn test(package_name: canton_types::PackageName) {
+    /// format!("{}", package_name); // "mypackage"
+    /// format!("{:#}", package_name); // "#mypackage"
+    /// # }
     /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {

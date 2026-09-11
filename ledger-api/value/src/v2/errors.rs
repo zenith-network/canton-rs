@@ -201,8 +201,8 @@ impl<E1, E2, E3> From<UnexpectedLabel> for Tuple3Error<E1, E2, E3> {
 /// # Example
 ///
 /// ```rust,no_run
-/// # use daml_primitives::party_id::PartyIdError;
-/// # use daml_lf_ledger_api_value::errors::{IntoValueError, ValueError};
+/// # use canton_types::errors::PartyIdError;
+/// # use ledger_api_value::v2::errors::{IntoValueError, ValueError};
 /// fn func() -> Result<(), PartyIdError> { Ok(()) }
 ///
 /// fn another_func() -> Result<(), ValueError> {

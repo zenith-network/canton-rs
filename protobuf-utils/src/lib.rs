@@ -108,7 +108,7 @@ impl InvalidProtoFieldValue {
 ///
 /// ```rust,no_run
 /// # use protobuf_utils::InvalidProtoField;
-/// fn func<E: std::error::Error>() -> u64 {
+/// fn func<E: std::error::Error + 'static + Send + Sync>() -> u64 {
 ///     let x: Result<u64, E> = Ok(1);
 ///     let y = x.validated("my.pkg", "MyMessage", "my_field").unwrap();
 ///     y

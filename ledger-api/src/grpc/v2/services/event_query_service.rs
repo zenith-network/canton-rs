@@ -124,8 +124,6 @@ impl EventQueryServiceClient {
             })
             .await?;
 
-        // TODO: Remove this attribute when CantonError size issue is fixed
-        #[allow(clippy::result_large_err)]
         let created = response
             .created
             .map(|created| {
@@ -141,8 +139,6 @@ impl EventQueryServiceClient {
             })
             .transpose()?;
 
-        // TODO: Remove this attribute when CantonError size issue is fixed
-        #[allow(clippy::result_large_err)]
         let archived = response
             .archived
             .map(|archived| {

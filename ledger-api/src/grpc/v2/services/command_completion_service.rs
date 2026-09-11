@@ -63,15 +63,15 @@ impl CommandCompletionServiceClient {
     /// # Parameters
     ///
     /// - `user_id` - Only completions of commands submitted with the same user_id will be visible
-    ///     in the stream. Required unless authentication is used with a user token. In that case,
-    ///     the token's user-id will be used for the request's user_id.
+    ///   in the stream. Required unless authentication is used with a user token. In that case,
+    ///   the token's user-id will be used for the request's user_id.
     /// - `parties` - Non-empty list of parties whose data should be included. The stream shows only
-    ///     completions of commands for which at least one of the `act_as` parties is in the given
-    ///     set of parties.
+    ///   completions of commands for which at least one of the `act_as` parties is in the given
+    ///   set of parties.
     /// - `begin_exclusive` - This field indicates the minimum offset for completions. This can be
-    ///     used to resume an earlier completion stream. It must be a valid absolute offset
-    ///     (positive integer) or zero (ledger begin offset). If the ledger has been pruned, this
-    ///     parameter must be specified and greater than the pruning offset.
+    ///   used to resume an earlier completion stream. It must be a valid absolute offset
+    ///   (positive integer) or zero (ledger begin offset). If the ledger has been pruned, this
+    ///   parameter must be specified and greater than the pruning offset.
     pub async fn completion_stream(
         &mut self,
         user_id: Option<UserId>,
@@ -91,7 +91,9 @@ impl CommandCompletionServiceClient {
             })
             .await?;
 
-        // we don't retry on item erros, user is supposed to re-create the stream in that case
+        // we don't retry on item errors, user is supposed to re-create the stream in that case
+        // TODO: Remove this attribute when CantonError size issue is fixed
+        #[allow(clippy::result_large_err)]
         let convertor =
             |response: Result<CompletionStreamResponse, Status>| -> Result<CompletionResponse, CantonError> {
                 response

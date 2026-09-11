@@ -79,6 +79,8 @@ impl PackageServiceClient {
             })
             .await?;
 
+        // TODO: Remove this attribute when CantonError size issue is fixed
+        #[allow(clippy::result_large_err)]
         response
             .package_ids
             .into_iter()

@@ -125,7 +125,9 @@ impl CantonRetryPolicy {
                 retry_policy.success();
             }
             CantonRetryPolicy::Auto(retry_limitation) => {
-                retry_limitation.as_ref().map(|lim| lim.deposit());
+                if let Some(lim) = retry_limitation {
+                    lim.deposit()
+                }
             }
         }
     }
@@ -178,14 +180,12 @@ impl RetryConfig {
             CantonError::Decoded(error) => self
                 .canton
                 .as_mut()
-                .map(|policy| Self::retry_canton_grpc(error, policy, attempt))
-                .flatten(),
+                .and_then(|policy| Self::retry_canton_grpc(error, policy, attempt)),
 
             CantonError::Raw(status) => self
                 .network
                 .as_mut()
-                .map(|policy| Self::retry_network(status, policy, attempt))
-                .flatten(),
+                .and_then(|policy| Self::retry_network(status, policy, attempt)),
 
             // We consider all redacted errors as non retryable now.
             // Although it's not strictly enforced anywhere, there is no reasonable way to perform

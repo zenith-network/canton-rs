@@ -11,7 +11,7 @@ pub mod package_generator;
 
 pub fn dotted_name_to_owned<'a>(name: &DottedName<'a>) -> OwnedDottedName {
     NonEmpty {
-        base: name.base().into_iter().map(|s| s.to_string()).collect(),
+        base: name.base().iter().map(|s| s.to_string()).collect(),
         tail: name.tail().to_owned(),
     }
 }

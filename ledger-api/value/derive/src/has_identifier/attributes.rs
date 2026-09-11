@@ -94,7 +94,7 @@ impl IdentifierAttributes {
         let package_id = package_id_attr.ok_or_else(|| {
             Error::new(
                 attr.map(|attr| attr.meta.span())
-                    .unwrap_or_else(|| Span::call_site()),
+                    .unwrap_or_else(Span::call_site),
                 "package_id is not specified",
             )
         })?;
@@ -102,7 +102,7 @@ impl IdentifierAttributes {
         let package_name = package_name_attr.ok_or_else(|| {
             Error::new(
                 attr.map(|attr| attr.meta.span())
-                    .unwrap_or_else(|| Span::call_site()),
+                    .unwrap_or_else(Span::call_site),
                 "package_name is not specified",
             )
         })?;
@@ -110,7 +110,7 @@ impl IdentifierAttributes {
         let module_name = module_name_attr.ok_or_else(|| {
             Error::new(
                 attr.map(|attr| attr.meta.span())
-                    .unwrap_or_else(|| Span::call_site()),
+                    .unwrap_or_else(Span::call_site),
                 "module is not specified",
             )
         })?;

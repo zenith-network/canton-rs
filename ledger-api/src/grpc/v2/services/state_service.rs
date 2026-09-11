@@ -81,6 +81,8 @@ impl StateServiceClient {
             })
             .await?;
 
+        // TODO: Remove this attribute when CantonError size issue is fixed
+        #[allow(clippy::result_large_err)]
         let converter = |result: Result<GetActiveContractsResponse, Status>| {
             result
                 .map_err(CantonError::from)?

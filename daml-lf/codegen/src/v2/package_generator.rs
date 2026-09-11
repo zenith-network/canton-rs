@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    sync::Arc,
+    rc::Rc,
 };
 
 use canton_types::{NonEmpty, PackageId};
@@ -36,20 +36,23 @@ pub struct PackageGenerator<'a> {
     package_id: PackageId,
     package: SealedPackage<'a>,
     package_identifier: Ident,
-    package_identifiers: Arc<HashMap<PackageId, Ident>>,
-    external_paths: Arc<ExternalPaths>,
+    package_identifiers: Rc<HashMap<PackageId, Ident>>,
+    external_paths: Rc<ExternalPaths>,
     gen_set: PackageTypeSet,
     type_attributes: HashMap<NonEmpty<String>, HashMap<NonEmpty<String>, Vec<Attribute>>>,
 }
 
 impl<'a> PackageGenerator<'a> {
+    // TODO: For now we just allow this ugly constructor. But it would nice to make it better at
+    //       some point in the future.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         daml_lf_version: Version,
         package_id: PackageId,
         package: SealedPackage<'a>,
         package_identifier: Ident,
-        package_identifiers: Arc<HashMap<PackageId, Ident>>,
-        external_paths: Arc<ExternalPaths>,
+        package_identifiers: Rc<HashMap<PackageId, Ident>>,
+        external_paths: Rc<ExternalPaths>,
         gen_set: PackageTypeSet,
         type_attributes: HashMap<NonEmpty<String>, HashMap<NonEmpty<String>, Vec<Attribute>>>,
     ) -> Self {
@@ -96,8 +99,8 @@ impl<'a> PackageGenerator<'a> {
             let module = modules[module_name];
 
             let rmodule = ModuleGenerator::new(
-                self.package_identifiers.clone(),
-                self.external_paths.clone(),
+                Rc::clone(&self.package_identifiers),
+                Rc::clone(&self.external_paths),
                 module,
                 module_gen_set.clone(),
                 mtype_attrs,

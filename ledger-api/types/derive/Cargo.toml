@@ -12,4 +12,4 @@ canton-paths.workspace = true
 canton-types.workspace = true
 proc-macro2.workspace = true
 quote.workspace = true
-syn = { workspace = true, features = ["full"] }
+syn = { workspace = true, features = ["full", "parsing", "proc-macro"] }

@@ -11,11 +11,15 @@ pub struct UpdateFormat<S: TxShape = TransactionShape> {
 
 impl<S: TxShape> UpdateFormat<S> {
     pub fn new() -> Self {
-        Self { include_transactions: None, include_reassignments: None, include_topology_events:None }
+        Self {
+            include_transactions: None,
+            include_reassignments: None,
+            include_topology_events: None,
+        }
     }
 
     pub fn include_transaction(mut self, tx_format: TransactionFormat<S>) -> Self {
-        self.include_transactions =  Some(tx_format);
+        self.include_transactions = Some(tx_format);
         self
     }
 }

@@ -259,8 +259,8 @@ fn package_name_and_version<'a>(package: &SealedPackage<'a>) -> (&'a str, &'a st
 }
 
 fn parse_dotted_name(kind: &'static str, input: &str) -> Result<NonEmpty<String>, ConfigError> {
-    let dotted_name = DottedName::parse(input)
-        .map_err(|source| TypeAttrError::invalid(kind, input, source))?;
+    let dotted_name =
+        DottedName::parse(input).map_err(|source| TypeAttrError::invalid(kind, input, source))?;
     let segments = dotted_name.segments();
     Ok(NonEmpty {
         base: segments.base.iter().map(ToString::to_string).collect(),

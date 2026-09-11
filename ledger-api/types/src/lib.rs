@@ -5,5 +5,5 @@ pub mod v2;
 
 // Re-export because types from these crates are in public API
 pub use canton_types;
-pub use nonempty;
 pub use ledger_api_value as value;
+pub use nonempty;

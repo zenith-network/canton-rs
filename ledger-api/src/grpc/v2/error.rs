@@ -162,9 +162,6 @@ pub struct DamlFailure {
 
 impl DamlFailure {
     /// On error returns original `decoded` error value
-    // TODO: For now just allow large error variant. We need to work on optimizing it anyway in the
-    //       future (Box-ing the entire thing probably) anyway. This attribute may be removed after.
-    #[allow(clippy::result_large_err)]
     pub fn from_decoded(decoded: DecodedCantonError) -> Result<Self, DecodedCantonError> {
         if matches!(decoded.error_code_id, ErrorCodeId::DamlFailure) {
             let DecodedCantonError {

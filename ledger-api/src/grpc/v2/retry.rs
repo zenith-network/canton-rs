@@ -187,6 +187,15 @@ impl RetryConfig {
                 .map(|policy| Self::retry_network(status, policy, attempt))
                 .flatten(),
 
+            // We consider all redacted errors as non retryable now.
+            // Although it's not strictly enforced anywhere, there is no reasonable way to perform
+            // an automatic retry in this case now.
+            CantonError::Redacted(_) => None,
+
+            // Daml interpretation errors (being a special case of decoded errors) are always
+            // considered non-retryable
+            CantonError::Daml(_) => None,
+
             // This one is always non retryable
             CantonError::ValueError(_) => None,
         }

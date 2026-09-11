@@ -26,14 +26,15 @@ pub(crate) type InterceptedService =
 /// Builder for constructing a [`CantonClient`] with TLS and authentication.
 ///
 /// # Example
-/// ```no_run
-/// # async fn example() -> ledger_api::grpc::error::Result<()> {
-/// # use ledger_api::grpc::CantonClientBuilder;
+///
+/// ```rust,no_run
+/// # async fn example() {
+/// # use ledger_api::grpc::v2::client::CantonClientBuilder;
 /// let client = CantonClientBuilder::new("https://localhost:5001")
 ///     .with_token("my-jwt-token")
 ///     .connect()
-///     .await?;
-/// # Ok(())
+///     .await
+///     .unwrap();
 /// # }
 /// ```
 pub struct CantonClientBuilder {

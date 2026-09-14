@@ -7,6 +7,8 @@ mod state_service;
 mod update_service;
 mod version_service;
 
+pub mod admin;
+
 pub use command_completion_service::{CommandCompletionServiceClient, CompletionResponse};
 pub use command_service::{CommandServiceClient, UpdateIdAndOffset};
 pub use command_submission_service::CommandSubmissionServiceClient;

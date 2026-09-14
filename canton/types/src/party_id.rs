@@ -19,10 +19,13 @@ const fn is_valid(c: char) -> bool {
 pub struct PartyId(String);
 
 impl PartyId {
-    /// Create a new party ID.
-    ///
-    /// Return error if provided value is not a valid `Party`.
-    pub fn new(value: String) -> Result<Self, PartyIdError> {
+    /// Create a new party ID without validating the input.
+    pub fn new_unchecked(value: String) -> Self {
+        Self(value)
+    }
+
+    /// Return error if input is not a valid party ID.
+    pub fn validate(value: &str) -> Result<(), PartyIdError> {
         if value.is_empty() {
             return Err(PartyIdError {
                 kind: ErrorKind::Empty,
@@ -42,7 +45,15 @@ impl PartyId {
             }
         }
 
-        Ok(Self(value))
+        Ok(())
+    }
+
+    /// Create a new party ID.
+    ///
+    /// Return error if provided value is not a valid `Party`.
+    pub fn new(value: String) -> Result<Self, PartyIdError> {
+        Self::validate(&value)?;
+        Ok(Self::new_unchecked(value))
     }
 
     /// Returns a byte slice of this `Party`'s contents.

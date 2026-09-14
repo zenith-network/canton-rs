@@ -1,0 +1,4 @@
+[workspace]
+members = ["runner", "suite"]
+default-members = ["runner"]
+resolver = "3"

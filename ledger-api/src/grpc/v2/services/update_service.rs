@@ -5,8 +5,8 @@ use ledger_api_proto::com::daml::ledger::api::v2::{
 use ledger_api_types::{
     canton_types::LedgerString,
     v2::{
-        Empty, OffsetCheckpoint, Page, PageToken, Reassignment, Transaction, TxShape, Update,
-        UpdateFormat,
+        Empty, OffsetCheckpoint, Page, PageToken, Reassignment, TopologyTransaction, Transaction,
+        TxShape, Update, UpdateFormat,
     },
     value::v2::errors::IntoValueError,
 };
@@ -20,14 +20,13 @@ use crate::grpc::v2::{
     retry::{RetryConfig, RetryHandler},
 };
 
-// FIXME: add topology tx type
 /// Update type of [`UpdateServiceClient::get_updates()`]
 pub type StreamingUpdate<S> =
-    Update<Transaction<<S as TxShape>::Event>, Reassignment, OffsetCheckpoint, Empty>;
+    Update<Transaction<<S as TxShape>::Event>, Reassignment, OffsetCheckpoint, TopologyTransaction>;
 
-// FIXME: add topology tx type
 /// Update type for other methods
-pub type SingleUpdate<S> = Update<Transaction<<S as TxShape>::Event>, Reassignment, Empty, Empty>;
+pub type SingleUpdate<S> =
+    Update<Transaction<<S as TxShape>::Event>, Reassignment, Empty, TopologyTransaction>;
 
 /// Wrapped for [`svc_proto::UpdateServiceClient`]
 #[derive(Clone, Debug)]

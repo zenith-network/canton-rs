@@ -18,3 +18,6 @@ pub use ledger_api;
 
 #[cfg(feature = "dpm-build")]
 pub use dpm_build;
+
+#[cfg(feature = "admin-api")]
+pub use admin_api;

@@ -9,7 +9,7 @@ use crate::grpc::v2::{
     retry::{RetryConfig, RetryHandler},
     services::{
         CommandServiceClient, PackageServiceClient, StateServiceClient, UpdateServiceClient,
-        VersionServiceClient,
+        VersionServiceClient, admin::PartyManagementServiceClient,
     },
 };
 
@@ -235,6 +235,17 @@ impl CantonClient {
     pub fn version(&self) -> VersionServiceClient {
         VersionServiceClient::new(
             proto::version_service_client::VersionServiceClient::with_interceptor(
+                self.channel.clone(),
+                self.interceptor.clone(),
+            )
+            .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
+        )
+    }
+
+    pub fn party_management(&self) -> PartyManagementServiceClient {
+        PartyManagementServiceClient::new(
+            proto::admin::party_management_service_client::PartyManagementServiceClient::with_interceptor(
                 self.channel.clone(),
                 self.interceptor.clone(),
             )

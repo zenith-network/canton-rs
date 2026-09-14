@@ -5,28 +5,32 @@ edition.workspace = true
 license.workspace = true
 
 [features]
-default = ["v2"]
+default = ["std", "client", "transport", "v2"]
+
+# Enables tonic client generation
+client = ["std", "dep:tonic", "dep:tonic-prost"]
+
+# Enables tonic server generation
+server = ["std", "dep:tonic", "dep:tonic-prost"]
+
+transport = ["client", "tonic/channel"]
+
+# Enables std support
+std = ["prost/std", "prost-types/std", "ledger-api-value-proto/std"]
+
+# Enables Ledger API v2
 v2 = ["ledger-api-value-proto/v2"]
-v2-admin = ["v2"]
-v2-interactive = ["v2"]
-v2-transaction = ["v2-interactive"]
-v2-transaction-v1 = ["v2-transaction"]
+
+# Small optional testing unit
 v2-testing = ["v2"]
-v2-full = [
-  "v2-admin",
-  "v2-interactive",
-  "v2-transaction",
-  "v2-transaction-v1",
-  "v2-testing",
-]
 
 [dependencies]
 ledger-api-value-proto.workspace = true
-prost.workspace = true
-prost-types = { workspace = true, features = ["std"] }
-thiserror = { workspace = true, optional = true }
-tonic = { workspace = true, features = ["codegen", "transport"] }
-tonic-prost.workspace = true
+prost = { workspace = true, features = ["derive"] }
+prost-types.workspace = true
+tonic = { workspace = true, features = ["codegen"], optional = true }
+tonic-prost = { workspace = true, optional = true }
 
 [build-dependencies]
+glob.workspace = true
 tonic-prost-build = { workspace = true, features = ["transport"] }

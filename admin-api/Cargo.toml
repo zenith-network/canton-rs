@@ -1,0 +1,22 @@
+[package]
+name = "admin-api"
+version = "0.1.0"
+description = "Admin API client implementation"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["v30"]
+v30 = ["canton-proto/v30", "admin-api-types/v30"]
+
+[dependencies]
+admin-api-types.workspace = true
+canton-proto.workspace = true
+canton-types.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+tonic = { workspace = true, features = [
+  "channel",
+  "tls-ring",
+  "tls-webpki-roots",
+] }

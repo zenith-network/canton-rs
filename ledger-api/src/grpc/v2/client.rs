@@ -1,18 +1,21 @@
-use std::{mem, time::Duration};
+use std::{mem, sync::Arc, time::Duration};
 
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
+use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 
 use crate::grpc::v2::{
     auth::AuthInterceptor,
+    error::CantonError,
     error::ClientBuildError,
     retry::{RetryConfig, RetryHandler},
     services::{
-        CommandServiceClient, PackageServiceClient, StateServiceClient, UpdateServiceClient,
-        VersionServiceClient,
+        ApiVersion, CommandServiceClient, PackageServiceClient, StateServiceClient,
+        UpdateServiceClient, VersionServiceClient, admin::PartyManagementServiceClient,
     },
 };
 
+#[cfg(feature = "_tls-any")]
 pub use tonic::transport::ClientTlsConfig;
 
 #[cfg(not(feature = "tracing"))]
@@ -39,6 +42,7 @@ pub(crate) type InterceptedService =
 /// ```
 pub struct CantonClientBuilder {
     endpoint: String,
+    #[cfg(feature = "_tls-any")]
     tls_config: Option<ClientTlsConfig>,
     token: Option<String>,
     max_decoding_message_size: Option<usize>,
@@ -51,6 +55,7 @@ impl CantonClientBuilder {
     pub fn new(endpoint: impl Into<String>) -> Self {
         Self {
             endpoint: endpoint.into(),
+            #[cfg(feature = "_tls-any")]
             tls_config: None,
             token: None,
             max_decoding_message_size: None,
@@ -60,6 +65,7 @@ impl CantonClientBuilder {
         }
     }
 
+    #[cfg(feature = "_tls-any")]
     pub fn with_tls(mut self, config: ClientTlsConfig) -> Self {
         self.tls_config = Some(config);
         self
@@ -118,11 +124,13 @@ impl CantonClientBuilder {
     }
 
     fn build_endpoint(&mut self) -> Result<Endpoint, ClientBuildError> {
+        #[allow(unused_mut, reason = "Avoid warning when TLS is not enabled")]
         let mut endpoint = Endpoint::from_shared(mem::take(&mut self.endpoint))?
             .http2_keep_alive_interval(self.http2_keep_alive_interval)
             .keep_alive_timeout(self.keep_alive_timeout)
             .keep_alive_while_idle(true);
 
+        #[cfg(feature = "_tls-any")]
         if let Some(tls) = self.tls_config.take() {
             endpoint = endpoint.tls_config(tls)?;
         }
@@ -145,6 +153,7 @@ impl CantonClientBuilder {
             interceptor,
             max_decoding_message_size,
             retry_handler: self.retry_config.into_handler(),
+            server_caps: Arc::new(RwLock::new(None)),
         }
     }
 }
@@ -156,6 +165,7 @@ pub struct CantonClient {
     interceptor: AuthInterceptor,
     max_decoding_message_size: usize,
     retry_handler: RetryHandler,
+    server_caps: Arc<RwLock<Option<ApiVersion>>>,
 }
 
 impl CantonClient {
@@ -186,6 +196,42 @@ impl CantonClient {
     /// Reference to the retry configuration of the client
     pub fn retry_config(&self) -> &RetryConfig {
         self.retry_handler.config()
+    }
+
+    /// Resolve server version and enabled features through [`VersionService`] and cache these
+    /// results inside the client.
+    ///
+    /// An error will be returned, if the server version is not compatible with client version
+    /// (see [`supported_versions()`][crate::supported_versions()]).
+    ///
+    /// Cached results are shared among all copies of the client. Client will remember these values
+    /// and respect them in the future.
+    ///
+    /// By default, if the version wasn't resolved, client treats all services as available.
+    ///
+    /// Note that during client lifetime the server may change its capabilities (e.g. it may be
+    /// upgraded to a newer version). The client cannot detect these situations automatically,
+    /// because the underlying channel could be silently re-created. Given that, in your application
+    /// it might be a good idea to run this resolution periodically, thus making error messages more
+    /// precise.
+    pub async fn resolve_server_capabilities(&self) -> Result<(), CantonError> {
+        let api_version = self.version().get_ledger_api_version().await?;
+
+        if !crate::is_supported_version(&api_version.version) {
+            return Err(CantonError::UnsupportedApiVersion {
+                server_version: api_version.version.clone(),
+            });
+        }
+
+        #[cfg(feature = "tracing")]
+        {
+            tracing::debug!(version = %api_version.version, "Resolved Ledger API version");
+            tracing::debug!(features = ?api_version.features, "Resolved Ledger API features");
+        }
+
+        let mut server_caps = self.server_caps.write().await;
+        *server_caps = Some(api_version);
+        Ok(())
     }
 
     pub fn command(&self) -> CommandServiceClient {
@@ -221,7 +267,18 @@ impl CantonClient {
         )
     }
 
-    pub fn package(&self) -> PackageServiceClient {
+    pub async fn package(&self) -> PackageServiceClient {
+        let max_vetted_packages_page_size =
+            if let Some(api_version) = self.server_caps.read().await.as_ref() {
+                Some(
+                    api_version
+                        .features
+                        .package_feature
+                        .max_vetted_packages_page_size,
+                )
+            } else {
+                None
+            };
         PackageServiceClient::new(
             proto::package_service_client::PackageServiceClient::with_interceptor(
                 self.channel.clone(),
@@ -229,6 +286,7 @@ impl CantonClient {
             )
             .max_decoding_message_size(self.max_decoding_message_size),
             self.retry_handler.clone(),
+            max_vetted_packages_page_size,
         )
     }
 
@@ -240,6 +298,24 @@ impl CantonClient {
             )
             .max_decoding_message_size(self.max_decoding_message_size),
             self.retry_handler.clone(),
+        )
+    }
+
+    pub async fn party_management(&self) -> PartyManagementServiceClient {
+        let max_parties_page_size =
+            if let Some(api_version) = self.server_caps.read().await.as_ref() {
+                Some(api_version.features.party_management.max_parties_page_size)
+            } else {
+                None
+            };
+        PartyManagementServiceClient::new(
+            proto::admin::party_management_service_client::PartyManagementServiceClient::with_interceptor(
+                self.channel.clone(),
+                self.interceptor.clone(),
+            )
+            .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
+            max_parties_page_size,
         )
     }
 }

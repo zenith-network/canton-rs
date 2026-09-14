@@ -1,3 +1,4 @@
+use canton_version::semver::Version;
 use ledger_api_proto::com::daml::ledger::api::v2::{
     GetLedgerApiVersionRequest, GetLedgerApiVersionResponse, version_service_client as svc_proto,
 };
@@ -53,7 +54,7 @@ impl VersionServiceClient {
 
 #[derive(Clone, Debug)]
 pub struct ApiVersion {
-    pub version: String,
+    pub version: Version,
     pub features: FeaturesDescriptor,
 }
 
@@ -62,7 +63,9 @@ impl TryFrom<GetLedgerApiVersionResponse> for ApiVersion {
 
     fn try_from(value: GetLedgerApiVersionResponse) -> Result<Self, Self::Error> {
         Ok(Self {
-            version: value.version,
+            version: Version::parse(&value.version)
+                .validated_of::<GetLedgerApiVersionResponse>("version")
+                .with_msg("expected a SemVer-compatible version")?,
             features: value
                 .features
                 .required_of::<GetLedgerApiVersionResponse>("features")

@@ -1,8 +1,13 @@
 [workspace]
 members = [
+  "admin-api",
+  "admin-api/proto",
+  "admin-api/types",
   "canton",
+  "canton/proto",
   "canton/types",
   "canton/types/derive",
+  "canton/version",
   "canton-paths",
   "daml-lf",
   "daml-lf/archive-proto",
@@ -31,6 +36,7 @@ clap = "4.6.1"
 criterion = { version = "0.8.2", default-features = false }
 derive_more = { version = "2.1.1", default-features = false }
 frunk = "0.5.0"
+glob = "0.3.4"
 heck = "0.5.0"
 hex = { version = "0.4.3", default-features = false }
 http = { version = "1.5.0", default-features = false }
@@ -43,6 +49,7 @@ prost-build = { version = "0.14.3", default-features = false }
 prost-types = { version = "0.14.3", default-features = false }
 quote = "1.0.45"
 rstest = { version = "0.26.1", default-features = false }
+semver = "1.0.28"
 serde = { version = "1.0.228", default-features = false }
 serde_json = { version = "1.0.150", default-features = false }
 sha2 = { version = "0.11.0", default-features = false }
@@ -72,8 +79,15 @@ zip = { version = "8.6.0", default-features = false }
 # Common Canton crates
 canton = { path = "canton", default-features = false }
 canton-paths = { path = "canton-paths" }
+canton-proto = { path = "canton/proto", default-features = false }
 canton-types = { path = "canton/types", default-features = false }
 canton-types-derive = { path = "canton/types/derive", default-features = false }
+canton-version = { path = "canton/version" }
+
+# Admin API crates
+admin-api = { path = "admin-api", default-features = false }
+admin-api-proto = { path = "admin-api/proto", default-features = false }
+admin-api-types = { path = "admin-api/types", default-features = false }
 
 # Ledger API crates
 ledger-api = { path = "ledger-api", default-features = false }

@@ -196,8 +196,8 @@ impl RetryConfig {
             // considered non-retryable
             CantonError::Daml(_) => None,
 
-            // This one is always non retryable
-            CantonError::ValueError(_) => None,
+            // Always non retryable
+            CantonError::ValueError(_) | CantonError::UnsupportedApiVersion { .. } => None,
         }
     }
 

@@ -1,0 +1,26 @@
+-- | Fixture of `transitive_deps` (src/generator.rs tests): a choice argument record
+-- (always in the template's module) whose fields reach types of this and another
+-- module only transitively.
+module Fixture.Main where
+
+import Fixture.Wire (Outer, Tree)
+
+data LocalLeaf = LocalLeaf with value : Int
+  deriving (Eq, Show)
+
+data LocalRecord = LocalRecord with leaf : LocalLeaf
+  deriving (Eq, Show)
+
+template Holder
+  with
+    owner : Party
+  where
+    signatory owner
+
+    choice Holder_Go : ()
+      with
+        outer : Outer
+        tree : Tree
+        local : LocalRecord
+      controller owner
+      do pure ()

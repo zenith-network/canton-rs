@@ -1,0 +1,7 @@
+sdk-version: 3.6.1-snapshot.20260903.34.0.v027a1da5
+name: transitive-deps
+version: 0.1.0
+source: daml
+dependencies:
+  - daml-prim
+  - daml-stdlib

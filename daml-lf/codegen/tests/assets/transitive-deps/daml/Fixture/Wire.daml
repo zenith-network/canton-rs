@@ -1,0 +1,21 @@
+-- | Types reachable from `Fixture.Main` only through other records of this module.
+module Fixture.Wire where
+
+data Kind = KindA | KindB
+  deriving (Eq, Show)
+
+data Leaf = Leaf with value : Int
+  deriving (Eq, Show)
+
+data Inner = Inner with kind : Kind; leaf : Leaf
+  deriving (Eq, Show)
+
+data Outer = Outer with inner : Inner
+  deriving (Eq, Show)
+
+-- | A recursive pair: the traversal must terminate.
+data Tree = Tree with label : Int; forests : [Forest]
+  deriving (Eq, Show)
+
+data Forest = Forest with trees : [Tree]
+  deriving (Eq, Show)

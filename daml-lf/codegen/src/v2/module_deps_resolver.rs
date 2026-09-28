@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 // FIXME: remove after local dep matrix is used. Just suppressing the warning for now.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use canton_types::PackageId;
 use daml_lf::v2::sealed::{
@@ -140,32 +140,57 @@ impl<'a> ModuleDepsResolver<'a> {
 
     /// Find all dependencies of the local type with given name (recursive search)
     pub fn find_deps(&self, name: &OwnedDottedName) -> Deps {
+        let mut visited = HashSet::from([name.clone()]);
+        self.find_deps_visiting(name, &mut visited)
+    }
+
+    pub fn find_deps_from_fields(&self, fields: Fields<'a>) -> Deps {
+        self.find_deps_from_fields_visiting(fields, &mut HashSet::new())
+    }
+
+    /// Find all dependencies of a type (recursive search)
+    pub fn find_deps_from_type(&self, type_: Type<'a>) -> Deps {
+        self.find_deps_from_type_visiting(type_, &mut HashSet::new())
+    }
+
+    /// `visited` holds the local types whose fields were already searched, so that
+    /// types of the same module are followed transitively and recursive types terminate.
+    fn find_deps_visiting(
+        &self,
+        name: &OwnedDottedName,
+        visited: &mut HashSet<OwnedDottedName>,
+    ) -> Deps {
         let dt = self.local_types[name];
         match dt.data_cons() {
-            DataCons::Record(fields) => self.find_deps_from_fields(fields),
-            DataCons::Variant(fields) => self.find_deps_from_fields(fields),
+            DataCons::Record(fields) => self.find_deps_from_fields_visiting(fields, visited),
+            DataCons::Variant(fields) => self.find_deps_from_fields_visiting(fields, visited),
             _ => Deps::new(),
         }
     }
 
-    pub fn find_deps_from_fields(&self, fields: Fields<'a>) -> Deps {
+    fn find_deps_from_fields_visiting(
+        &self,
+        fields: Fields<'a>,
+        visited: &mut HashSet<OwnedDottedName>,
+    ) -> Deps {
         let mut ret = Deps::new();
         for field in fields.fields() {
-            ret.extend(self.find_deps_from_type(field.type_()));
+            ret.extend(self.find_deps_from_type_visiting(field.type_(), visited));
         }
         ret
     }
 
-    pub fn find_deps_from_type(&self, type_: Type<'a>) -> Deps {
+    fn find_deps_from_type_visiting(
+        &self,
+        type_: Type<'a>,
+        visited: &mut HashSet<OwnedDottedName>,
+    ) -> Deps {
         let mut deps = Deps::new();
         match type_ {
             Type::Var(var) => {
-                deps.extend(
-                    var.args()
-                        .into_iter()
-                        .map(|t| self.find_deps_from_type(t))
-                        .collect(),
-                );
+                for t in var.args() {
+                    deps.extend(self.find_deps_from_type_visiting(t, visited));
+                }
             }
             Type::Con(con) => {
                 let type_con_id = con.tycon();
@@ -177,6 +202,10 @@ impl<'a> ModuleDepsResolver<'a> {
                 match package_id {
                     SelfOrImportedPackageId::SelfPackageId => {
                         if module_name == self.module_name {
+                            // A type of this module needs everything its own fields need.
+                            if visited.insert(type_name.clone()) {
+                                deps.extend(self.find_deps_visiting(&type_name, visited));
+                            }
                             deps.direct.as_mut().insert(type_name);
                         } else {
                             // Recursive search for mentioned module
@@ -216,26 +245,19 @@ impl<'a> ModuleDepsResolver<'a> {
                     }
                 }
 
-                deps.extend(
-                    con.args()
-                        .into_iter()
-                        .map(|t| self.find_deps_from_type(t))
-                        .collect(),
-                );
+                for t in con.args() {
+                    deps.extend(self.find_deps_from_type_visiting(t, visited));
+                }
             }
             Type::Builtin(builtin) => {
-                deps.extend(
-                    builtin
-                        .args()
-                        .into_iter()
-                        .map(|t| self.find_deps_from_type(t))
-                        .collect(),
-                );
+                for t in builtin.args() {
+                    deps.extend(self.find_deps_from_type_visiting(t, visited));
+                }
             }
             Type::Nat => {}
             Type::Tapp(tapp) => {
-                deps.extend(self.find_deps_from_type(tapp.lhs()));
-                deps.extend(self.find_deps_from_type(tapp.rhs()));
+                deps.extend(self.find_deps_from_type_visiting(tapp.lhs(), visited));
+                deps.extend(self.find_deps_from_type_visiting(tapp.rhs(), visited));
             }
         }
         deps

@@ -12,6 +12,7 @@ mod package_identifier;
 mod package_name;
 mod party_id;
 mod synchronizer_id;
+mod time;
 mod traits;
 mod user_id;
 
@@ -30,6 +31,7 @@ pub use package_identifier::PackageIdentifier;
 pub use package_name::PackageName;
 pub use party_id::PartyId;
 pub use synchronizer_id::SynchronizerId;
+pub use time::{Date, Timestamp};
 pub use traits::{Choice, Template, TemplateWithKey};
 pub use user_id::UserId;
 

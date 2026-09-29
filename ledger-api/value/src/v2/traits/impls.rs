@@ -113,6 +113,52 @@ impl TryFromValue for String {
 
 impl Value for String {}
 
+// Timestamp and Date
+
+impl IntoValue for canton_types::Timestamp {
+    fn into_value(self) -> value::Value {
+        value::Value::Timestamp(self.0)
+    }
+}
+
+impl TryFromValue for canton_types::Timestamp {
+    type Error = ValueKindError;
+
+    fn try_from_value(value: value::Value) -> Result<Self, Self::Error> {
+        match value {
+            value::Value::Timestamp(micros) => Ok(Self(micros)),
+            other => Err(ValueKindError {
+                expected: value::ValueKind::Timestamp,
+                got: other.kind(),
+            }),
+        }
+    }
+}
+
+impl Value for canton_types::Timestamp {}
+
+impl IntoValue for canton_types::Date {
+    fn into_value(self) -> value::Value {
+        value::Value::Date(self.0)
+    }
+}
+
+impl TryFromValue for canton_types::Date {
+    type Error = ValueKindError;
+
+    fn try_from_value(value: value::Value) -> Result<Self, Self::Error> {
+        match value {
+            value::Value::Date(days) => Ok(Self(days)),
+            other => Err(ValueKindError {
+                expected: value::ValueKind::Date,
+                got: other.kind(),
+            }),
+        }
+    }
+}
+
+impl Value for canton_types::Date {}
+
 // tuples
 
 // (T1, T2)

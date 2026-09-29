@@ -23,7 +23,7 @@ pub fn try_impl_value_enum(
         try_impl_value_unit_only_enum(item_attrs, ident, generics, de)
     } else {
         // This is a Variant in Daml LF
-        todo!("non-unit enums are not suppoted yet")
+        try_impl_value_variant(item_attrs, ident, generics, de)
     }
 }
 
@@ -111,6 +111,114 @@ fn try_impl_value_unit_only_enum(
                 let constructor = enum_.constructor.as_str();
 
                 match constructor {
+                    #(#from_match_arms),*
+                }
+            }
+        }
+
+        #[automatically_derived]
+        impl #impl_generics #value_trait for #ident #ty_generics #where_clause {}
+    })
+}
+
+/// A Daml LF variant: every constructor carries exactly one payload value (the
+/// codegen emits `()` for a constructor without data).
+fn try_impl_value_variant(
+    item_attrs: &ItemAttributes,
+    ident: &Ident,
+    generics: &Generics,
+    de: &DataEnum,
+) -> Result<TokenStream, Error> {
+    let types = item_attrs.paths().types();
+    let into_value_trait = item_attrs.paths().into_value_trait();
+    let try_from_value_trait = item_attrs.paths().try_from_value_trait();
+    let value_trait = item_attrs.paths().value_trait();
+    let value_v2 = item_attrs.paths().value_v2();
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let mut into_match_arms = Vec::new();
+    let mut from_match_arms = Vec::new();
+    for variant in &de.variants {
+        let variant_ident = &variant.ident;
+        let payload_ty = match &variant.fields {
+            Fields::Unnamed(fields) if fields.unnamed.len() == 1 => &fields.unnamed[0].ty,
+            _ => {
+                return Err(Error::new_spanned(
+                    variant,
+                    "a Daml variant constructor must carry exactly one unnamed payload \
+                     (use `()` for a constructor without data)",
+                ));
+            }
+        };
+        let attrs = MemberAttributes::parse(&variant.attrs)?;
+        let name = if let Some(attr) = attrs.name() {
+            match attr {
+                Attr::Fixed { attr, span } => {
+                    let span = *span;
+                    let name = attr.as_str();
+                    quote_spanned!(span=> #name)
+                }
+                Attr::Expr(expr) => quote! { #expr },
+            }
+        } else {
+            let span = variant_ident.span();
+            let ident_str = variant_ident.to_string();
+            quote_spanned!(span=> #ident_str)
+        };
+
+        into_match_arms.push(quote! {
+            Self::#variant_ident(payload) => (
+                #types::Name::new_static_unchecked(#name),
+                #into_value_trait::into_value(payload),
+            )
+        });
+        from_match_arms.push(quote! {
+            #name => Ok(Self::#variant_ident(
+                <#payload_ty as #try_from_value_trait>::try_from_value(variant.value)
+                    .map_err(|e| TryFromVariantError::PayloadError(Box::new(e)))?,
+            ))
+        });
+    }
+    from_match_arms.push(quote! { t => Err(UnexpectedConstructorName::new(t.to_string()).into()) });
+
+    Ok(quote! {
+        #[automatically_derived]
+        impl #impl_generics #into_value_trait for #ident #ty_generics #where_clause {
+            fn into_value(self) -> #value_v2::value::Value {
+                use #value_v2::HasIdentifier;
+                let (constructor, value) = match self {
+                    #(#into_match_arms),*
+                };
+                #value_v2::value::Value::Variant(Box::new(#value_v2::value::Variant {
+                    variant_id: Some(<Self as HasIdentifier>::identifier_with_package_id()),
+                    constructor,
+                    value,
+                }))
+            }
+        }
+
+        #[automatically_derived]
+        impl #impl_generics #try_from_value_trait for #ident #ty_generics #where_clause {
+            type Error = #value_v2::errors::TryFromVariantError;
+
+            #[allow(unused_imports)]
+            fn try_from_value(value: #value_v2::value::Value) -> Result<Self, Self::Error> {
+                use #value_v2::HasIdentifier;
+                use #value_v2::errors::{TryFromVariantError, UnexpectedIdentifier, UnexpectedConstructorName};
+
+                let variant = value.into_variant()?;
+
+                if let Some(variant_id) = &variant.variant_id {
+                    let expected = <Self as HasIdentifier>::identifier_with_package_id();
+                    if *variant_id != expected {
+                        return Err(
+                            UnexpectedIdentifier::new(expected.to_string(), variant_id.to_string()).into(),
+                        );
+                    }
+                }
+
+                match variant.constructor.as_str() {
                     #(#from_match_arms),*
                 }
             }

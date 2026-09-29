@@ -125,6 +125,19 @@ pub enum TryFromEnumError {
     UnexpectedConstructorName(#[from] UnexpectedConstructorName),
 }
 
+/// Error on converting a Daml variant value into a Rust enum with payloads
+#[derive(Debug, thiserror::Error)]
+pub enum TryFromVariantError {
+    #[error(transparent)]
+    ValueKindError(#[from] ValueKindError),
+    #[error(transparent)]
+    UnexpectedIdentifier(#[from] UnexpectedIdentifier),
+    #[error(transparent)]
+    UnexpectedConstructorName(#[from] UnexpectedConstructorName),
+    #[error("failed to convert the variant's payload")]
+    PayloadError(#[source] Box<dyn std::error::Error + 'static + Send + Sync>),
+}
+
 /// Error on converting record value to a tuple
 #[derive(Debug, thiserror::Error)]
 pub enum TupleFromRecordError {

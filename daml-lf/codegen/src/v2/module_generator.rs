@@ -188,12 +188,13 @@ impl<'a> ModuleGenerator<'a> {
 
     /// Generate Rust item (struct, enum, ...) declaration
     fn gen_item(&self, dt: DefDataType<'a>) -> Result<syn::Item, ModuleGenError> {
-        let name = dt.name();
-
-        if !name.base().is_empty() {
-            todo!("multi-segment name of a data type constructor: {dt:?}")
-        }
-        let name = name.tail();
+        // A record constructor of a variant (`data X = A with ...`) is its own type,
+        // named `X.A` in Daml LF: the identifier keeps the dotted name, the Rust type
+        // joins the segments.
+        let segments: Vec<&str> = dt.name().into_iter().collect();
+        let dotted = segments.join(".");
+        let name = dotted.as_str();
+        let rust_name = segments.join("_");
 
         let cons = dt.data_cons();
         let params = dt.params();
@@ -210,7 +211,7 @@ impl<'a> ModuleGenerator<'a> {
             "Entering data type deinition"
         );
 
-        let entity_id = ident::generate_camel_ident(name);
+        let entity_id = ident::generate_camel_ident(&rust_name);
         let attrs = self.gen_attrs(name, dt)?;
         let generics = self.gen_generic_params(params);
 
@@ -224,7 +225,18 @@ impl<'a> ModuleGenerator<'a> {
             DataCons::Enum(enum_ctrs) => self
                 .gen_unit_only_enum(entity_id, enum_ctrs, generics, attrs)
                 .map(Into::into),
-            DataCons::Interface => todo!("interfaces are not supported yet"),
+            // An interface appears in data only as `ContractId I`: a marker type that
+            // carries its identifier is all a binding needs.
+            DataCons::Interface => Ok(syn::ItemStruct {
+                attrs,
+                vis: Visibility::Public(Default::default()),
+                struct_token: Default::default(),
+                ident: entity_id,
+                generics,
+                fields: syn::Fields::Unit,
+                semi_token: Some(Default::default()),
+            }
+            .into()),
         }
     }
 
@@ -248,7 +260,7 @@ impl<'a> ModuleGenerator<'a> {
     /// ```
     fn gen_attrs(
         &self,
-        name: &'a str,
+        name: &str,
         dt: DefDataType<'a>,
     ) -> Result<Vec<syn::Attribute>, ModuleGenError> {
         let root = self.paths.root();
@@ -600,11 +612,7 @@ impl<'a> ModuleGenerator<'a> {
     fn gen_con(&self, con: Con<'a>) -> Result<syn::TypePath, ModuleGenError> {
         let tycon = con.tycon();
 
-        let name = tycon.name();
-        if !name.base().is_empty() {
-            todo!("multi-segment tycon name: {con:?}")
-        }
-        let name = name.tail();
+        let name = tycon.name().into_iter().collect::<Vec<_>>().join("_");
         trace!(name, "Generating type constructor");
 
         let args = con
@@ -634,7 +642,7 @@ impl<'a> ModuleGenerator<'a> {
 
         // TODO: ensure package with 'package_id' will be generated
 
-        let type_id = ident::generate_camel_ident(name);
+        let type_id = ident::generate_camel_ident(&name);
         let module_path = path::generate_module_path(module_name.iter());
 
         let mut tokens = quote! { #package_path::#module_path::#type_id };
@@ -655,8 +663,8 @@ impl<'a> ModuleGenerator<'a> {
             BuiltinType::Unit => quote! { () },
             BuiltinType::Bool => quote! { bool },
             BuiltinType::Int64 => quote! { i64 },
-            BuiltinType::Date => todo!(),
-            BuiltinType::Timestamp => todo!(),
+            BuiltinType::Date => quote! { #types::Date },
+            BuiltinType::Timestamp => quote! { #types::Timestamp },
             BuiltinType::Numeric => quote! { #types::Numeric },
             BuiltinType::Party => quote! { #types::PartyId },
             BuiltinType::Text => quote! { ::std::string::String },
@@ -720,7 +728,9 @@ impl<'a> ModuleGenerator<'a> {
                     args.len() <= 1,
                     "Textmap with type args greater than 1: {args:?}"
                 );
-                let mut tokens = quote! { ::std::collections::BTreeMap };
+                // A Ledger API text map, not a generic map: the encodings differ.
+                let value_v2 = self.paths.value_v2();
+                let mut tokens = quote! { #value_v2::value::TextMap };
                 if let Some(arg) = args.first().map(|arg| self.gen_type(*arg)).transpose()? {
                     tokens = quote! { #tokens<#arg> };
                 }

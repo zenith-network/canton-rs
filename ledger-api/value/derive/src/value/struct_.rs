@@ -162,7 +162,17 @@ fn try_from_record_impl(
                     }
                 }
 
-                let [#(#members1),*] = <[RecordField; #fields_count]>::try_from(record.fields)
+                // The Ledger API omits trailing `None` fields (upgrade normalization: a
+                // template or record may gain trailing `Optional` fields). Restore them as
+                // `None`; a missing field that is not `Optional` still fails to decode.
+                let mut fields = record.fields;
+                if fields.len() < #fields_count {
+                    fields.resize_with(#fields_count, || RecordField {
+                        label: None,
+                        value: #value_v2::value::Value::Optional(None),
+                    });
+                }
+                let [#(#members1),*] = <[RecordField; #fields_count]>::try_from(fields)
                     .map_err(|orig| UnexpectedRecordSize::new(#fields_count, orig.len()))?;
 
                 #(#labels_check)*

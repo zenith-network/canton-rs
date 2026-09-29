@@ -93,3 +93,28 @@ fn daml_time_and_date_round_trip_and_refuse_other_kinds() {
     assert!(Timestamp::try_from_value(d.into_value()).is_err());
     assert!(Date::try_from_value(t.into_value()).is_err());
 }
+
+/// A generic variant (`data Either a b`, `data Result a = ...`): the payloads that
+/// mention a type parameter are bounded by the conversion traits.
+#[derive(Clone, Debug, PartialEq, HasIdentifier, Value)]
+#[value(crate_path = ::canton)]
+#[identifier(package_id = "ffff", package_name = "my-pack", module = "A.B.C", name = "Gen", crate_path = ::canton)]
+pub enum Gen<A> {
+    GenL(A),
+    GenR(i64),
+    GenList(Vec<A>),
+}
+
+#[test]
+fn generic_variants_round_trip() {
+    for v in [
+        Gen::GenL("a".to_string()),
+        Gen::GenR(7),
+        Gen::GenList(vec!["b".to_string()]),
+    ] {
+        assert_eq!(
+            Gen::<String>::try_from_value(v.clone().into_value()).unwrap(),
+            v
+        );
+    }
+}

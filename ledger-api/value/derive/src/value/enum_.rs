@@ -136,6 +136,34 @@ fn try_impl_value_variant(
     let value_v2 = item_attrs.paths().value_v2();
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    // Each payload that mentions a type parameter must itself convert (as the record
+    // derive requires per field). Payloads without one are left out, so a recursive
+    // variant (`AnyValue` through `Vec<AnyValue>`) adds no cyclic bound.
+    let type_params: Vec<String> = generics
+        .type_params()
+        .map(|p| p.ident.to_string())
+        .collect();
+    let mut where_clause = where_clause.cloned().unwrap_or_else(|| syn::WhereClause {
+        where_token: Default::default(),
+        predicates: Default::default(),
+    });
+    for variant in &de.variants {
+        if let Fields::Unnamed(fields) = &variant.fields {
+            for field in &fields.unnamed {
+                let ty = &field.ty;
+                let mentions_param = quote!(#ty)
+                    .to_string()
+                    .split(|c: char| !c.is_alphanumeric() && c != '_')
+                    .any(|word| type_params.iter().any(|param| param == word));
+                if mentions_param {
+                    where_clause
+                        .predicates
+                        .push(syn::parse_quote!(#ty: #try_from_value_trait + #into_value_trait));
+                }
+            }
+        }
+    }
+    let where_clause = &where_clause;
 
     let mut into_match_arms = Vec::new();
     let mut from_match_arms = Vec::new();

@@ -27,7 +27,7 @@ pub use empty::Empty;
 pub use event_format::EventFormat;
 pub use events::{
     AcsDeltaEvent, Archived, ArchivedEvent, CastError, Created, CreatedEvent, CreatedWithKey,
-    Event, Exercised, ExercisedEvent, InterfaceView, LedgerEffectEvent,
+    Event, Exercised, ExercisedEvent, InterfaceView, LedgerEffectEvent, ViewError, ViewFailure,
 };
 pub use filters::{CumulativeFilter, Filters, InterfaceFilter, TemplateFilter, WildcardFilter};
 pub use offset_checkpoint::{OffsetCheckpoint, SynchronizerTime};

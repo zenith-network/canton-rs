@@ -42,17 +42,21 @@ impl Filters {
         }
     }
 
+    /// Contracts implementing the interface, with its view (`CreatedEvent::view`).
     pub fn interface(interface_id: Identifier<PackageName>) -> Self {
-        Self {
-            cumulative: vec![TemplateFilter::from(interface_id).into()],
-        }
+        Self::interfaces(vec![interface_id])
     }
 
+    /// Contracts implementing any of the interfaces, with their views.
     pub fn interfaces(interface_ids: Vec<Identifier<PackageName>>) -> Self {
         Self {
             cumulative: interface_ids
                 .into_iter()
-                .map(|template_id| InterfaceFilter::from(template_id).into())
+                .map(|interface_id| {
+                    let mut filter = InterfaceFilter::from(interface_id);
+                    filter.include_interface_view();
+                    filter.into()
+                })
                 .collect(),
         }
     }

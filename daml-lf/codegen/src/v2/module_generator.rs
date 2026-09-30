@@ -679,7 +679,17 @@ impl<'a> ModuleGenerator<'a> {
                 }
                 tokens
             }
-            BuiltinType::Optional => quote! { ::std::option::Option },
+            BuiltinType::Optional => {
+                debug_assert!(
+                    args.len() <= 1,
+                    "Optional with type args greater than 1: {args:?}"
+                );
+                let mut tokens = quote! { ::std::option::Option };
+                if let Some(arg) = args.first().map(|arg| self.gen_type(*arg)).transpose()? {
+                    tokens = quote! { #tokens<#arg> };
+                }
+                tokens
+            }
             BuiltinType::List => {
                 debug_assert!(
                     args.len() <= 1,

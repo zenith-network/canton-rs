@@ -45,7 +45,26 @@ impl ModuleGenSetBuilder {
             }
         }
 
+        for interface in module.interfaces() {
+            Self::add_interface(&resolver, &mut deps, interface);
+        }
+
         deps
+    }
+
+    /// An interface's view type and its choices' argument and result types: what a
+    /// client needs to read the interface's views (`CreatedEvent::view`) and to
+    /// exercise its choices.
+    fn add_interface(
+        resolver: &ModuleDepsResolver<'_>,
+        deps: &mut Deps,
+        interface: daml_lf::v2::sealed::DefInterface<'_>,
+    ) {
+        deps.extend(resolver.find_deps_from_type(interface.view()));
+        for choice in interface.choices() {
+            deps.extend(resolver.find_deps_from_type(choice.arg_binder().type_()));
+            deps.extend(resolver.find_deps_from_type(choice.ret_type()));
+        }
     }
 
     fn build_from_roots(module: Module<'_>, roots: ModuleTypeSet) -> Deps {
@@ -54,6 +73,15 @@ impl ModuleGenSetBuilder {
 
         for typename in roots {
             let type_deps = resolver.find_deps(&typename);
+            // A root that is an interface (reached as `ContractId I`) brings its view
+            // and choice types with it.
+            if let Some(interface) = module
+                .interfaces()
+                .into_iter()
+                .find(|i| dotted_name_to_owned(&i.tycon_name()) == typename)
+            {
+                Self::add_interface(&resolver, &mut deps, interface);
+            }
             deps.direct.as_mut().insert(typename);
             deps.extend(type_deps);
         }

@@ -3,7 +3,7 @@ use std::time::SystemTime;
 use canton_types::{ContractId, Name, PackageId, PackageName, PartyId};
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::{
-    Identifier, TryFromValue,
+    HasIdentifier, Identifier, TryFromRecord, TryFromValue,
     errors::{IntoValueError as _, ValueError},
     value::{Record, Value},
 };
@@ -94,7 +94,9 @@ pub struct CreatedEvent {
     pub contract_key_hash: Vec<u8>,
     pub create_arguments: Record,
     pub created_event_blob: Vec<u8>,
-    // pub inteface_views: Vec<InterfaceView>,
+    /// The views of the interfaces the event's filter requested
+    /// (`InterfaceFilter::include_interface_view`).
+    pub interface_views: Vec<InterfaceView>,
     pub witness_parties: NonEmpty<PartyId>,
     pub signatories: NonEmpty<PartyId>,
     pub observers: Vec<PartyId>,
@@ -104,7 +106,32 @@ pub struct CreatedEvent {
     // TODO: implement missing fields
 }
 
+/// The view of one interface on a created event.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InterfaceView {
+    pub interface_id: Identifier<PackageId>,
+    /// The computed view; `Err` carries the ledger's reason when it failed.
+    pub view: Result<Record, String>,
+}
+
 impl CreatedEvent {
+    /// The view of interface `I` on this event, decoded as `V` (the interface's view
+    /// type). `None` if the event carries no view of `I`: the filter did not request
+    /// it, or the template does not implement `I`. Matched on the interface's module
+    /// and entity: the view's interface id names the package that defines it, which
+    /// may be another version than `I`'s.
+    pub fn view<I: HasIdentifier, V: TryFromRecord>(&self) -> Option<Result<V, CastError>> {
+        let wanted = I::identifier_with_package_id();
+        let view = self.interface_views.iter().find(|v| {
+            v.interface_id.module_name == wanted.module_name
+                && v.interface_id.entity_name == wanted.entity_name
+        })?;
+        Some(match &view.view {
+            Ok(record) => V::try_from_record(record.clone()).map_err(|_| CastError {}),
+            Err(_) => Err(CastError {}),
+        })
+    }
+
     /// Cast to typed event
     pub fn cast<T: TemplateValue>(self) -> Result<Created<T>, CastError> {
         let expected_id = T::identifier_with_package_id();
@@ -257,6 +284,34 @@ impl TryFrom<proto::CreatedEvent> for CreatedEvent {
             .validated_of::<proto::CreatedEvent>("package_name")
             .no_msg()?;
 
+        let interface_views = value
+            .interface_views
+            .into_iter()
+            .map(|v| {
+                let interface_id = v
+                    .interface_id
+                    .required_of::<proto::InterfaceView>("interface_id")
+                    .no_msg()?
+                    .try_into()
+                    .validated_of::<proto::InterfaceView>("interface_id")
+                    .no_msg()?;
+                let failed = v
+                    .view_status
+                    .as_ref()
+                    .filter(|s| s.code != 0)
+                    .map(|s| s.message.clone());
+                let view = match (failed, v.view_value) {
+                    (Some(reason), _) => Err(reason),
+                    (None, Some(record)) => Ok(record
+                        .try_into()
+                        .validated_of::<proto::InterfaceView>("view_value")
+                        .no_msg()?),
+                    (None, None) => Err("no view value".to_string()),
+                };
+                Ok(InterfaceView { interface_id, view })
+            })
+            .collect::<Result<Vec<_>, ValueError>>()?;
+
         Ok(Self {
             offset: value.offset,
             node_id: value.node_id,
@@ -266,6 +321,7 @@ impl TryFrom<proto::CreatedEvent> for CreatedEvent {
             contract_key_hash: value.contract_key_hash,
             create_arguments,
             created_event_blob: value.created_event_blob,
+            interface_views,
             witness_parties,
             signatories,
             observers,

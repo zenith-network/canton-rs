@@ -1,0 +1,102 @@
+module MyContracts.Types where
+
+import qualified DA.Map as Map
+import qualified DA.TextMap as TextMap
+
+data EmptyRecord = EmptyRecord {}
+  deriving (Eq, Show)
+
+data Color = Red | Green | Blue
+  deriving (Eq, Show)
+
+data ExternalRecord = ExternalRecord
+  with
+    label : Text
+  deriving (Eq, Show)
+
+data ExternalEnum = ExternalOne | ExternalTwo
+  deriving (Eq, Show)
+
+data ExternalVariant
+  = ExternalText Text
+  | ExternalNumber Int
+  deriving (Eq, Show)
+
+data GenericRecord a b = GenericRecord
+  with
+    first : a
+    second : b
+  deriving (Eq, Show)
+
+data GenericMap k = GenericMap
+  with
+    map : Map.Map k ()
+  deriving (Eq, Show)
+
+data GenericVariant a
+  = NothingHere
+  | OneValue a
+  | NamedValues (GenericRecord a Text)
+  deriving (Eq, Show)
+
+data ProductVariant
+  = Positional (Int, Text)
+  | RecordPayload (GenericRecord Bool Text)
+  deriving (Eq, Show)
+
+data ListRecursive = ListRecursive
+  with
+    descendants : [ListRecursive]
+  deriving (Eq, Show)
+
+data OptionalRecursive = OptionalRecursive
+  with
+    next : Optional OptionalRecursive
+  deriving (Eq, Show)
+
+-- TODO: Enable this, when we figure out what to do in such cases.
+--       For now leaving it disabled, because most of the time Daml
+--       code uses camelCase to name fields
+-- data CollidingFields = CollidingFields
+--   with
+--     someValue : Int
+--     some_value : Int
+--   deriving (Eq, Show)
+
+data RecursiveVariant
+  = Recurse RecursiveVariant
+  | End
+  deriving (Eq, Show)
+
+data Self = Self
+  with
+    value : Text
+  deriving (Eq, Show)
+
+data AllFieldTypes = AllFieldTypes
+  with
+    unit : ()
+    boolean : Bool
+    integer : Int
+    decimal : Decimal
+    numeric : Numeric 3
+    date : Date
+    time : Time
+    party : Party
+    text : Text
+    optional : Optional Int
+    nestedOptional : Optional (Optional Text)
+    list : [Bool]
+    textMap : TextMap.TextMap Int
+    genMap : Map.Map Text Color
+    external : ExternalRecord
+    externalEnum : ExternalEnum
+    generic : GenericRecord Int Text
+    genericMap : GenericMap Text
+    variant : GenericVariant Int
+    tuple : (Int, Text)
+    either : Either Text Int
+    self : Text
+    crate : Text
+    async : Text
+  deriving (Eq, Show)

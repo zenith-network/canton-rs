@@ -1,0 +1,15 @@
+module MyContracts.Nested where
+
+import MyContracts.Types
+
+data NestedRecord = NestedRecord
+  with
+    generic : GenericRecord Text Int
+  deriving (Eq, Show)
+
+template NestedTemplate
+  with
+    owner : Party
+    nested : NestedRecord
+  where
+    signatory owner

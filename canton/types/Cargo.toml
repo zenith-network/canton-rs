@@ -11,6 +11,7 @@ testing = [] # Enables some testing helpers
 
 [dependencies]
 bigdecimal = { workspace = true, features = ["std"] }
+chrono.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]

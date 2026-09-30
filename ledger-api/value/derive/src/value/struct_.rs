@@ -4,11 +4,14 @@ use canton_paths::Paths;
 use canton_types::Name;
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
-use syn::{DataStruct, Error, Fields, Generics, Ident, Member, WhereClause};
+use syn::{DataStruct, Error, Fields, Generics, Ident, Member, parse_quote};
 
 use crate::{
     Attr, collect_err_chain,
-    value::attributes::{ItemAttributes, MemberAttributes},
+    value::{
+        attributes::{ItemAttributes, MemberAttributes},
+        bounds::apply_bounds,
+    },
 };
 
 /// Generate `Record` (and dependencies) trait impl for struct
@@ -28,19 +31,29 @@ pub fn try_impl_record(
         "tuple structs are not allowed"
     );
 
-    let into_record_impl = into_record_impl(item_attrs, ident, ds, generics)?;
-    let try_from_record_impl = try_from_record_impl(item_attrs, ident, ds, generics)?;
-    let record_impl = record_impl(item_attrs, ident, ds, generics)?;
+    let member_attrs = ds
+        .fields
+        .iter()
+        .map(|field| MemberAttributes::parse(&field.attrs))
+        .collect::<Result<Vec<_>, _>>()?;
+    let field_types = ds
+        .fields
+        .iter()
+        .zip(&member_attrs)
+        .filter(|(_, attrs)| !attrs.omit_bound())
+        .map(|(field, _)| &field.ty)
+        .collect::<Vec<_>>();
+
+    let into_record_impl =
+        into_record_impl(item_attrs, ident, ds, generics, &field_types, &member_attrs)?;
+    let try_from_record_impl =
+        try_from_record_impl(item_attrs, ident, ds, generics, &field_types, &member_attrs)?;
+    let record_impl = record_impl(item_attrs, ident, generics, &field_types)?;
 
     let output = quote! {
-        #[automatically_derived]
-        #into_record_impl
-
-        #[automatically_derived]
-        #try_from_record_impl
-
-        #[automatically_derived]
-        #record_impl
+        #(#into_record_impl)*
+        #(#try_from_record_impl)*
+        #(#record_impl)*
     };
 
     Ok(output)
@@ -49,30 +62,36 @@ pub fn try_impl_record(
 fn record_impl(
     item_attrs: &ItemAttributes,
     ident: &Ident,
-    ds: &DataStruct,
     generics: &Generics,
-) -> Result<syn::ItemImpl, Error> {
+    field_types: &[&syn::Type],
+) -> Result<Vec<syn::ItemImpl>, Error> {
     let record_trait = item_attrs.paths().record_trait();
     let try_from_value_trait = item_attrs.paths().try_from_value_trait();
     let into_value_trait = item_attrs.paths().into_value_trait();
 
+    let generics = apply_bounds(
+        generics,
+        field_types.iter().copied(),
+        &[&try_from_value_trait, &into_value_trait],
+        item_attrs
+            .bounds()
+            .iter()
+            .chain(item_attrs.into_bounds())
+            .chain(item_attrs.from_bounds()),
+    );
     let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
-    let mut where_clause = where_clause.cloned().unwrap_or_else(|| WhereClause {
-        where_token: Default::default(),
-        predicates: Default::default(),
-    });
-    for field in &ds.fields {
-        let field_type = &field.ty;
-        where_clause
-            .predicates
-            .push(syn::parse_quote!(#field_type: #try_from_value_trait + #into_value_trait));
-    }
 
-    let item_impl = syn::parse_quote! {
+    let impl_ = syn::parse_quote! {
+        #[automatically_derived]
         impl #impl_generics #record_trait for #ident #type_generics #where_clause {}
     };
 
-    Ok(item_impl)
+    let impl_box = parse_quote! {
+        #[automatically_derived]
+        impl #impl_generics #record_trait for ::std::boxed::Box<#ident #type_generics> #where_clause {}
+    };
+
+    Ok(vec![impl_, impl_box])
 }
 
 fn try_from_record_impl(
@@ -80,27 +99,24 @@ fn try_from_record_impl(
     ident: &Ident,
     ds: &DataStruct,
     generics: &Generics,
-) -> Result<syn::ItemImpl, Error> {
+    field_types: &[&syn::Type],
+    member_attrs: &[MemberAttributes],
+) -> Result<Vec<syn::ItemImpl>, Error> {
     let try_from_record_path = item_attrs.paths().try_from_record_trait();
     let try_from_value_trait = item_attrs.paths().try_from_value_trait();
     let value_v2 = item_attrs.paths().value_v2();
 
+    let generics = apply_bounds(
+        generics,
+        field_types.iter().copied(),
+        &[&try_from_value_trait],
+        item_attrs.bounds().iter().chain(item_attrs.from_bounds()),
+    );
     let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
-    let mut where_clause = where_clause.cloned().unwrap_or_else(|| WhereClause {
-        where_token: Default::default(),
-        predicates: Default::default(),
-    });
-    for field in &ds.fields {
-        let field_type = &field.ty;
-        where_clause
-            .predicates
-            .push(syn::parse_quote!(#field_type: #try_from_value_trait));
-    }
 
     let mut labels_check = Vec::new();
-    for field in &ds.fields {
+    for (field, attrs) in ds.fields.iter().zip(member_attrs) {
         let field_ident = field.ident.as_ref().unwrap();
-        let attrs = MemberAttributes::parse(&field.attrs)?;
         let expected = if let Some(attr) = attrs.name() {
             match attr {
                 Attr::Fixed { attr, span } => {
@@ -135,7 +151,8 @@ fn try_from_record_impl(
     let members1 = ds.fields.members();
     let members2 = ds.fields.members();
 
-    let tokens = quote! {
+    let impl_ = syn::parse_quote! {
+        #[automatically_derived]
         impl #impl_generics #try_from_record_path for #ident #type_generics #where_clause {
             type Error = #value_v2::errors::TryFromRecordError;
 
@@ -175,9 +192,18 @@ fn try_from_record_impl(
         }
     };
 
-    let item_impl = syn::parse2(tokens)?;
+    let impl_box = parse_quote! {
+        #[automatically_derived]
+        impl #impl_generics #try_from_record_path for ::std::boxed::Box<#ident #type_generics> #where_clause {
+            type Error = <#ident #type_generics as #try_from_record_path>::Error;
 
-    Ok(item_impl)
+            fn try_from_record(record: #value_v2::value::Record) -> Result<Self, Self::Error> {
+                Ok(::std::boxed::Box::new(<#ident #type_generics as #try_from_record_path>::try_from_record(record)?))
+            }
+        }
+    };
+
+    Ok(vec![impl_, impl_box])
 }
 
 fn into_record_impl(
@@ -185,15 +211,15 @@ fn into_record_impl(
     ident: &Ident,
     ds: &DataStruct,
     generics: &Generics,
-) -> Result<syn::ItemImpl, Error> {
+    field_types: &[&syn::Type],
+    member_attrs: &[MemberAttributes],
+) -> Result<Vec<syn::ItemImpl>, Error> {
     let into_value_trait = item_attrs.paths().into_value_trait();
     let into_record_trait = item_attrs.paths().into_record_trait();
     let value_v2 = item_attrs.paths().value_v2();
 
     let mut fields = Vec::new();
-    for (field, member) in ds.fields.iter().zip(ds.fields.members()) {
-        let attrs = MemberAttributes::parse(&field.attrs)?;
-
+    for ((_, attrs), member) in ds.fields.iter().zip(member_attrs).zip(ds.fields.members()) {
         let field_name = field_name_expr(item_attrs.paths(), attrs.name(), &member)?;
 
         fields.push(quote! {#value_v2::value::RecordField {
@@ -202,20 +228,17 @@ fn into_record_impl(
         }});
     }
 
+    let generics = apply_bounds(
+        generics,
+        field_types.iter().copied(),
+        &[&into_value_trait],
+        item_attrs.bounds().iter().chain(item_attrs.into_bounds()),
+    );
     let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
-    let mut where_caluse = where_clause.cloned().unwrap_or_else(|| WhereClause {
-        where_token: Default::default(),
-        predicates: Default::default(),
-    });
-    for field in &ds.fields {
-        let field_type = &field.ty;
-        where_caluse
-            .predicates
-            .push(syn::parse_quote!(#field_type: #into_value_trait));
-    }
 
-    let item_impl = syn::parse_quote! {
-        impl #impl_generics #into_record_trait for #ident #type_generics #where_caluse {
+    let impl_ = parse_quote! {
+        #[automatically_derived]
+        impl #impl_generics #into_record_trait for #ident #type_generics #where_clause {
             fn into_record(self) -> #value_v2::value::Record {
                 #value_v2::value::Record {
                     record_id: Some(<Self as #value_v2::HasIdentifier>::identifier_with_package_id()),
@@ -225,7 +248,18 @@ fn into_record_impl(
         }
     };
 
-    Ok(item_impl)
+    let impl_box = parse_quote! {
+        #[automatically_derived]
+        impl #impl_generics #into_record_trait for ::std::boxed::Box<#ident #type_generics> #where_clause {
+            fn into_record(self) -> #value_v2::value::Record {
+                use #value_v2::HasIdentifier;
+                let self_ = *self;
+                self_.into_record()
+            }
+        }
+    };
+
+    Ok(vec![impl_, impl_box])
 }
 
 fn field_name_expr(

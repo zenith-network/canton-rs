@@ -1,0 +1,24 @@
+module MyContracts.Interfaces where
+
+data AssetView = AssetView
+  with
+    currentOwner : Party
+    description : Text
+  deriving (Eq, Show)
+
+interface Asset where
+  viewtype AssetView
+  getOwner : Party
+
+  nonconsuming choice Describe : Text
+    controller getOwner this
+    do pure (view this).description
+
+interface Transferable requires Asset where
+  viewtype AssetView
+
+  choice Transfer : ContractId Transferable
+    with
+      newOwner : Party
+    controller getOwner (toInterface @Asset this)
+    do abort "not exercised by this test"

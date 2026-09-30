@@ -10,7 +10,9 @@ use ledger_api_value::v2::{
 };
 use uuid::Uuid;
 
-use crate::v2::{ChoiceByKeyValue, ChoiceValue, TemplateValue, TemplateValueWithKey};
+use crate::v2::{
+    ChoiceByKeyValue, ChoiceValue, TemplateOrInterface, TemplateValue, TemplateValueWithKey,
+};
 
 /// A composite command that groups multiple erased commands together
 #[derive(Clone, Debug)]
@@ -199,16 +201,16 @@ impl From<CreateCommand> for proto::CreateCommand {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Exercise<T: TemplateValue, C: ChoiceValue<T>> {
-    pub contract_id: ContractId<T>,
+pub struct Exercise<R: TemplateOrInterface, C: ChoiceValue<R>> {
+    pub contract_id: ContractId<R>,
     pub choice_argument: C,
 }
 
-impl<T: TemplateValue, C: ChoiceValue<T>> Exercise<T, C> {
+impl<R: TemplateOrInterface, C: ChoiceValue<R>> Exercise<R, C> {
     /// Erase type information, converting to raw command
     pub fn erase(self) -> ExerciseCommand {
         ExerciseCommand {
-            template_id: T::identifier(),
+            template_id: R::identifier(),
             contract_id: self.contract_id.into_any(),
             choice: C::NAME,
             choice_argument: self.choice_argument.into_value(),
@@ -276,12 +278,12 @@ impl From<ExerciseByKeyCommand> for proto::ExerciseByKeyCommand {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CreateAndExercise<T: TemplateValue, C: ChoiceValue<T>> {
+pub struct CreateAndExercise<T: TemplateValue + TemplateOrInterface, C: ChoiceValue<T>> {
     pub create_arguments: T,
     pub choice_argument: C,
 }
 
-impl<T: TemplateValue, C: ChoiceValue<T>> CreateAndExercise<T, C> {
+impl<T: TemplateValue + TemplateOrInterface, C: ChoiceValue<T>> CreateAndExercise<T, C> {
     /// Erase type information, converting to raw command
     pub fn erase(self) -> CreateAndExerciseCommand {
         CreateAndExerciseCommand {

@@ -2,6 +2,7 @@
 members = [
   "canton",
   "canton/types",
+  "canton/types/derive",
   "canton-paths",
   "daml-lf",
   "daml-lf/archive-proto",
@@ -11,7 +12,6 @@ members = [
   "ledger-api",
   "ledger-api/proto",
   "ledger-api/types",
-  "ledger-api/types/derive",
   "ledger-api/value",
   "ledger-api/value/derive",
   "ledger-api/value/proto",
@@ -36,7 +36,7 @@ hex = { version = "0.4.3", default-features = false }
 http = { version = "1.5.0", default-features = false }
 nonempty = { version = "0.12.0", default-features = false }
 pretty_assertions = "1.4.1"
-prettyplease = { version = "0.2.37", default-features = false }
+prettyplease = { version = "0.3.0", default-features = false }
 proc-macro2 = "1.0.106"
 prost = { version = "0.14.3", default-features = false }
 prost-build = { version = "0.14.3", default-features = false }
@@ -46,7 +46,7 @@ rstest = { version = "0.26.1", default-features = false }
 serde = { version = "1.0.228", default-features = false }
 serde_json = { version = "1.0.150", default-features = false }
 sha2 = { version = "0.11.0", default-features = false }
-syn = { version = "2.0.118", default-features = false }
+syn = { version = "3.0.6", default-features = false }
 tempfile = { version = "3.27.0", default-features = false }
 thiserror = { version = "2.0.18", default-features = false }
 tokio = { version = "1.53.1", default-features = false }
@@ -73,12 +73,12 @@ zip = { version = "8.6.0", default-features = false }
 canton = { path = "canton", default-features = false }
 canton-paths = { path = "canton-paths" }
 canton-types = { path = "canton/types", default-features = false }
+canton-types-derive = { path = "canton/types/derive", default-features = false }
 
 # Ledger API crates
 ledger-api = { path = "ledger-api", default-features = false }
 ledger-api-proto = { path = "ledger-api/proto", default-features = false }
 ledger-api-types = { path = "ledger-api/types", default-features = false }
-ledger-api-types-derive = { path = "ledger-api/types/derive", default-features = false }
 ledger-api-value = { path = "ledger-api/value", default-features = false }
 ledger-api-value-derive = { path = "ledger-api/value/derive", default-features = false }
 ledger-api-value-proto = { path = "ledger-api/value/proto", default-features = false }

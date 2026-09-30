@@ -1,256 +1,185 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    fs,
-    path::{Path, PathBuf},
-    rc::Rc,
-};
+#![allow(dead_code, reason = "Ignoring external paths for now")]
 
+use std::collections::BTreeMap;
+
+use canton_paths::Paths;
 use canton_types::PackageId;
-use daml_lf::{
-    dar::DarFile,
-    package::{Package, SealedPackage, VersionedSealedPackage},
-};
-use syn::Ident;
+use daml_lf::package::VersionedSealedPackage;
 
-#[cfg(feature = "v2")]
-use crate::v2::package_generator::PackageGenerator as PackageGeneratorV2;
 use crate::{
-    Config, Error,
-    errors::OutputError,
-    gen_set_builder::{GenMode, GenSetBuilder},
-    helpers::is_empty_mod,
+    dispatcher::Packages,
+    external_paths::ExternalPaths,
+    ir::{Definition, GenGraph, GeneratedModule, GeneratedPackage},
+    type_attributes::TypeAttributes,
 };
 
-/// Output of the code generation
+/// Generation context
 #[derive(Clone, Debug)]
-pub struct GenOutput {
-    /// Main generated file
-    ///
-    /// Include this to your lib.rs
-    pub main: PathBuf,
-
-    /// All generated files
-    pub files: Vec<PathBuf>,
+pub struct GenCtx<'a> {
+    packages: &'a Packages<'a>,
+    paths: Paths,
+    external_paths: ExternalPaths,
+    type_attrs: TypeAttributes,
 }
 
-/// Generator for a DAR file
-pub struct Generator {}
-
-impl Generator {
-    pub fn generate(dar: &mut DarFile, config: Config) -> Result<GenOutput, Error> {
-        let outdir = config.get_outdir()?;
-
-        let packages = Self::read_packages(dar)?;
-
-        let sealed_packages = Self::seal_packages(&packages)?;
-
-        let mut type_attrs = config.resolve_type_attributes(&sealed_packages)?;
-
-        // FIXME: replace panic with error
-        let main_package_id = Self::get_main_package_id(dar)?;
-
-        let package_identifiers = Rc::new(Self::generate_package_identifiers(&sealed_packages));
-
-        let external_paths = Rc::new(Default::default());
-
-        let genset = GenSetBuilder::build(
-            &sealed_packages,
-            main_package_id.clone(),
-            GenMode::ResolveTemplates,
-        );
-
-        let mut files = Vec::new();
-        for (package_id, package_gen_set) in genset {
-            let ptype_attrs = type_attrs.remove(&package_id).unwrap_or_default();
-            // Safety: gen set contains only existing packages
-            let package = &sealed_packages[&package_id];
-            let ident = &package_identifiers[&package_id];
-
-            match package.versioned() {
-                #[cfg(feature = "v2")]
-                VersionedSealedPackage::V2(sealed) => {
-                    let mut pgen = PackageGeneratorV2::new(
-                        package.daml_lf_version(),
-                        package.package_id().clone(),
-                        sealed,
-                        ident.clone(),
-                        Rc::clone(&package_identifiers),
-                        Rc::clone(&external_paths),
-                        package_gen_set,
-                        ptype_attrs,
-                    );
-                    let pmodule = pgen.gen_package()?;
-
-                    if !is_empty_mod(&pmodule) {
-                        let file = syn::File {
-                            shebang: None,
-                            attrs: Vec::new(),
-                            items: vec![syn::Item::Mod(pmodule)],
-                        };
-                        let path = Self::package_file_path(&outdir, ident);
-                        Self::write_file(&file, &path)?;
-                        files.push(path);
-                    }
-                }
-            }
-        }
-
-        let main_package_ident = &package_identifiers[&main_package_id];
-        let main_file = Self::generate_main_file(&files, main_package_ident);
-        let main = Self::main_file_path(&outdir);
-        Self::write_file(&main_file, &main)?;
-
-        Ok(GenOutput { main, files })
-    }
-
-    fn read_packages(dar: &mut DarFile) -> Result<Vec<Package>, Error> {
-        dar.dalfs()?
-            .into_iter()
-            .map(|dalf| dalf.to_package())
-            .collect::<Result<_, _>>()
-            .map_err(Into::into)
-    }
-
-    fn seal_packages(
-        packages: &[Package],
-    ) -> Result<BTreeMap<PackageId, SealedPackage<'_>>, Error> {
-        packages
-            .iter()
-            .map(|package| {
-                package
-                    .seal()
-                    .map(|sealed| (sealed.package_id().clone(), sealed))
-            })
-            .collect::<Result<BTreeMap<_, _>, _>>()
-            .map_err(Into::into)
-    }
-
-    fn get_main_package_id(dar: &mut DarFile) -> Result<PackageId, Error> {
-        let main_dalf = dar.main_dalf()?;
-        Ok(main_dalf.hash().to_package_id())
-    }
-
-    fn generate_main_file(files: &[PathBuf], main_package_ident: &Ident) -> syn::File {
-        let mut items: Vec<syn::Item> = files
-            .iter()
-            .map(|filepath| {
-                let filepath_str = filepath.display().to_string();
-                syn::parse_quote! { include!(#filepath_str); }
-            })
-            .collect::<Vec<_>>();
-        items.push(syn::parse_quote! { pub use #main_package_ident::*; });
-        syn::File {
-            shebang: None,
-            attrs: Vec::new(),
-            items,
+impl<'a> GenCtx<'a> {
+    /// Create new generation context
+    pub fn new(
+        packages: &'a Packages<'a>,
+        paths: Paths,
+        external_paths: ExternalPaths,
+        type_attrs: TypeAttributes,
+    ) -> Self {
+        Self {
+            packages,
+            paths,
+            external_paths,
+            type_attrs,
         }
     }
 
-    fn main_file_path(outdir: impl AsRef<Path>) -> PathBuf {
-        outdir.as_ref().join("main_package.rs")
+    /// All packages map
+    pub fn packages(&self) -> &'a Packages<'a> {
+        self.packages
     }
 
-    fn package_file_path(outdir: impl AsRef<Path>, package_ident: &Ident) -> PathBuf {
-        outdir.as_ref().join(format!("{package_ident}.rs"))
+    /// Canton crate paths
+    pub fn paths(&self) -> &Paths {
+        &self.paths
     }
 
-    fn write_file(file: &syn::File, path: impl AsRef<Path>) -> Result<(), Error> {
-        let output = cfg_select! {
-            feature = "format" => prettyplease::unparse(file),
-            _ => quote::ToTokens::into_token_stream(file).to_string(),
+    /// Configured additional type attributes
+    pub fn type_attributes(&self) -> &TypeAttributes {
+        &self.type_attrs
+    }
+
+    /// Configured external paths
+    pub fn external_paths(&self) -> &ExternalPaths {
+        &self.external_paths
+    }
+}
+
+/// Produces Rust syntax tree from generation graph
+pub struct Generator<'a> {
+    ctx: &'a GenCtx<'a>,
+    generated: BTreeMap<PackageId, GeneratedPackage>,
+}
+
+impl<'a> Generator<'a> {
+    pub fn generate(
+        graph: GenGraph<'a>,
+        ctx: &'a GenCtx<'a>,
+    ) -> BTreeMap<PackageId, GeneratedPackage> {
+        let mut generator = Self {
+            ctx,
+            generated: BTreeMap::new(),
         };
-
-        fs::write(path, output).map_err(OutputError::from)?;
-        Ok(())
-    }
-
-    fn generate_package_identifiers(
-        packages: &BTreeMap<PackageId, SealedPackage<'_>>,
-    ) -> HashMap<PackageId, Ident> {
-        let packages = packages
-            .iter()
-            .map(|(package_id, package)| {
-                let (name, version) = Self::package_name_and_version(package);
-                (package_id.clone(), name.to_owned(), version.to_owned())
-            })
-            .collect::<Vec<_>>();
-
-        let mut name_counts = HashMap::<String, usize>::new();
-        let mut name_version_counts = HashMap::<(String, String), usize>::new();
-        for (_, name, version) in &packages {
-            *name_counts.entry(name.clone()).or_default() += 1;
-            *name_version_counts
-                .entry((name.clone(), version.clone()))
-                .or_default() += 1;
+        for node in graph.nodes() {
+            generator.generate_node(*node);
         }
-
-        packages
-            .into_iter()
-            .map(|(package_id, name, version)| {
-                let name_version_count = name_version_counts[&(name.clone(), version.clone())];
-                let ident = if name_counts[&name] == 1 {
-                    crate::ident::generate_snake_ident(&name)
-                } else if name_version_count == 1 {
-                    crate::ident::generate_snake_ident(format!("{name}_{version}"))
-                } else {
-                    crate::ident::generate_snake_ident(format!(
-                        "{name}_{version}_{}",
-                        Self::short_package_id(&package_id),
-                    ))
-                };
-                (package_id, ident)
-            })
-            .collect::<HashMap<_, _>>()
+        generator.generated
     }
 
-    fn package_name_and_version<'a>(sealed_package: &SealedPackage<'a>) -> (&'a str, &'a str) {
-        match sealed_package.versioned() {
-            VersionedSealedPackage::V2(package) => {
-                let metadata = package.metadata();
-                (metadata.name(), metadata.version())
+    fn generate_node(&mut self, node: Definition<'_>) {
+        let package = node.package();
+        let package_id = node.package_id();
+
+        let item = ItemGenerator::generate(node, self.ctx);
+
+        let generated_package = self.generated.entry(package_id.clone()).or_insert_with(|| {
+            let package_ident = &self.ctx.packages()[package_id].ident;
+            let header = ItemGenerator::generate_package_header(package_id, package);
+            GeneratedPackage::new(package_ident.clone(), header)
+        });
+
+        Self::insert_generated_item(generated_package, item, node);
+    }
+
+    fn insert_generated_item(
+        package: &mut GeneratedPackage,
+        item: syn::Item,
+        node: Definition<'_>,
+    ) {
+        match node {
+            #[cfg(feature = "v2")]
+            Definition::V2(node) => {
+                use crate::v2::item_generator::ItemGenerator as ItemGeneratorV2;
+
+                let daml_module = node.module();
+                let mut module_path = crate::path::generate_module_path(daml_module.name());
+                let daml_module_depth = module_path.segments.len();
+                let entity_name = node.definition().name();
+                module_path
+                    .segments
+                    .extend(crate::path::generate_module_path(entity_name.base()).segments);
+
+                let mut modules = package.modules_mut();
+
+                // Since module name is non-empty, this is guaranteed to be non-empty too
+                let mut module_path = module_path
+                    .segments
+                    .into_iter()
+                    .map(|s| s.ident)
+                    .enumerate()
+                    .peekable();
+
+                while let Some((depth, module_ident)) = module_path.next() {
+                    let module_idx = if let Some(idx) =
+                        modules.iter().position(|m| m.ident() == &module_ident)
+                    {
+                        idx
+                    } else {
+                        modules.push(GeneratedModule::new(module_ident));
+                        modules.len() - 1
+                    };
+
+                    let module = &mut modules[module_idx];
+
+                    if depth + 1 == daml_module_depth && module.header().is_empty() {
+                        module.set_header(ItemGeneratorV2::generate_module_header(daml_module));
+                    }
+
+                    if module_path.peek().is_none() {
+                        module.push_item(item);
+                        return;
+                    }
+
+                    modules = module.submodules_mut();
+                }
+
+                // Since the module path is non-empty and finite, the return statement will be hit
+                // eventually, thus this is unreachable
+                unreachable!()
             }
-        }
-    }
-
-    fn short_package_id(package_id: &PackageId) -> &str {
-        let package_id = package_id.as_str();
-        match package_id.char_indices().nth(8) {
-            Some((idx, _)) => &package_id[..idx],
-            None => package_id,
         }
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+pub struct ItemGenerator {}
 
-//     use std::path::Path;
-//     use tracing_test::traced_test;
+impl ItemGenerator {
+    pub fn generate<'a>(node: Definition<'a>, ctx: &'a GenCtx) -> syn::Item {
+        match node {
+            #[cfg(feature = "v2")]
+            Definition::V2(node) => {
+                use crate::v2::item_generator::ItemGenerator as ItemGeneratorV2;
 
-//     #[test]
-//     #[traced_test]
-//     fn test_codegen_my_contracts() {
-//         let mut config = dpm_build::Config::default();
-//         config
-//             .disable_multi_package()
-//             .output("tests/assets/my-contracts.dar")
-//             .package_root("tests/assets/my-contracts");
-//         let path = config.build().expect("should be able to build Daml").output;
+                ItemGeneratorV2::generate(node, ctx)
+            }
+        }
+    }
 
-//         let output = test_codegen_main_dalf(path);
-//         let output = prettyplease::unparse(&syn::parse2(output).unwrap());
-//         println!("{}", output.to_string());
-//     }
+    pub fn generate_package_header(
+        package_id: &PackageId,
+        package: VersionedSealedPackage<'_>,
+    ) -> Vec<syn::Item> {
+        match package {
+            #[cfg(feature = "v2")]
+            VersionedSealedPackage::V2(package_v2) => {
+                use crate::v2::item_generator::ItemGenerator as ItemGeneratorV2;
 
-//     fn test_codegen_main_dalf(path: impl AsRef<Path>) -> TokenStream {
-//         let mut dar = DarFile::read_from(path).expect("should be able to read DAR");
-//         let dalf = dar.main_dalf().expect("should be able to read main DALF");
-
-//         let mut generator = Generator::new(&mut dar, Config::default().outdir("."));
-//         let (output, _) = generator
-//             .generate_from_dalf(dalf)
-//             .expect("should be able to generate code");
-//         output
-//     }
-// }
+                ItemGeneratorV2::generate_package_header(package_id, package_v2)
+            }
+        }
+    }
+}

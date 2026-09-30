@@ -1,6 +1,11 @@
 //! Canton SDK
 
-pub use canton_types as types;
+pub mod types {
+    pub use canton_types::*;
+
+    #[cfg(feature = "derive")]
+    pub use canton_types_derive::{Choice, Interface, Template};
+}
 
 #[cfg(feature = "daml-lf")]
 pub use daml_lf as lf;

@@ -12,6 +12,7 @@ mod package_identifier;
 mod package_name;
 mod party_id;
 mod synchronizer_id;
+mod text_map;
 mod traits;
 mod user_id;
 
@@ -30,7 +31,10 @@ pub use package_identifier::PackageIdentifier;
 pub use package_name::PackageName;
 pub use party_id::PartyId;
 pub use synchronizer_id::SynchronizerId;
-pub use traits::{Choice, Template, TemplateWithKey};
+pub use text_map::TextMap;
+pub use traits::{
+    Choice, Implements, Interface, Requires, Template, TemplateOrInterface, TemplateWithKey,
+};
 pub use user_id::UserId;
 
 /// Error types
@@ -57,5 +61,10 @@ pub struct AnyTemplate;
 
 pub use bigdecimal;
 pub use bigdecimal::BigDecimal;
+
+pub use chrono;
+pub use chrono::NaiveDate as Date;
+pub type Timestamp = chrono::DateTime<chrono::Utc>;
+// FIXME: this is not a precise representation of date/time types in Daml, needs correction
 
 // TODO: add serde support

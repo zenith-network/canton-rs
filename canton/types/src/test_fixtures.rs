@@ -1,4 +1,4 @@
-use crate::{Choice, Name, Template, TemplateWithKey};
+use crate::{Choice, Implements, Interface, Name, Template, TemplateOrInterface, TemplateWithKey};
 
 pub struct TestTemplate;
 
@@ -22,12 +22,24 @@ impl Choice<TestTemplate> for TestChoiceB {
     type Result = ();
 }
 
-impl Template for TestTemplate {
-    // type Choices = Coprod!(TestChoiceA, TestChoiceB);
-}
+impl Template for TestTemplate {}
+
+impl TemplateOrInterface for TestTemplate {}
 
 pub struct TestKey;
 
 impl TemplateWithKey for TestTemplate {
     type Key = TestKey;
 }
+
+pub struct TestViewType;
+
+pub struct TestInterface;
+
+impl Interface for TestInterface {
+    type View = TestViewType;
+}
+
+impl TemplateOrInterface for TestInterface {}
+
+impl Implements<TestInterface> for TestTemplate {}

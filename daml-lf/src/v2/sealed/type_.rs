@@ -8,15 +8,35 @@ use daml_lf_archive_proto::com::digitalasset::daml::lf::archive::v2 as proto;
 
 use crate::v2::sealed::{BuiltinType, Package, TypeConId};
 
+/// A Daml LF type.
+///
+/// The variants distinguish type variables, user-defined type constructors,
+/// built-in types, type-level natural numbers, and type applications.
+///
+/// ## Example
+///
+/// ```daml
+/// data Box a = Box with
+///   value : Optional a
+/// ```
+///
+/// The type of `Box.value` combines a `Type::Tapp`, a `Type::Builtin`, and a
+/// `Type::Var`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Type<'a> {
+    /// A type variable, such as `a` in `data Box a = Box with value : a`.
     Var(Var<'a>),
+    /// A user-defined type constructor, such as `Address` in a field of type
+    /// `Address`.
     Con(Con<'a>),
+    /// A built-in type, such as `Int`.
     Builtin(Builtin<'a>),
     // Forall(::prost::alloc::boxed::Box<Forall>),
     // Struct(Struct),
+    /// A type-level natural number, such as `10` in `Numeric 10`.
     Nat,
     // Syn(Syn),
+    /// A type application, such as `Optional Int`.
     Tapp(TApp<'a>),
     // TODO: complete variants
 }
@@ -54,6 +74,16 @@ impl<'a> Type<'a> {
     }
 }
 
+/// A reference to a type variable.
+///
+/// ## Example
+///
+/// ```daml
+/// data Box a = Box with
+///   value : a
+/// ```
+///
+/// The type of `Box.value` is `Type::Var`; `var()` returns `"a"`.
 #[derive(Clone, Copy)]
 pub struct Var<'a> {
     package: Package<'a>,
@@ -108,6 +138,20 @@ impl Hash for Var<'_> {
     }
 }
 
+/// A reference to a user-defined type constructor.
+///
+/// ## Example
+///
+/// ```daml
+/// data Address = Address with
+///   street : Text
+///
+/// data Person = Person with
+///   address : Address
+/// ```
+///
+/// The type of `Person.address` is `Type::Con`, whose `tycon()` identifies
+/// `Address`.
 #[derive(Clone, Copy)]
 pub struct Con<'a> {
     package: Package<'a>,
@@ -161,6 +205,17 @@ impl Hash for Con<'_> {
     }
 }
 
+/// A built-in Daml LF type.
+///
+/// ## Example
+///
+/// ```daml
+/// data Example = Example with
+///   value : Int
+/// ```
+///
+/// The type of `Example.value` is `Type::Builtin` containing
+/// `BuiltinType::Int64`.
 #[derive(Clone, Copy)]
 pub struct Builtin<'a> {
     package: Package<'a>,
@@ -219,6 +274,18 @@ impl Hash for Builtin<'_> {
     }
 }
 
+/// An application of the type `lhs` to the type `rhs`.
+///
+/// ## Example
+///
+/// ```daml
+/// data Example = Example with
+///   value : Optional Int
+/// ```
+///
+/// The type of `Example.value` is `Type::Tapp`. Its `lhs()` is a
+/// `Type::Builtin` whose `type_()` is `BuiltinType::Optional`, and its `rhs()`
+/// is a `Type::Builtin` whose `type_()` is `BuiltinType::Int64`.
 #[derive(Clone, Copy)]
 pub struct TApp<'a> {
     package: Package<'a>,

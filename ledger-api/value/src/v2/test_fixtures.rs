@@ -6,7 +6,9 @@ use crate::v2::{HasIdentifier, IntoRecord, IntoValue, TryFromRecord, TryFromValu
 
 use super::{Record, value};
 
-pub use canton_types::test_fixtures::{TestChoiceA, TestChoiceB, TestKey, TestTemplate};
+pub use canton_types::test_fixtures::{
+    TestChoiceA, TestChoiceB, TestInterface, TestKey, TestTemplate, TestViewType,
+};
 
 impl HasIdentifier for TestTemplate {
     fn package_id() -> PackageId {
@@ -89,3 +91,37 @@ impl TryFromValue for TestKey {
 }
 
 impl Value for TestKey {}
+
+impl IntoRecord for TestViewType {
+    fn into_record(self) -> value::Record {
+        unreachable!()
+    }
+}
+
+impl TryFromRecord for TestViewType {
+    type Error = Infallible;
+
+    fn try_from_record(_: value::Record) -> Result<Self, Self::Error> {
+        unreachable!()
+    }
+}
+
+impl Record for TestViewType {}
+
+impl HasIdentifier for TestInterface {
+    fn package_id() -> PackageId {
+        PackageId::new_unchecked("test_package_id")
+    }
+
+    fn package_name() -> PackageName {
+        PackageName::new_unchecked("test_package_name")
+    }
+
+    fn module_name() -> DottedName {
+        DottedName::single(Name::new_static_unchecked("TestModule"))
+    }
+
+    fn entity_name() -> DottedName {
+        DottedName::single(Name::new_static_unchecked("TestInterface"))
+    }
+}

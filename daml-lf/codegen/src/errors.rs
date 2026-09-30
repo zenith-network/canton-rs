@@ -1,9 +1,5 @@
 use daml_lf::{MalformedPackage, dalf::DalfError, dar::DarError, proto::daml_lf_version::Version};
 
-use crate::config::ConfigError;
-#[cfg(feature = "v2")]
-use crate::v2::package_generator::PackageGenError as PackageGenErrorV2;
-
 #[derive(Debug, thiserror::Error)]
 #[error("unsupported Daml LF version")]
 pub struct UnsupportedVersion {
@@ -51,7 +47,4 @@ pub enum Error {
     OutdirNotSet(#[from] OutdirNotSet),
     SyntaxError(#[from] SyntaxError),
     OutputError(#[from] OutputError),
-    #[cfg(feature = "v2")]
-    PackageGenErrorV2(#[from] PackageGenErrorV2),
-    ConfigError(#[from] ConfigError),
 }

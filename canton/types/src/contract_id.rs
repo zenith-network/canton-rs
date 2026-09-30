@@ -1,6 +1,8 @@
 use std::{fmt, hash::Hash, marker::PhantomData};
 
-use crate::{AnyTemplate, LedgerString, errors::LedgerStringError};
+use crate::{
+    AnyTemplate, Implements, Interface, LedgerString, Requires, Template, errors::LedgerStringError,
+};
 
 /// Contract ID
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -43,6 +45,36 @@ impl<T> ContractId<T> {
 impl ContractId<AnyTemplate> {
     pub fn into_typed<T>(self) -> ContractId<T> {
         ContractId::from_any(self)
+    }
+}
+
+impl<T: Template> ContractId<T> {
+    /// Cast contract ID to an interface-bounded contract ID
+    pub fn into_interface<I>(self) -> ContractId<I>
+    where
+        I: Interface,
+        T: Implements<I>,
+    {
+        ContractId {
+            value: self.value,
+            phantom_data: PhantomData,
+        }
+    }
+}
+
+impl<I: Interface> ContractId<I> {
+    /// Cast contract ID to a parent interface contract ID
+    ///
+    /// Note: transitive casting is not supported
+    pub fn cast_interface<P>(self) -> ContractId<P>
+    where
+        P: Interface,
+        I: Requires<P>,
+    {
+        ContractId {
+            value: self.value,
+            phantom_data: PhantomData,
+        }
     }
 }
 

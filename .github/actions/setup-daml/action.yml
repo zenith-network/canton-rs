@@ -1,0 +1,169 @@
+name: Set up Daml
+description: Install dpm and Daml SDK
+
+inputs:
+  dpm-version:
+    description: dpm version to install ("X.Y.Z" or "latest")
+    required: false
+    default: latest
+  sdk-version:
+    description: Daml SDK version to install (if not specified, Daml SDK won't be installed)
+    required: false
+  dpm-registry:
+    description: OCI registry from which dpm installs the Daml SDK
+    required: false
+
+outputs:
+  dpm-version:
+    description: Installed dpm version
+    value: ${{ steps.install-dpm.outputs.version }}
+  sdk-version:
+    description: Installed Daml SDK version (may be unset)
+    value: ${{ steps.install-sdk.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Configure dpm environment
+      shell: bash
+      env:
+        DPM_REGISTRY_INPUT: ${{ inputs.dpm-registry }}
+      run: |
+        set -euo pipefail
+
+        dpm_home="$RUNNER_TEMP/dpm"
+        echo "DPM_HOME=$dpm_home" >> "$GITHUB_ENV"
+        if [[ -n "$DPM_REGISTRY_INPUT" ]]; then
+          if [[ "$DPM_REGISTRY_INPUT" == *$'\n'* || "$DPM_REGISTRY_INPUT" == *$'\r'* ]]; then
+            echo "dpm-registry must not contain newline characters" >&2
+            exit 1
+          fi
+          echo "DPM_REGISTRY=$DPM_REGISTRY_INPUT" >> "$GITHUB_ENV"
+        fi
+        echo "$dpm_home/bin" >> "$GITHUB_PATH"
+
+    - name: Install dpm
+      id: install-dpm
+      shell: bash
+      env:
+        DPM_VERSION_INPUT: ${{ inputs.dpm-version }}
+      run: |
+        set -euo pipefail
+
+        if [[ "$(uname -s)" != Linux ]]; then
+          echo "dpm installation is only supported on Linux" >&2
+          exit 1
+        fi
+
+        case "$(uname -m)" in
+          x86_64)
+            arch=amd64
+            ;;
+          aarch64|arm64)
+            arch=arm64
+            ;;
+          *)
+            echo "Unsupported architecture: $(uname -m)" >&2
+            exit 1
+            ;;
+        esac
+
+        if [[ "$DPM_VERSION_INPUT" == latest ]]; then
+          latest_url="$(curl --fail --silent --show-error --location \
+            --output /dev/null --write-out '%{url_effective}' \
+            https://github.com/digital-asset/dpm/releases/latest)"
+          dpm_version="${latest_url##*/}"
+        else
+          dpm_version="$DPM_VERSION_INPUT"
+        fi
+
+        if [[ ! "$dpm_version" =~ ^[0-9]+([.][0-9]+)+([.+-][0-9A-Za-z.-]+)?$ ]]; then
+          echo "Invalid dpm release version: $dpm_version" >&2
+          exit 1
+        fi
+
+        archive="dpm-${dpm_version}-linux-${arch}.tar.gz"
+        checksums="dpm-${dpm_version}-checksums.txt"
+        release_url="https://github.com/digital-asset/dpm/releases/download/${dpm_version}"
+        download_dir="$(mktemp -d)"
+        trap 'rm -rf "$download_dir"' EXIT
+
+        curl --fail --silent --show-error --location \
+          "$release_url/$archive" \
+          --output "$download_dir/$archive"
+
+        if ! checksum_status="$(curl --silent --show-error --location \
+          --output "$download_dir/$checksums" --write-out '%{http_code}' \
+          "$release_url/$checksums")"; then
+          echo "Failed to download the checksum file for dpm $dpm_version" >&2
+          exit 1
+        fi
+
+        case "$checksum_status" in
+          200)
+            checksum="$(awk -v archive="$archive" \
+              '$2 == archive { print $1; found = 1; exit } END { if (!found) exit 1 }' \
+              "$download_dir/$checksums")" || {
+                echo "No checksum found for $archive in $checksums" >&2
+                exit 1
+              }
+            echo "$checksum  $download_dir/$archive" | sha256sum --check --strict
+            ;;
+          404)
+            echo "Warning: dpm $dpm_version does not provide a checksum file" >&2
+            ;;
+          *)
+            echo "Failed to download $checksums: HTTP $checksum_status" >&2
+            exit 1
+            ;;
+        esac
+
+        mkdir -p "$DPM_HOME/bin"
+        tar -xzf "$download_dir/$archive" -C "$DPM_HOME/bin" dpm
+
+        resolved_dpm_version="$("$DPM_HOME/bin/dpm" --version \
+          | sed -n 's/^version:[[:space:]]*//p' | head -n 1)"
+        if [[ -z "$resolved_dpm_version" ]]; then
+          echo "Could not determine the installed dpm version" >&2
+          exit 1
+        fi
+        echo "version=$resolved_dpm_version" >> "$GITHUB_OUTPUT"
+
+    - name: Install Daml SDK
+      id: install-sdk
+      if: ${{ inputs.sdk-version != '' }}
+      shell: bash
+      env:
+        DAML_SDK_VERSION: ${{ inputs.sdk-version }}
+      run: |
+        set -euo pipefail
+
+        install_log="$(mktemp)"
+        trap 'rm -f "$install_log"' EXIT
+        "$DPM_HOME/bin/dpm" install "$DAML_SDK_VERSION" | tee "$install_log"
+
+        resolved_sdk_version="$(awk '
+          /^resolved to / { version = substr($0, length("resolved to ") + 1) }
+          /^Successfully installed SDK / {
+            version = substr($0, length("Successfully installed SDK ") + 1)
+          }
+          END { print version }
+        ' "$install_log" | tr -d '\r')"
+        if [[ -z "$resolved_sdk_version" ]]; then
+          echo "Could not determine the installed Daml SDK version" >&2
+          exit 1
+        fi
+        echo "version=$resolved_sdk_version" >> "$GITHUB_OUTPUT"
+
+    - name: Print installed versions
+      shell: bash
+      env:
+        RESOLVED_DPM_VERSION: ${{ steps.install-dpm.outputs.version }}
+        RESOLVED_SDK_VERSION: ${{ steps.install-sdk.outputs.version }}
+      run: |
+        echo "dpm: $RESOLVED_DPM_VERSION"
+        if [[ -n "$RESOLVED_SDK_VERSION" ]]; then
+          echo "Daml SDK: $RESOLVED_SDK_VERSION"
+        else
+          echo "Daml SDK: not installed"
+        fi

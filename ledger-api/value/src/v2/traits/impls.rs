@@ -5,7 +5,9 @@
 
 use std::collections::BTreeMap;
 
-use canton_types::{ContractId, DottedName, Name, NonEmpty, Numeric, PackageId, PartyId};
+use canton_types::{
+    ContractId, Date, DottedName, Name, NonEmpty, Numeric, PackageId, PartyId, TextMap, Timestamp,
+};
 
 use crate::v2::{
     Identifier, IntoRecord, IntoValue, Record, TryFromRecord, TryFromValue, Value,
@@ -260,6 +262,24 @@ impl<T: TryFromValue> TryFromValue for Option<T> {
 
 impl<T: Value> Value for Option<T> {}
 
+// Box<Option<T>>
+
+impl<T: IntoValue> IntoValue for Box<Option<T>> {
+    fn into_value(self) -> value::Value {
+        (*self).into_value()
+    }
+}
+
+impl<T: TryFromValue> TryFromValue for Box<Option<T>> {
+    type Error = AggregatedValueError<T::Error>;
+
+    fn try_from_value(value: value::Value) -> Result<Self, Self::Error> {
+        Ok(Box::new(Option::<T>::try_from_value(value)?))
+    }
+}
+
+impl<T: Value> Value for Box<Option<T>> {}
+
 // Vec<T>
 
 impl<T: IntoValue> IntoValue for Vec<T> {
@@ -315,6 +335,42 @@ impl<K: Ord + Value, V: Value> Value for BTreeMap<K, V> {}
 
 // Daml primitives
 
+// TextMap
+
+impl<T> IntoValue for TextMap<T>
+where
+    T: IntoValue,
+{
+    fn into_value(self) -> value::Value {
+        value::Value::TextMap(TextMap(
+            self.0
+                .into_iter()
+                .map(|(k, v)| (k, v.into_value()))
+                .collect(),
+        ))
+    }
+}
+
+impl<T> TryFromValue for TextMap<T>
+where
+    T: TryFromValue,
+{
+    type Error = AggregatedValueError<T::Error>;
+
+    fn try_from_value(value: value::Value) -> Result<Self, Self::Error> {
+        value
+            .into_text_map()?
+            .0
+            .into_iter()
+            .map(|(k, v)| T::try_from_value(v).map(|t| (k, t)))
+            .collect::<Result<_, _>>()
+            .map_err(AggregatedValueError::Other)
+            .map(Self)
+    }
+}
+
+impl<T: Value> Value for TextMap<T> {}
+
 // Party ID
 
 impl IntoValue for PartyId {
@@ -368,3 +424,48 @@ impl TryFromValue for Numeric {
 }
 
 impl Value for Numeric {}
+
+// Date/Time
+
+const EPOCH: Date = match Date::from_ymd_opt(1970, 1, 1) {
+    Some(date) => date,
+    None => panic!("epoch must be a valid date"),
+};
+
+impl IntoValue for Date {
+    fn into_value(self) -> value::Value {
+        let days = self.signed_duration_since(EPOCH).num_days() as i32;
+        value::Value::Date(days)
+    }
+}
+
+impl TryFromValue for Date {
+    type Error = ValueKindError;
+
+    fn try_from_value(value: value::Value) -> Result<Self, Self::Error> {
+        let date = value.into_date()?;
+        Ok(EPOCH
+            .checked_add_signed(canton_types::chrono::TimeDelta::days(date.into()))
+            .expect("Value must be valid date")) // FIXME: remove this panic
+    }
+}
+
+impl Value for Date {}
+
+impl IntoValue for Timestamp {
+    fn into_value(self) -> value::Value {
+        value::Value::Timestamp(self.timestamp_micros())
+    }
+}
+
+impl TryFromValue for Timestamp {
+    type Error = ValueKindError;
+
+    fn try_from_value(value: value::Value) -> Result<Self, Self::Error> {
+        let ts = value.into_timestamp()?;
+        // FIXME: remove this panic
+        Ok(Timestamp::from_timestamp_micros(ts).expect("Value must be valid timestamp"))
+    }
+}
+
+impl Value for Timestamp {}

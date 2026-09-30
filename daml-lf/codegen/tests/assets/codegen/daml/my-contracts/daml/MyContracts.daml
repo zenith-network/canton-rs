@@ -1,0 +1,71 @@
+module MyContracts where
+
+import MyContracts.Interfaces
+import MyContracts.Types
+
+template ExternalTemplate
+  with
+    owner : Party
+    payload : ExternalRecord
+  where
+    signatory owner
+
+    nonconsuming choice ReplaceExternal : ContractId ExternalTemplate
+      with
+        replacement : ExternalRecord
+      controller owner
+      do create this with payload = replacement
+
+template AllTypes
+  with
+    owner : Party
+    fields : AllFieldTypes
+    empty : EmptyRecord
+    color : Color
+    productVariant : ProductVariant
+    reservedType : Self
+    listRecursive : ListRecursive
+    optionalRecursive : OptionalRecursive
+    recursiveVariant : RecursiveVariant
+    -- Disabled for now, see TODO for this type
+    -- collidingFields : CollidingFields
+    externalTemplate : ContractId ExternalTemplate
+  where
+    signatory owner
+
+    key (owner, fields.text) : (Party, Text)
+    maintainer key._1
+
+    choice UpdateFields : ContractId AllTypes
+      with
+        newFields : AllFieldTypes
+        note : Optional Text
+      controller owner
+      do create this with fields = newFields
+
+    nonconsuming choice LookupResult : Optional (GenericRecord Int Text)
+      controller owner
+      do pure None
+
+    interface instance Asset for AllTypes where
+      view = AssetView owner fields.text
+      getOwner = owner
+
+    interface instance Transferable for AllTypes where
+      view = AssetView owner fields.text
+
+template ChoiceResults
+  with
+    owner : Party
+  where
+    signatory owner
+
+    choice NoArguments : ()
+      controller owner
+      do pure ()
+
+    nonconsuming choice ExternalResult : ExternalVariant
+      with
+        request : ExternalRecord
+      controller owner
+      do pure (ExternalText request.label)

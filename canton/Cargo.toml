@@ -6,7 +6,7 @@ license.workspace = true
 
 [features]
 default = []
-derive = ["ledger-api-value/derive", "ledger-api-types/derive"]
+derive = ["dep:canton-types-derive", "ledger-api-value/derive"]
 daml-lf = ["dep:daml-lf"]
 codegen = ["dep:daml-lf-codegen"]
 ledger-api = ["dep:ledger-api"]
@@ -15,6 +15,7 @@ full = ["derive", "daml-lf", "codegen", "ledger-api", "dpm-build"]
 
 [dependencies]
 canton-types = { workspace = true, default-features = true }
+canton-types-derive = { workspace = true, optional = true }
 daml-lf = { workspace = true, default-features = true, optional = true }
 daml-lf-codegen = { workspace = true, default-features = true, optional = true }
 dpm-build = { workspace = true, default-features = true, optional = true }

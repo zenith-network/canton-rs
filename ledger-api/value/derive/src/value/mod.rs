@@ -2,6 +2,7 @@ use proc_macro2::{Span, TokenStream};
 use syn::{Data, DeriveInput, Error};
 
 mod attributes;
+mod bounds;
 mod enum_;
 mod struct_;
 

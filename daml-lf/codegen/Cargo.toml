@@ -20,7 +20,7 @@ env = []
 
 [dependencies]
 anyhow.workspace = true
-canton-paths.workspace = true
+canton-paths = { workspace = true, features = ["extra"] }
 canton-types.workspace = true
 clap = { workspace = true, features = ["derive"] }
 daml-lf.workspace = true
@@ -41,7 +41,12 @@ unicode-ident.workspace = true
 unicode-normalization.workspace = true
 
 [dev-dependencies]
+canton = { workspace = true, features = ["derive", "ledger-api"] }
+daml-lf = { workspace = true, features = ["builder"] }
+daml-lf-version.workspace = true
 dpm-build.workspace = true
 pretty_assertions.workspace = true
 rstest.workspace = true
+sha2.workspace = true
 tracing-test.workspace = true
+trybuild.workspace = true

@@ -2,8 +2,9 @@
 
 use std::{collections::BTreeMap, convert::Infallible};
 
-use canton_types::{AnyTemplate, ContractId, Numeric, PartyId};
+use canton_types::{AnyTemplate, ContractId, Numeric, PartyId, TextMap};
 use ledger_api_value_proto::com::daml::ledger::api::v2 as proto;
+use protobuf_utils::RequiredProtoField as _;
 
 use super::{
     errors::{IntoValueError as _, ValueError, ValueKindError},
@@ -12,13 +13,11 @@ use super::{
 
 mod enum_;
 mod record;
-mod text_map;
 mod value_kind;
 mod variant;
 
 pub use enum_::Enum;
 pub use record::{Record, RecordField};
-pub use text_map::TextMap;
 pub use value_kind::ValueKind;
 pub use variant::Variant;
 
@@ -93,6 +92,28 @@ impl Value {
         } else {
             Err(ValueKindError {
                 expected: ValueKind::Int64,
+                got: self.kind(),
+            })
+        }
+    }
+
+    pub fn into_date(self) -> Result<i32, ValueKindError> {
+        if let Value::Date(value) = self {
+            Ok(value)
+        } else {
+            Err(ValueKindError {
+                expected: ValueKind::Date,
+                got: self.kind(),
+            })
+        }
+    }
+
+    pub fn into_timestamp(self) -> Result<i64, ValueKindError> {
+        if let Value::Timestamp(value) = self {
+            Ok(value)
+        } else {
+            Err(ValueKindError {
+                expected: ValueKind::Timestamp,
                 got: self.kind(),
             })
         }
@@ -279,7 +300,16 @@ impl From<Value> for proto::Value {
                 })),
             },
             Value::TextMap(v) => Self {
-                sum: Some(Sum::TextMap(v.into())),
+                sum: Some(Sum::TextMap(proto::TextMap {
+                    entries: v
+                        .0
+                        .into_iter()
+                        .map(|(key, value)| proto::text_map::Entry {
+                            key,
+                            value: Some(value.into()),
+                        })
+                        .collect(),
+                })),
             },
             Value::GenMap(v) => Self {
                 sum: Some(Sum::GenMap(proto::GenMap {
@@ -337,7 +367,21 @@ impl TryFrom<proto::Value> for Value {
                     })
                     .collect::<Result<Vec<_>, _>>()?,
             ),
-            Sum::TextMap(v) => Self::TextMap(v.try_into()?),
+            Sum::TextMap(v) => Self::TextMap(TextMap(
+                v.entries
+                    .into_iter()
+                    .enumerate()
+                    .map(|(idx, entry)| {
+                        entry
+                            .value
+                            .required_of::<proto::text_map::Entry>("value")
+                            .no_msg()?
+                            .try_into()
+                            .with_msg_owned(format!("failed to convert entry[{idx}]"))
+                            .map(|t| (entry.key, t))
+                    })
+                    .collect::<Result<_, _>>()?,
+            )),
             Sum::GenMap(v) => {
                 use proto::gen_map::Entry;
 

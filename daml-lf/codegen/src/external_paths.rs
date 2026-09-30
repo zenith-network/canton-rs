@@ -60,12 +60,9 @@ impl UnresolvedExternalPaths {
 }
 
 #[allow(dead_code)]
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ExternalPaths {
     pub extern_packages: HashMap<PackageId, syn::Path>,
     pub extern_modules: HashMap<PackageId, HashMap<DottedName, syn::Path>>,
     pub extern_entities: HashMap<PackageId, HashMap<DottedName, HashMap<DottedName, syn::Path>>>,
 }
-
-#[derive(Debug, thiserror::Error)]
-pub enum ExternalPathsError {}

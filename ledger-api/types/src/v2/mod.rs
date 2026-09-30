@@ -33,7 +33,10 @@ pub use filters::{CumulativeFilter, Filters, InterfaceFilter, TemplateFilter, Wi
 pub use offset_checkpoint::{OffsetCheckpoint, SynchronizerTime};
 pub use pagination::{Page, PageToken};
 pub use reassignment::{AssignedEvent, Reassignment, ReassignmentEvent, UnassignedEvent};
-pub use template::{ChoiceByKeyValue, ChoiceValue, TemplateValue, TemplateValueWithKey};
+pub use template::{
+    ChoiceByKeyValue, ChoiceValue, Implements, Interface, TemplateOrInterface, TemplateValue,
+    TemplateValueWithKey,
+};
 pub use topology_format::{ParticipantAuthorizationTopologyFormat, TopologyFormat};
 pub use transaction::Transaction;
 pub use transaction_format::TransactionFormat;
@@ -41,6 +44,3 @@ pub use transaction_shape::{AcsDelta, LedgerEffects, TransactionShape, TxShape};
 pub use update::Update;
 pub use update_format::UpdateFormat;
 pub use version::FeaturesDescriptor;
-
-#[cfg(feature = "derive")]
-pub use ledger_api_types_derive::{Choice, Template};

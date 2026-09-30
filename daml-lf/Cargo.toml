@@ -9,6 +9,7 @@ license.workspace = true
 default = ["v2", "std"]
 std = ["daml-lf-archive-proto/std"]
 v2 = ["daml-lf-archive-proto/v2"]
+builder = []
 
 [dependencies]
 canton-types.workspace = true

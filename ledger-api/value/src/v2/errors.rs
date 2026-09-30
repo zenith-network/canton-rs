@@ -125,6 +125,24 @@ pub enum TryFromEnumError {
     UnexpectedConstructorName(#[from] UnexpectedConstructorName),
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum TryFromVariantError {
+    #[error(transparent)]
+    ValueKindError(#[from] ValueKindError),
+    #[error(transparent)]
+    UnexpectedIdentifier(#[from] UnexpectedIdentifier),
+    #[error(transparent)]
+    UnexpectedConstructorName(#[from] UnexpectedConstructorName),
+    #[error("failed to convert variant value")]
+    ValueError(#[source] Box<dyn std::error::Error + 'static + Send + Sync>),
+}
+
+impl TryFromVariantError {
+    pub fn value_error(error: impl std::error::Error + 'static + Send + Sync) -> Self {
+        Self::ValueError(Box::new(error))
+    }
+}
+
 /// Error on converting record value to a tuple
 #[derive(Debug, thiserror::Error)]
 pub enum TupleFromRecordError {

@@ -12,7 +12,7 @@ pub struct Package {
 }
 
 impl Package {
-    pub(crate) fn new(
+    pub fn new(
         daml_lf_version: Version,
         package_id: PackageId,
         versioned: VersionedPackage,
@@ -73,6 +73,18 @@ pub struct SealedPackage<'a> {
 }
 
 impl<'a> SealedPackage<'a> {
+    pub fn new(
+        daml_lf_version: Version,
+        package_id: PackageId,
+        versioned: VersionedSealedPackage<'a>,
+    ) -> Self {
+        Self {
+            daml_lf_version,
+            package_id,
+            versioned,
+        }
+    }
+
     pub fn daml_lf_version(&self) -> Version {
         self.daml_lf_version
     }

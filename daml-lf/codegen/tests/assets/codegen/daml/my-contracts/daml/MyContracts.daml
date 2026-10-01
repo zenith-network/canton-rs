@@ -29,6 +29,7 @@ template AllTypes
     recursiveVariant : RecursiveVariant
     -- Disabled for now, see TODO for this type
     -- collidingFields : CollidingFields
+    collidingWithTypeVar : CollidingWithTypeVar Int
     externalTemplate : ContractId ExternalTemplate
   where
     signatory owner

@@ -167,23 +167,28 @@ impl<'a> ItemGenerator<'a> {
         generics: syn::Generics,
         attrs: Vec<syn::Attribute>,
     ) -> syn::ItemEnum {
+        let variants = fields
+            .fields()
+            .into_iter()
+            .map(|field| self.generate_enum_variant(field, &generics))
+            .collect();
         syn::ItemEnum {
             attrs,
             vis: syn::Visibility::Public(Default::default()),
             ident,
             generics,
-            variants: fields
-                .fields()
-                .into_iter()
-                .map(|field| self.generate_enum_variant(field))
-                .collect(),
+            variants,
             enum_token: Default::default(),
             brace_token: Default::default(),
         }
     }
 
     /// Generate Rust enum variant with a single unnamed field: `#[name = "Variant"] Variant(Type)`
-    fn generate_enum_variant(&self, field: FieldWithType<'_>) -> syn::Variant {
+    fn generate_enum_variant(
+        &self,
+        field: FieldWithType<'_>,
+        generics: &syn::Generics,
+    ) -> syn::Variant {
         let field_name = field.field();
         let mut attrs = vec![Self::generate_name_attr(field_name)];
         let maybe_edge = self.type_references_definition(field.type_());
@@ -191,7 +196,7 @@ impl<'a> ItemGenerator<'a> {
             attrs.push(parse_quote! { #[value(omit_bound)] });
         }
         let ident = ident::generate_camel_ident(field_name);
-        let fields = self.generate_enum_fields(field, maybe_edge);
+        let fields = self.generate_enum_fields(field, generics, maybe_edge);
         syn::Variant {
             attrs,
             ident,
@@ -201,8 +206,17 @@ impl<'a> ItemGenerator<'a> {
     }
 
     /// Generate single unnamed field `Variant(Type)`
-    fn generate_enum_fields(&self, field: FieldWithType<'_>, edge: Option<Edge>) -> syn::Fields {
-        let mut field_type = self.type_generator.generate(field.type_());
+    fn generate_enum_fields(
+        &self,
+        field: FieldWithType<'_>,
+        generics: &syn::Generics,
+        edge: Option<Edge>,
+    ) -> syn::Fields {
+        let type_ = field.type_();
+        let mut field_type = self.type_generator.generate(type_);
+        if !matches!(type_, Type::Var(_)) {
+            Self::protect_from_collision_with_generics(&mut field_type, generics);
+        }
         if edge == Some(Edge::Inline) {
             field_type = parse_quote! { ::std::boxed::Box<#field_type> };
         }
@@ -231,31 +245,36 @@ impl<'a> ItemGenerator<'a> {
         generics: syn::Generics,
         attrs: Vec<syn::Attribute>,
     ) -> syn::ItemStruct {
+        let fields = self.generate_struct_fields(fields, &generics);
         syn::ItemStruct {
             attrs,
             vis: syn::Visibility::Public(Default::default()),
             struct_token: Default::default(),
             ident,
             generics,
-            fields: self.generate_struct_fields(fields),
+            fields,
             semi_token: None,
         }
     }
 
     /// Generate names fields for struct `pub name1: Type1, pub name2: Type2, ...`
-    fn generate_struct_fields(&self, fields: Fields<'_>) -> syn::Fields {
+    fn generate_struct_fields(&self, fields: Fields<'_>, generics: &syn::Generics) -> syn::Fields {
         syn::Fields::Named(syn::FieldsNamed {
             brace_token: Default::default(),
             named: fields
                 .fields()
                 .into_iter()
-                .map(|field| self.generate_struct_field(field))
+                .map(|field| self.generate_struct_field(field, generics))
                 .collect(),
         })
     }
 
     /// Generate a field in struct: `#[name = "Name"] pub name: Type,`
-    fn generate_struct_field(&self, field: FieldWithType<'_>) -> syn::Field {
+    fn generate_struct_field(
+        &self,
+        field: FieldWithType<'_>,
+        generics: &syn::Generics,
+    ) -> syn::Field {
         trace!(?field, "Entering field");
         let field_name = field.field();
         let mut attrs = vec![Self::generate_name_attr(field_name)];
@@ -264,7 +283,12 @@ impl<'a> ItemGenerator<'a> {
             attrs.push(parse_quote! { #[value(omit_bound)] });
         }
         let field_id = ident::generate_snake_ident(field_name);
-        let mut field_type = self.type_generator.generate(field.type_());
+        let type_ = field.type_();
+        let mut field_type = self.type_generator.generate(type_);
+        if !matches!(type_, Type::Var(_)) {
+            Self::protect_from_collision_with_generics(&mut field_type, generics);
+        }
+
         if maybe_edge == Some(Edge::Inline) {
             field_type = parse_quote! { ::std::boxed::Box<#field_type> };
         }
@@ -522,6 +546,28 @@ impl<'a> ItemGenerator<'a> {
             }),
             Kind::Arrow(arrow) => todo!("Arrow kind is not supported yet: {arrow:?}"),
             Kind::Nat => todo!("Nat kind is not supported yet"),
+        }
+    }
+
+    /// If type was resolved as just an identifier, but it's not a type var, it may collide with
+    /// generic type param with the same identifier. This function inserts `self` before the type
+    /// identifier if needed.
+    fn protect_from_collision_with_generics(field_type: &mut syn::Type, generics: &syn::Generics) {
+        if let syn::Type::Path(type_path) = field_type
+            && type_path.path.segments.len() == 1
+        {
+            let type_ident = &type_path.path.segments[0].ident;
+            if generics
+                .type_params()
+                .find(|tp| &tp.ident == type_ident)
+                .is_some()
+            {
+                // if there is a colliding type parameter, prepend `self`
+                type_path
+                    .path
+                    .segments
+                    .insert(0, syn::token::SelfValue::default().into());
+            }
         }
     }
 }

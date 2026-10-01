@@ -100,3 +100,11 @@ data AllFieldTypes = AllFieldTypes
     crate : Text
     async : Text
   deriving (Eq, Show)
+
+data Tv = Tv
+  deriving (Eq, Show)
+
+data CollidingWithTypeVar tv = CollidingWithTypeVar with
+    fromTv : tv
+    concrete : Tv
+  deriving (Eq, Show)

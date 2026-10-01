@@ -68,6 +68,16 @@ data RecursiveVariant
   | End
   deriving (Eq, Show)
 
+data RecursiveVariantWithRefFirst = RecursiveVariantWithRefFirst with
+    recursiveRef : [RecursiveVariantWithRefFirst]
+    recursiveInline : RecursiveVariantWithRefFirst
+  deriving (Eq, Show)
+
+data RecursiveVariantWithInlineFirst = RecursiveVariantWithInlineFirst with
+    recursiveInline : RecursiveVariantWithInlineFirst
+    recursiveRef : [RecursiveVariantWithInlineFirst]
+  deriving (Eq, Show)
+
 data Self = Self
   with
     value : Text

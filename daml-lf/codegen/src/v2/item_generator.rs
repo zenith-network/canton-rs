@@ -338,13 +338,14 @@ impl<'a> ItemGenerator<'a> {
         self.deps_resolver
             .deps_of_type(type_)
             .into_iter()
-            .find_map(|(def, edge)| {
+            .filter_map(|(def, edge)| {
                 if def == crate::ir::Definition::V2(self.definition) {
                     Some(edge)
                 } else {
                     None
                 }
             })
+            .max()
     }
 
     /// Generate attributes for items (structs, enums)

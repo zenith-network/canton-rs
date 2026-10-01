@@ -27,6 +27,8 @@ template AllTypes
     listRecursive : ListRecursive
     optionalRecursive : OptionalRecursive
     recursiveVariant : RecursiveVariant
+    recursiveVariantWithRefFirst : RecursiveVariantWithRefFirst
+    recursiveVariantWithInlineFirst : RecursiveVariantWithInlineFirst
     -- Disabled for now, see TODO for this type
     -- collidingFields : CollidingFields
     collidingWithTypeVar : CollidingWithTypeVar Int

@@ -21,7 +21,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1.0.7
         with:
-          toolchain: stable
+          toolchain: "1.99.0"
           default: true
           components: rustfmt
       - name: Use Rust cache
@@ -38,7 +38,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1.0.7
         with:
-          toolchain: stable
+          toolchain: "1.99.0"
           default: true
           components: clippy
       - name: Install Protoc
@@ -60,7 +60,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1.0.7
         with:
-          toolchain: stable
+          toolchain: "1.99.0"
           default: true
       - name: Install Protoc
         uses: arduino/setup-protoc@v3.0.0
@@ -81,7 +81,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1.0.7
         with:
-          toolchain: stable
+          toolchain: "1.99.0"
           default: true
       - name: Install Protoc
         uses: arduino/setup-protoc@v3.0.0
@@ -103,7 +103,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1.0.7
         with:
-          toolchain: stable
+          toolchain: "1.99.0"
           default: true
       - name: Install Protoc
         uses: arduino/setup-protoc@v3.0.0

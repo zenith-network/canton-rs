@@ -352,7 +352,7 @@ impl<'a> ItemGenerator<'a> {
     ///
     /// Example:
     ///
-    /// ```
+    /// ```ignore
     /// #[derive(
     ///     Clone,
     ///     Debug,

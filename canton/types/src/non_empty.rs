@@ -69,3 +69,37 @@ impl<T> From<NonEmpty<T>> for (Vec<T>, T) {
         (value.base, value.tail)
     }
 }
+
+/// This error is returned when a conversion from vector to non-empty fails.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
+#[error("source vector is empty")]
+pub struct EmptyVecError(());
+
+impl<T> TryFrom<Vec<T>> for NonEmpty<T> {
+    type Error = EmptyVecError;
+
+    /// Try to create [`NonEmpty`] from a vector and return error if given vector is empty.
+    fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
+        let mut base = value;
+        let tail = base.pop().ok_or(EmptyVecError(()))?;
+        Ok(Self { base, tail })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::{EmptyVecError, NonEmpty};
+
+    #[rstest]
+    #[case::empty(vec![], Err(EmptyVecError(())))]
+    #[case::one_elem(vec![1], Ok(NonEmpty { base: Vec::new(), tail: 1 }))]
+    #[case::three_elem(vec![1, 2, 3], Ok(NonEmpty { base: vec![1, 2], tail: 3 }))]
+    fn test_try_from_vec(
+        #[case] source: Vec<u32>,
+        #[case] result: Result<NonEmpty<u32>, EmptyVecError>,
+    ) {
+        assert_eq!(NonEmpty::try_from(source), result);
+    }
+}

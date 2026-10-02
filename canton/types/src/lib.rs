@@ -44,6 +44,7 @@ pub mod errors {
     pub use super::dotted_name::DottedNameError;
     pub use super::ledger_string::LedgerStringError;
     pub use super::name::NameError;
+    pub use super::non_empty::EmptyVecError;
     pub use super::numeric::NumericError;
     pub use super::package_id::PackageIdError;
     pub use super::package_id_any::PackageIdAnyError;

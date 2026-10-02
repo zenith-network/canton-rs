@@ -244,7 +244,7 @@ impl<'a> ModuleGenerator<'a> {
     ///
     /// Example:
     ///
-    /// ```
+    /// ```text
     /// #[derive(
     ///     Clone,
     ///     Debug,

@@ -8,8 +8,8 @@ use crate::grpc::v2::{
     error::ClientBuildError,
     retry::{RetryConfig, RetryHandler},
     services::{
-        CommandServiceClient, PackageServiceClient, StateServiceClient, UpdateServiceClient,
-        VersionServiceClient,
+        CommandServiceClient, PackageServiceClient, PartyManagementServiceClient,
+        StateServiceClient, UpdateServiceClient, VersionServiceClient,
     },
 };
 
@@ -224,6 +224,17 @@ impl CantonClient {
     pub fn package(&self) -> PackageServiceClient {
         PackageServiceClient::new(
             proto::package_service_client::PackageServiceClient::with_interceptor(
+                self.channel.clone(),
+                self.interceptor.clone(),
+            )
+            .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
+        )
+    }
+
+    pub fn party_management(&self) -> PartyManagementServiceClient {
+        PartyManagementServiceClient::new(
+            proto::admin::party_management_service_client::PartyManagementServiceClient::with_interceptor(
                 self.channel.clone(),
                 self.interceptor.clone(),
             )

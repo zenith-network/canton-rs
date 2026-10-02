@@ -20,7 +20,7 @@ mod version;
 pub use acs::{ActiveContract, ContractEntry, IncompleteAssigned, IncompleteUnassigned};
 pub use commands::{
     Command, Commands, Create, CreateAndExercise, CreateAndExerciseCommand, CreateCommand,
-    Exercise, ExerciseByKey, ExerciseByKeyCommand, ExerciseCommand,
+    DisclosedContract, Exercise, ExerciseByKey, ExerciseByKeyCommand, ExerciseCommand,
 };
 pub use completion::Completion;
 pub use empty::Empty;

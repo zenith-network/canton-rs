@@ -1,7 +1,8 @@
 use std::time::{Duration, SystemTime};
 
 use canton_types::{
-    ContractId, LedgerString, Name, NonEmpty, PackageName, PartyId, SynchronizerId, UserId,
+    ContractId, LedgerString, Name, NonEmpty, PackageId, PackageName, PartyId, SynchronizerId,
+    UserId,
 };
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::{
@@ -26,7 +27,7 @@ pub struct Commands {
     pub act_as: NonEmpty<PartyId>,
     pub read_as: Vec<PartyId>,
     pub submission_id: Option<LedgerString>,
-    // pub disclosed_contracts: Vec<DisclosedContract>,
+    pub disclosed_contracts: Vec<DisclosedContract>,
     pub synchronizer_id: Option<SynchronizerId>,
     // pub package_id_selection_preference: Vec<PackageId>,
     // pub prefetch_contract_keys: Vec<PrefetchContractKey>,
@@ -48,6 +49,7 @@ impl Commands {
             act_as,
             read_as: Vec::new(),
             submission_id: None,
+            disclosed_contracts: Vec::new(),
             synchronizer_id: None,
             taps_max_passes: None,
         }
@@ -78,6 +80,13 @@ impl Commands {
         self
     }
 
+    /// Attach a contract the submitting parties cannot see, as a registry's off-ledger
+    /// API returns it with a choice context (explicit disclosure).
+    pub fn with_disclosed_contract(&mut self, contract: DisclosedContract) -> &mut Self {
+        self.disclosed_contracts.push(contract);
+        self
+    }
+
     pub fn with_submission_id(&mut self, submission_id: Option<LedgerString>) -> &mut Self {
         self.submission_id = submission_id;
         self
@@ -105,11 +114,42 @@ impl From<Commands> for proto::Commands {
             act_as: value.act_as.into_iter().map(Into::into).collect(),
             read_as: value.read_as.into_iter().map(Into::into).collect(),
             submission_id: value.submission_id.map(Into::into).unwrap_or_default(),
+            disclosed_contracts: value
+                .disclosed_contracts
+                .into_iter()
+                .map(Into::into)
+                .collect(),
             synchronizer_id: value.synchronizer_id.map(Into::into).unwrap_or_default(),
             taps_max_passes: value.taps_max_passes,
             min_ledger_time_abs: value.min_ledger_time_abs.map(Into::into),
             min_ledger_time_rel: value.min_ledger_time_rel.map(|t| t.try_into().unwrap()), // FIXME: do something about this unwrap
             ..Default::default() // TODO: convert other fields when they are implemented
+        }
+    }
+}
+
+/// A contract attached to a submission by explicit disclosure: the Ledger API's
+/// `DisclosedContract`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DisclosedContract {
+    /// If set, the participant checks the blob's template id against it.
+    pub template_id: Option<Identifier<PackageId>>,
+    /// If set, the participant checks the blob's contract id against it.
+    pub contract_id: Option<ContractId>,
+    /// The opaque payload the engine reconstructs the contract from (the
+    /// `created_event_blob` of its create event). Must be non-empty.
+    pub created_event_blob: Vec<u8>,
+    /// The synchronizer the contract is assigned to, if known.
+    pub synchronizer_id: Option<SynchronizerId>,
+}
+
+impl From<DisclosedContract> for proto::DisclosedContract {
+    fn from(value: DisclosedContract) -> Self {
+        Self {
+            template_id: value.template_id.map(Into::into),
+            contract_id: value.contract_id.map(Into::into).unwrap_or_default(),
+            created_event_blob: value.created_event_blob,
+            synchronizer_id: value.synchronizer_id.map(Into::into).unwrap_or_default(),
         }
     }
 }
@@ -312,5 +352,60 @@ impl From<CreateAndExerciseCommand> for proto::CreateAndExerciseCommand {
             choice: value.choice.into(),
             choice_argument: Some(value.choice_argument.into()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn commands() -> Commands {
+        Commands::new(
+            LedgerString::new("cmd".to_string()).unwrap(),
+            NonEmpty::single(format!("alice::1220{}", "ab".repeat(32)).parse().unwrap()),
+        )
+    }
+
+    #[test]
+    fn disclosed_contracts_reach_the_proto() {
+        let template_id = Identifier {
+            package_id: PackageId::new("ab".repeat(32)).unwrap(),
+            module_name: "M".parse().unwrap(),
+            entity_name: "T".parse().unwrap(),
+        };
+        let contract_id = ContractId::new(format!("00{}", "cd".repeat(32))).unwrap();
+        let synchronizer_id =
+            SynchronizerId::new(format!("sync::1220{}", "ef".repeat(32))).unwrap();
+        let mut cmds = commands();
+        cmds.with_disclosed_contract(DisclosedContract {
+            template_id: Some(template_id.clone()),
+            contract_id: Some(contract_id.clone()),
+            created_event_blob: vec![1, 2, 3],
+            synchronizer_id: Some(synchronizer_id.clone()),
+        })
+        .with_disclosed_contract(DisclosedContract {
+            template_id: None,
+            contract_id: None,
+            created_event_blob: vec![4],
+            synchronizer_id: None,
+        });
+        let proto: proto::Commands = cmds.into();
+        assert_eq!(
+            proto.disclosed_contracts,
+            vec![
+                proto::DisclosedContract {
+                    template_id: Some(template_id.into()),
+                    contract_id: contract_id.to_string(),
+                    created_event_blob: vec![1, 2, 3],
+                    synchronizer_id: synchronizer_id.to_string(),
+                },
+                proto::DisclosedContract {
+                    template_id: None,
+                    contract_id: String::new(),
+                    created_event_blob: vec![4],
+                    synchronizer_id: String::new(),
+                },
+            ]
+        );
     }
 }

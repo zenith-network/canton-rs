@@ -1,5 +1,3 @@
-use std::debug_assert_matches;
-
 use canton_paths::Paths;
 use canton_types::Name;
 use proc_macro2::TokenStream;
@@ -25,9 +23,8 @@ pub fn try_impl_record(
 ) -> Result<TokenStream, Error> {
     // FIXME: We should explicitly reject tuple structs,
     //        because they don't have viable alternative in Daml.
-    debug_assert_matches!(
-        ds.fields,
-        Fields::Named(_) | Fields::Unit,
+    debug_assert!(
+        matches!(ds.fields, Fields::Named(_) | Fields::Unit),
         "tuple structs are not allowed"
     );
 

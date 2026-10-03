@@ -652,10 +652,11 @@ mod tests {
     }
 
     fn assert_parses_as_canton_decoded(input: Status) {
-        use std::assert_matches;
-
         let output = CantonError::from(input);
-        assert_matches!(output, CantonError::Decoded(..));
+        assert!(
+            matches!(output, CantonError::Decoded(..)),
+            "expected CantonError::Decoded, got {output:?}"
+        );
     }
 
     fn assert_parses_as_redacted(

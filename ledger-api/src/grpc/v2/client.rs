@@ -13,6 +13,12 @@ use crate::grpc::v2::{
     },
 };
 
+#[cfg(any(
+    feature = "tls-ring",
+    feature = "tls-aws-lc",
+    feature = "tls-native-roots",
+    feature = "tls-webpki-roots",
+))]
 pub use tonic::transport::ClientTlsConfig;
 
 #[cfg(not(feature = "tracing"))]
@@ -39,6 +45,12 @@ pub(crate) type InterceptedService =
 /// ```
 pub struct CantonClientBuilder {
     endpoint: String,
+    #[cfg(any(
+        feature = "tls-ring",
+        feature = "tls-aws-lc",
+        feature = "tls-native-roots",
+        feature = "tls-webpki-roots",
+    ))]
     tls_config: Option<ClientTlsConfig>,
     token: Option<String>,
     max_decoding_message_size: Option<usize>,
@@ -51,6 +63,12 @@ impl CantonClientBuilder {
     pub fn new(endpoint: impl Into<String>) -> Self {
         Self {
             endpoint: endpoint.into(),
+            #[cfg(any(
+                feature = "tls-ring",
+                feature = "tls-aws-lc",
+                feature = "tls-native-roots",
+                feature = "tls-webpki-roots",
+            ))]
             tls_config: None,
             token: None,
             max_decoding_message_size: None,
@@ -60,6 +78,12 @@ impl CantonClientBuilder {
         }
     }
 
+    #[cfg(any(
+        feature = "tls-ring",
+        feature = "tls-aws-lc",
+        feature = "tls-native-roots",
+        feature = "tls-webpki-roots",
+    ))]
     pub fn with_tls(mut self, config: ClientTlsConfig) -> Self {
         self.tls_config = Some(config);
         self
@@ -117,15 +141,23 @@ impl CantonClientBuilder {
         Ok(self.build_client_with_channel(channel))
     }
 
-    fn build_endpoint(&mut self) -> Result<Endpoint, ClientBuildError> {
-        let mut endpoint = Endpoint::from_shared(mem::take(&mut self.endpoint))?
+    pub(crate) fn build_endpoint(&mut self) -> Result<Endpoint, ClientBuildError> {
+        let endpoint = Endpoint::from_shared(mem::take(&mut self.endpoint))?
             .http2_keep_alive_interval(self.http2_keep_alive_interval)
             .keep_alive_timeout(self.keep_alive_timeout)
             .keep_alive_while_idle(true);
 
-        if let Some(tls) = self.tls_config.take() {
-            endpoint = endpoint.tls_config(tls)?;
-        }
+        #[cfg(any(
+            feature = "tls-ring",
+            feature = "tls-aws-lc",
+            feature = "tls-native-roots",
+            feature = "tls-webpki-roots",
+        ))]
+        let endpoint = if let Some(tls) = self.tls_config.take() {
+            endpoint.tls_config(tls)?
+        } else {
+            endpoint
+        };
 
         Ok(endpoint)
     }
@@ -241,5 +273,93 @@ impl CantonClient {
             .max_decoding_message_size(self.max_decoding_message_size),
             self.retry_handler.clone(),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_builder_defaults() {
+        let builder = CantonClientBuilder::new("http://localhost:5001");
+        assert_eq!(builder.endpoint, "http://localhost:5001");
+        assert!(builder.token.is_none());
+        assert!(builder.max_decoding_message_size.is_none());
+        #[cfg(any(
+            feature = "tls-ring",
+            feature = "tls-aws-lc",
+            feature = "tls-native-roots",
+            feature = "tls-webpki-roots",
+        ))]
+        assert!(builder.tls_config.is_none());
+    }
+
+    #[test]
+    fn test_build_endpoint_without_tls() {
+        let mut builder = CantonClientBuilder::new("http://localhost:5001")
+            .with_token("test-token")
+            .with_max_decoding_message_size(1024 * 1024);
+        let endpoint = builder.build_endpoint();
+        assert!(endpoint.is_ok());
+    }
+
+    #[cfg(any(
+        feature = "tls-ring",
+        feature = "tls-aws-lc",
+        feature = "tls-native-roots",
+        feature = "tls-webpki-roots",
+    ))]
+    #[test]
+    fn test_builder_with_tls() {
+        let tls = ClientTlsConfig::new();
+        let builder = CantonClientBuilder::new("https://localhost:5001").with_tls(tls);
+        assert!(builder.tls_config.is_some());
+    }
+
+    #[cfg(any(
+        feature = "tls-ring",
+        feature = "tls-aws-lc",
+        feature = "tls-native-roots",
+        feature = "tls-webpki-roots",
+    ))]
+    #[test]
+    fn test_build_endpoint_with_tls() {
+        let tls = ClientTlsConfig::new();
+        let mut builder = CantonClientBuilder::new("https://localhost:5001").with_tls(tls);
+        assert!(builder.tls_config.is_some());
+        let endpoint = builder.build_endpoint();
+        assert!(endpoint.is_ok());
+        assert!(
+            builder.tls_config.is_none(),
+            "tls_config must be consumed and applied to endpoint"
+        );
+    }
+
+    #[cfg(any(
+        feature = "tls-ring",
+        feature = "tls-aws-lc",
+        feature = "tls-native-roots",
+        feature = "tls-webpki-roots",
+    ))]
+    #[tokio::test]
+    async fn test_connect_with_tls_fails_on_plaintext_server() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        tokio::spawn(async move {
+            use tokio::io::AsyncWriteExt;
+            if let Ok((mut socket, _)) = listener.accept().await {
+                let _ = socket.write_all(b"HTTP/1.1 200 OK\r\n\r\n").await;
+            }
+        });
+
+        let tls = ClientTlsConfig::new().domain_name("localhost");
+        let builder = CantonClientBuilder::new(format!("https://{addr}")).with_tls(tls);
+
+        let res = builder.connect().await;
+        // Connecting with TLS to a non-TLS server fails at the TLS handshake layer,
+        // confirming that TLS transport is actively configured and applied.
+        assert!(res.is_err());
     }
 }

@@ -34,6 +34,10 @@ impl ModuleGenSetBuilder {
             deps.direct.as_mut().insert(template_name);
             deps.extend(template_deps);
 
+            if let Some(key) = template.key() {
+                deps.extend(resolver.find_deps_from_type(key.type_()));
+            }
+
             let choices = template.choices();
 
             for choice in choices {

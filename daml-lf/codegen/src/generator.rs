@@ -321,4 +321,69 @@ mod transitive_deps_tests {
             );
         }
     }
+
+    #[test]
+    fn generates_key_only_record_and_its_dependencies() {
+        use crate::{
+            gen_set_builder::PackageGenMode, v2::package_gen_set_builder::PackageGenSetBuilder,
+        };
+
+        let mut dar = DarFile::read_from(FIXTURE).expect("fixture DAR");
+        let packages = Generator::read_packages(&mut dar).unwrap();
+        let sealed = Generator::seal_packages(&packages).unwrap();
+        let main = Generator::get_main_package_id(&mut dar).unwrap();
+        let original = &sealed[&main];
+        let VersionedSealedPackage::V2(package) = original.versioned();
+        let mut unsealed = package.as_unsealed().clone();
+
+        // Reuse the fixture's choice record exclusively as a key: no payload or
+        // choice refers to it, and its fields reach both local and other modules.
+        let key_name = unsealed
+            .interned_strings
+            .iter_mut()
+            .position(|name| name == "Holder_Go")
+            .unwrap();
+        unsealed.interned_strings[key_name] = "KeyOnlyRecord".into();
+        for module in &mut unsealed.modules {
+            for template in &mut module.templates {
+                let choice = template
+                    .choices
+                    .iter()
+                    .find(|choice| choice.name_interned_str == key_name as i32)
+                    .unwrap();
+                let key_type = choice.arg_binder.as_ref().unwrap().r#type.clone();
+                template.choices.clear();
+                template.key.get_or_insert_default().r#type = key_type;
+            }
+        }
+
+        let package = daml_lf::v2::sealed::Package::seal(&unsealed).unwrap();
+        let genset = PackageGenSetBuilder::build(package, PackageGenMode::ResolveTemplates);
+        let identifiers = Rc::new(Generator::generate_package_identifiers(&sealed));
+        let mut generator = PackageGeneratorV2::new(
+            original.daml_lf_version(),
+            main.clone(),
+            package,
+            identifiers[&main].clone(),
+            identifiers,
+            Rc::new(Default::default()),
+            genset.genset,
+            Default::default(),
+        );
+        let generated = generator.gen_package().unwrap();
+        let source = quote::quote!(#generated).to_string();
+        for record in [
+            "KeyOnlyRecord",
+            "LocalRecord",
+            "LocalLeaf",
+            "Outer",
+            "Inner",
+            "Leaf",
+        ] {
+            assert!(
+                source.contains(&format!("struct {record} ")),
+                "{record} missing from generated bindings"
+            );
+        }
+    }
 }

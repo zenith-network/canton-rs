@@ -1,3 +1,11 @@
 # Canton Rust SDK
 
-WIP
+This SDK is under development.
+
+## Build
+
+Build dependencies:
+
+- [Protobuf] compiler `protoc`
+
+[Protobuf]: https://protobuf.dev/

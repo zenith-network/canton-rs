@@ -1,0 +1,27 @@
+[package]
+name = "ledger-api-integration"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+canton = { path = "../../../canton", default-features = false, features = ["derive", "ledger-api"] }
+ledger-api = { path = "../../../ledger-api" }
+ledger-api-proto = { path = "../../../ledger-api/proto", features = ["v2-full"] }
+ledger-api-types = { path = "../../../ledger-api/types" }
+prost = "0.14.3"
+prost-types = "0.14.3"
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "time"] }
+tokio-stream = "0.1.18"
+tonic = { version = "0.14.6", features = ["transport"] }
+tonic-types = "0.14.6"
+uuid = { version = "1.24.1", features = ["v4"] }
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+
+[build-dependencies]
+daml-lf-codegen = { path = "../../../daml-lf/codegen" }
+prost = "0.14.3"
+zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+daml-lf-archive-proto = { path = "../../../daml-lf/archive-proto" }

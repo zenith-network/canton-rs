@@ -1,6 +1,10 @@
 [workspace]
 members = [
+  "admin-api",
+  "admin-api/proto",
+  "admin-api/types",
   "canton",
+  "canton/proto",
   "canton/types",
   "canton/types/derive",
   "canton-paths",
@@ -72,8 +76,14 @@ zip = { version = "8.6.0", default-features = false }
 # Common Canton crates
 canton = { path = "canton", default-features = false }
 canton-paths = { path = "canton-paths" }
+canton-proto = { path = "canton/proto", default-features = false }
 canton-types = { path = "canton/types", default-features = false }
 canton-types-derive = { path = "canton/types/derive", default-features = false }
+
+# Admin API crates
+admin-api = { path = "admin-api", default-features = false }
+admin-api-proto = { path = "admin-api/proto", default-features = false }
+admin-api-types = { path = "admin-api/types", default-features = false }
 
 # Ledger API crates
 ledger-api = { path = "ledger-api", default-features = false }

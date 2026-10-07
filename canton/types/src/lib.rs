@@ -10,6 +10,7 @@ mod package_id;
 mod package_id_any;
 mod package_identifier;
 mod package_name;
+mod participant_id;
 mod party_id;
 mod synchronizer_id;
 mod text_map;
@@ -18,6 +19,8 @@ mod user_id;
 
 #[cfg(feature = "testing")]
 pub mod test_fixtures;
+
+pub mod topology;
 
 pub use contract_id::ContractId;
 pub use dotted_name::DottedName;
@@ -29,6 +32,7 @@ pub use package_id::PackageId;
 pub use package_id_any::PackageIdAny;
 pub use package_identifier::PackageIdentifier;
 pub use package_name::PackageName;
+pub use participant_id::ParticipantId;
 pub use party_id::PartyId;
 pub use synchronizer_id::SynchronizerId;
 pub use text_map::TextMap;
@@ -49,6 +53,7 @@ pub mod errors {
     pub use super::package_id::PackageIdError;
     pub use super::package_id_any::PackageIdAnyError;
     pub use super::package_name::PackageNameError;
+    pub use super::participant_id::ParticipantIdError;
     pub use super::party_id::PartyIdError;
     pub use super::synchronizer_id::SynchronizerIdError;
     pub use super::user_id::UserIdError;

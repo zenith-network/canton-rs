@@ -110,7 +110,7 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install dpm and Daml SDK
-        uses: $/.github/actions/setup-daml
+        uses: zenith-network/setup-daml@v1.0.0
         with:
           dpm-version: "1.0.22"
           sdk-version: "3.5.9"

@@ -9,6 +9,7 @@ workflows:
         - 'arduino/setup-protoc@v3.0.0'
         - 'swatinem/rust-cache@v2.9.2'
         - 'uncenter/setup-taplo@v1.0.8'
+        - 'zenith-network/setup-daml@v1.0.0'
 dependencies:
     'actions-rs/toolchain@v1.0.7':
         ref: 'v1.0.7'
@@ -35,3 +36,8 @@ dependencies:
         commit: 'sha1-4f203fdb4f3b1e289c8382cf90d8397d2338df2e'
         owner_id: 47499684
         repo_id: 756648657
+    'zenith-network/setup-daml@v1.0.0':
+        ref: 'v1.0.0'
+        commit: 'sha1-0d173d8e085661ab1928b425d4ab505f4cf3e5b8'
+        owner_id: 216674813
+        repo_id: 1410882479

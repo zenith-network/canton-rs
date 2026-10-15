@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt, time::Duration};
 
+use canton_version::semver::Version;
 use ledger_api_types::{canton_types::LedgerString, value::v2::errors::ValueError};
 use thiserror::Error;
 use tonic_types::{ErrorDetail, ErrorInfo, StatusExt as _};
@@ -60,6 +61,10 @@ pub enum CantonError {
     /// the client
     #[error("failed to parse response from Ledger API")]
     ValueError(#[from] ValueError),
+
+    /// This error is returned when client doesn't support the API version of the server.
+    #[error("unsupported API version: '{server_version}'")]
+    UnsupportedApiVersion { server_version: Version },
 }
 
 impl CantonError {

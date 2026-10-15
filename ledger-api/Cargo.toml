@@ -11,6 +11,7 @@ tracing = ["dep:tracing", "dep:http"]
 v2 = ["ledger-api-proto/v2-full", "ledger-api-types/v2"]
 
 [dependencies]
+canton-version.workspace = true
 http = { workspace = true, optional = true }
 ledger-api-proto.workspace = true
 ledger-api-types.workspace = true

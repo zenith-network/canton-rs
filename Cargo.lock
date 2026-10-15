@@ -9,6 +9,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 
 [[package]]
+name = "admin-api"
+version = "0.1.0"
+dependencies = [
+ "admin-api-types",
+ "canton-proto",
+ "canton-types",
+ "chrono",
+ "thiserror",
+ "tonic",
+]
+
+[[package]]
+name = "admin-api-proto"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "prost-types",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+]
+
+[[package]]
+name = "admin-api-types"
+version = "0.1.0"
+dependencies = [
+ "canton-proto",
+ "canton-types",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -161,6 +192,7 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 name = "canton"
 version = "0.1.0"
 dependencies = [
+ "admin-api",
  "canton-types",
  "canton-types-derive",
  "daml-lf",
@@ -183,6 +215,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "canton-proto"
+version = "0.1.0"
+dependencies = [
+ "admin-api-proto",
+ "prost",
+ "prost-types",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+]
+
+[[package]]
 name = "canton-types"
 version = "0.1.0"
 dependencies = [
@@ -201,6 +245,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.6",
+]
+
+[[package]]
+name = "canton-version"
+version = "0.1.0"
+dependencies = [
+ "semver",
 ]
 
 [[package]]
@@ -838,6 +889,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 name = "ledger-api"
 version = "0.1.0"
 dependencies = [
+ "canton-version",
  "http",
  "ledger-api-proto",
  "ledger-api-types",
@@ -1190,6 +1242,7 @@ version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f94967dc7688f3054c7fac87473ffae4cc4c3904800e2d9f5b857246d8963b0a"
 dependencies = [
+ "chrono",
  "prost",
 ]
 

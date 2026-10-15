@@ -1,0 +1,74 @@
+module Integration where
+
+import DA.Fail
+import DA.TextMap qualified as TM
+
+data Color = Red | Green | Blue deriving (Eq, Show)
+data Detail = Count Int | Label Text deriving (Eq, Show)
+data Nested = Nested with
+    enabled : Bool
+    numbers : [Int]
+    note : Optional Text
+  deriving (Eq, Show)
+
+data Payload = Payload with
+    number : Int
+    amount : Decimal
+    text : Text
+    day : Date
+    moment : Time
+    color : Color
+    detail : Detail
+    nested : Nested
+    labels : TM.TextMap Text
+  deriving (Eq, Show)
+
+template Sample
+  with
+    owner : Party
+    observerParty : Party
+    payload : Payload
+  where
+    signatory owner
+    observer observerParty
+
+    nonconsuming choice Read : Payload
+      controller owner
+      do pure payload
+
+    choice Replace : ContractId Sample
+      with newPayload : Payload
+      controller owner
+      do create this with payload = newPayload
+
+    choice Finish : ()
+      controller owner
+      do pure ()
+
+    nonconsuming choice Reject : ()
+      with stateDependent : Bool
+      controller owner
+      do
+        failWithStatus (FailureStatus with
+          errorId = "integration.canton-rs/rejected"
+          category = if stateDependent then failedPrecondition else invalidArgument
+          message = "Controlled rejection: payload is unacceptable"
+          meta = TM.fromList [("fixture", "Sample"), ("detail", "controlled")])
+
+template Keyed
+  with
+    owner : Party
+    label : Text
+    number : Int
+  where
+    signatory owner
+    key (owner, label) : (Party, Text)
+    maintainer key._1
+
+    nonconsuming choice ReadNumber : Int
+      controller owner
+      do pure number
+
+    choice FinishKeyed : ()
+      controller owner
+      do pure ()

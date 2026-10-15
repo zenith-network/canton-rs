@@ -1,8 +1,10 @@
 use canton_types::PartyId;
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct TopologyFormat {
+    /// Include participant authorization topology events in streams.
+    /// If `None`, no participant authorization topology events are emitted in the stream.
     pub include_participant_authorization_events: Option<ParticipantAuthorizationTopologyFormat>,
 }
 
@@ -18,6 +20,8 @@ impl From<TopologyFormat> for proto::TopologyFormat {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ParticipantAuthorizationTopologyFormat {
+    /// List of parties for which the topology transactions should be sent.
+    /// Empty means: for all parties.
     pub parties: Vec<PartyId>,
 }
 

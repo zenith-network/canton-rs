@@ -1,0 +1,10 @@
+[default]
+git = { url = "https://github.com/digital-asset/canton.git", tag = "v3.5.12" }
+
+[capsules]
+# Filtering out Scala files inside this capsule
+admin-api-proto = { src = "community/admin-api/src/main/protobuf", dst = "admin-api/proto/protobuf", filter = "**/*.{proto,yaml,yml}" }
+canton-proto = { src = "community/base/src/main/protobuf", dst = "canton/proto/protobuf" }
+daml-lf-archive-proto = { src = "community/daml-lf/archive/src/main/protobuf", dst = "daml-lf/archive-proto/proto" }
+ledger-api-proto = { src = "community/ledger-api-proto/src/main/protobuf", dst = "ledger-api/proto/protobuf" }
+ledger-api-value-proto = { src = "community/daml-lf/ledger-api-value-proto/src/main/protobuf", dst = "ledger-api/value/proto/proto" }

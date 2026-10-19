@@ -42,7 +42,11 @@ impl AuthInterceptor {
 
     /// Reload a host-managed bearer file for each new RPC. Missing, empty or
     /// malformed files fail closed; no old token or anonymous fallback is used.
-    /// Mount the containing directory when tokens are replaced atomically.
+    /// Use a regular file on local storage or tmpfs; reads run synchronously in
+    /// the interceptor, so network filesystems are not supported. The writer must
+    /// replace the file atomically (write a temporary file in the same directory
+    /// and rename it over the path, or swap a symlink). In-place writes can be
+    /// observed half-written. Mount the containing directory in containers.
     pub fn from_file(path: impl Into<PathBuf>) -> Self {
         Self {
             token: None,
@@ -55,6 +59,12 @@ impl AuthInterceptor {
             return Ok(self.token.clone());
         };
         let fail = || tonic::Status::unauthenticated("ledger token file unavailable or invalid");
+        // Follow secret-volume symlinks, but reject devices/FIFOs before opening.
+        // The credential directory and its writer must be trusted.
+        let metadata = std::fs::metadata(path).map_err(|_| fail())?;
+        if !metadata.is_file() || metadata.len() > 16_384 {
+            return Err(fail());
+        }
         let file = std::fs::File::open(path).map_err(|_| fail())?;
         let mut text = String::new();
         file.take(16_385)
@@ -150,6 +160,26 @@ mod tests {
             original.call(tonic::Request::new(())).unwrap_err().code(),
             tonic::Code::Unauthenticated
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn writerless_fifo_is_rejected_without_opening() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("token");
+        assert!(
+            std::process::Command::new("mkfifo")
+                .arg(&path)
+                .status()
+                .unwrap()
+                .success()
+        );
+        let start = std::time::Instant::now();
+        let error = AuthInterceptor::from_file(&path)
+            .call(tonic::Request::new(()))
+            .unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Unauthenticated);
+        assert!(start.elapsed() < std::time::Duration::from_secs(1));
     }
 
     #[test]

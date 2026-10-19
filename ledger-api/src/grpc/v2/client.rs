@@ -73,6 +73,10 @@ impl CantonClientBuilder {
     /// Reload the bearer file for every new RPC, including calls made by cloned
     /// clients. Existing streams retain their original authorization and must
     /// reconnect when the server expires them. File errors fail closed.
+    /// The path must be a regular file on local storage or tmpfs. Writers must
+    /// replace it atomically (same-directory temporary file + rename, or symlink
+    /// swap); in-place writes can be observed half-written. See
+    /// [`AuthInterceptor::from_file`] for the synchronous I/O contract.
     pub fn with_token_file(mut self, path: impl Into<std::path::PathBuf>) -> Self {
         self.auth = AuthInterceptor::from_file(path);
         self

@@ -827,6 +827,7 @@ dependencies = [
  "prost",
  "prost-types",
  "protobuf-utils",
+ "tempfile",
  "thiserror",
  "tokio",
  "tokio-stream",

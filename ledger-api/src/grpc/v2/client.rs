@@ -40,7 +40,7 @@ pub(crate) type InterceptedService =
 pub struct CantonClientBuilder {
     endpoint: String,
     tls_config: Option<ClientTlsConfig>,
-    token: Option<String>,
+    auth: AuthInterceptor,
     max_decoding_message_size: Option<usize>,
     retry_config: RetryConfig,
     http2_keep_alive_interval: Duration,
@@ -52,7 +52,7 @@ impl CantonClientBuilder {
         Self {
             endpoint: endpoint.into(),
             tls_config: None,
-            token: None,
+            auth: AuthInterceptor::new(None),
             max_decoding_message_size: None,
             retry_config: RetryConfig::default(),
             http2_keep_alive_interval: CantonClient::DEFAULT_HTTP2_KEEP_ALIVE_INTERVAL,
@@ -66,7 +66,15 @@ impl CantonClientBuilder {
     }
 
     pub fn with_token(mut self, token: impl Into<String>) -> Self {
-        self.token = Some(token.into());
+        self.auth = AuthInterceptor::new(Some(token.into()));
+        self
+    }
+
+    /// Reload the bearer file for every new RPC, including calls made by cloned
+    /// clients. Existing streams retain their original authorization and must
+    /// reconnect when the server expires them. File errors fail closed.
+    pub fn with_token_file(mut self, path: impl Into<std::path::PathBuf>) -> Self {
+        self.auth = AuthInterceptor::from_file(path);
         self
     }
 
@@ -134,7 +142,7 @@ impl CantonClientBuilder {
         #[cfg(feature = "tracing")]
         let channel = crate::grpc::v2::tracing_layer::GrpcTracing::new(channel);
 
-        let interceptor = AuthInterceptor::new(self.token);
+        let interceptor = self.auth;
 
         let max_decoding_message_size = self
             .max_decoding_message_size

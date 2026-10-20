@@ -1,6 +1,7 @@
 use ledger_api_proto::com::daml::ledger::api::v2::{
     GetUpdateByIdRequest, GetUpdateByOffsetRequest, GetUpdateResponse, GetUpdatesPageRequest,
-    GetUpdatesRequest, GetUpdatesResponse, update_service_client as svc_proto,
+    GetUpdatesPageResponse, GetUpdatesRequest, GetUpdatesResponse,
+    update_service_client as svc_proto,
 };
 use ledger_api_types::{
     canton_types::LedgerString,
@@ -213,7 +214,7 @@ impl UpdateServiceClient {
                 })
                 .collect::<Result<_, _>>()?,
             next_page_token: PageBytesToken::try_from_proto(response.next_page_token)
-                .validated_of::<GetUpdateResponse>("next_page_token")
+                .validated_of::<GetUpdatesPageResponse>("next_page_token")
                 .no_msg()?,
         };
 

@@ -1,6 +1,7 @@
 //! Decodes the compiler-produced stable Daml-LF 2.4 fixture
 //! `codegen/tests/assets/stable-lf24.dar` (SDK 3.6.0: damlc 3.6.2, Canton 3.6.1;
 //! built from `codegen/tests/assets/stable-lf24` with `dpm build -o ../stable-lf24.dar`).
+#![cfg(feature = "v2")]
 
 use daml_lf::dar::DarFile;
 use daml_lf::package::VersionedPackage;

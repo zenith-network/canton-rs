@@ -222,10 +222,10 @@ fn into_record_impl(
     for ((_, attrs), member) in ds.fields.iter().zip(member_attrs).zip(ds.fields.members()) {
         let field_name = field_name_expr(item_attrs.paths(), attrs.name(), &member)?;
 
-        fields.push(quote! {#value_v2::value::RecordField {
-            label: Some(#field_name),
-            value: #into_value_trait::into_value(self.#member),
-        }});
+        fields.push(quote! {#value_v2::value::RecordField::new_labeled(
+            #field_name,
+            #into_value_trait::into_value(self.#member),
+        )});
     }
 
     let generics = apply_bounds(
@@ -240,10 +240,10 @@ fn into_record_impl(
         #[automatically_derived]
         impl #impl_generics #into_record_trait for #ident #type_generics #where_clause {
             fn into_record(self) -> #value_v2::value::Record {
-                #value_v2::value::Record {
-                    record_id: Some(<Self as #value_v2::HasIdentifier>::identifier_with_package_id()),
-                    fields: vec![ #(#fields),* ],
-                }
+                #value_v2::value::Record::new(
+                    Some(<Self as #value_v2::HasIdentifier>::identifier_with_package_id()),
+                    vec![ #(#fields),* ],
+                )
             }
         }
     };

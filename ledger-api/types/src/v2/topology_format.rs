@@ -1,9 +1,26 @@
 use canton_types::PartyId;
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub struct TopologyFormat {
     pub include_participant_authorization_events: Option<ParticipantAuthorizationTopologyFormat>,
+}
+
+impl TopologyFormat {
+    pub fn new() -> Self {
+        Self {
+            include_participant_authorization_events: None,
+        }
+    }
+
+    pub fn include_participant_authorization_events(
+        mut self,
+        format: ParticipantAuthorizationTopologyFormat,
+    ) -> Self {
+        self.include_participant_authorization_events = Some(format);
+        self
+    }
 }
 
 impl From<TopologyFormat> for proto::TopologyFormat {
@@ -17,6 +34,7 @@ impl From<TopologyFormat> for proto::TopologyFormat {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ParticipantAuthorizationTopologyFormat {
     pub parties: Vec<PartyId>,
 }

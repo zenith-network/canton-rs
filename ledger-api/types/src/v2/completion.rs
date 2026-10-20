@@ -6,6 +6,7 @@ use protobuf_utils::InvalidProtoField as _;
 /// A completion represents the status of a submitted command on the ledger: it can be successful or
 /// failed.
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct Completion {
     /// The ID of the succeeded or failed command.
     pub command_id: LedgerString,

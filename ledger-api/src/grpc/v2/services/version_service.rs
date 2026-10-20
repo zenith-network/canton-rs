@@ -52,6 +52,7 @@ impl VersionServiceClient {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct ApiVersion {
     pub version: String,
     pub features: FeaturesDescriptor,

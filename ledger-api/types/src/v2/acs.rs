@@ -11,6 +11,7 @@ use crate::v2::CreatedEvent;
 //       moment. This attribute needs to be removed after IncompleteUnassigned and
 //       IncompleteAssigned are implemented.
 #[allow(clippy::large_enum_variant)]
+#[non_exhaustive]
 pub enum ContractEntry {
     ActiveContract(ActiveContract),
     IncompleteUnassigned(IncompleteUnassigned),
@@ -40,6 +41,7 @@ impl TryFrom<proto::get_active_contracts_response::ContractEntry> for ContractEn
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct ActiveContract {
     pub created_event: CreatedEvent,
     pub synchronizer_id: SynchronizerId,
@@ -67,11 +69,13 @@ impl TryFrom<proto::ActiveContract> for ActiveContract {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct IncompleteUnassigned {
     // TODO: implement
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct IncompleteAssigned {
     // TODO: implement
 }

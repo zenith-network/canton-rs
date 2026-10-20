@@ -57,6 +57,7 @@ impl TxShape for LedgerEffects {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
+#[non_exhaustive]
 pub enum TransactionShape {
     /// Transaction shape that is sufficient to maintain an accurate ACS view.
     ///

@@ -5,6 +5,7 @@ use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::Identifier;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct Filters {
     pub cumulative: Vec<CumulativeFilter>,
 }
@@ -73,6 +74,7 @@ impl From<Filters> for proto::Filters {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum CumulativeFilter {
     Wildcard(WildcardFilter),
     Interface(InterfaceFilter),
@@ -117,6 +119,7 @@ impl From<CumulativeFilter> for proto::CumulativeFilter {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
 pub struct WildcardFilter {
     pub include_created_event_blob: bool,
 }
@@ -141,6 +144,7 @@ impl From<WildcardFilter> for proto::WildcardFilter {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct TemplateFilter {
     /// We use package-name here because package-id is marked as deprecated in Protobuf
     pub template_id: Identifier<PackageName>,
@@ -177,6 +181,7 @@ impl From<TemplateFilter> for proto::TemplateFilter {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct InterfaceFilter {
     /// We use package-name here because package-id is marked as deprecated in Protobuf
     pub interface_id: Identifier<PackageName>,

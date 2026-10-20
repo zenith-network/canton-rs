@@ -31,6 +31,7 @@ pub type StreamingUpdate<S> =
 pub type SingleUpdate<S> = Update<Transaction<<S as TxShape>::Event>, Reassignment, Empty, Empty>;
 
 /// Page of updates
+#[non_exhaustive]
 pub struct UpdatesPage<S: TxShape> {
     pub page: Page<PageBytesToken, SingleUpdate<S>>,
     pub lowest_page_offset_exclusive: i64,

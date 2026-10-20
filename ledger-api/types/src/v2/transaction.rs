@@ -7,6 +7,7 @@ use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
 /// Ledger transaction
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct Transaction<E> {
     pub update_id: LedgerString,
     pub command_id: Option<LedgerString>,

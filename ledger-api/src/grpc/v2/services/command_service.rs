@@ -135,6 +135,7 @@ impl CommandServiceClient {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct UpdateIdAndOffset {
     pub update_id: LedgerString,
     pub completion_offset: i64,

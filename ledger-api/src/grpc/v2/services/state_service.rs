@@ -93,6 +93,7 @@ impl StateServiceClient {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct ActiveContractResponse {
     pub workflow_id: Option<LedgerString>,
     pub stream_continuation_token: Option<Vec<u8>>,

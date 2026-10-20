@@ -81,11 +81,11 @@ fn try_impl_value_variant(
         };
 
         into_match_arms.push(quote! {
-            Self::#variant_ident(value) => #value_v2::value::Variant {
-                variant_id: Some(<Self as HasIdentifier>::identifier_with_package_id()),
-                constructor: #types::Name::new_static_unchecked(#name),
-                value: #into_value_trait::into_value(value),
-            }
+            Self::#variant_ident(value) => #value_v2::value::Variant::new(
+                Some(<Self as HasIdentifier>::identifier_with_package_id()),
+                #types::Name::new_static_unchecked(#name),
+                #into_value_trait::into_value(value),
+            )
         });
         from_match_arms.push(quote! {
             #name => Ok(Self::#variant_ident(
@@ -275,12 +275,12 @@ fn try_impl_value_unit_only_enum(
         impl #into_impl_generics #into_value_trait for #ident #into_ty_generics #into_where_clause {
             fn into_value(self) -> #value_v2::value::Value {
                 use #value_v2::HasIdentifier;
-                #value_v2::value::Value::Enum(#value_v2::value::Enum {
-                    enum_id: Some(<Self as HasIdentifier>::identifier_with_package_id()),
-                    constructor: match self {
+                #value_v2::value::Value::Enum(#value_v2::value::Enum::new(
+                    Some(<Self as HasIdentifier>::identifier_with_package_id()),
+                    match self {
                         #(#into_match_arms),*
-                    },
-                })
+                    }
+                ))
             }
         }
 

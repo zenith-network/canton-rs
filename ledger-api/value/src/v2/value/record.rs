@@ -12,9 +12,29 @@ use crate::v2::{
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub struct RecordField {
     pub label: Option<Name>,
     pub value: Value,
+}
+
+impl RecordField {
+    pub fn new(label: Option<Name>, value: Value) -> Self {
+        Self { label, value }
+    }
+
+    /// Create new record field with label
+    pub fn new_labeled(label: Name, value: Value) -> Self {
+        Self {
+            label: Some(label),
+            value,
+        }
+    }
+
+    /// Create new record field without label
+    pub fn new_unlabeled(value: Value) -> Self {
+        Self { label: None, value }
+    }
 }
 
 // Protobuf conversions
@@ -48,9 +68,24 @@ impl TryFrom<proto::RecordField> for RecordField {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub struct Record {
     pub record_id: Option<Identifier<PackageId>>,
     pub fields: Vec<RecordField>,
+}
+
+impl Record {
+    pub fn new(record_id: Option<Identifier<PackageId>>, fields: Vec<RecordField>) -> Self {
+        Self { record_id, fields }
+    }
+
+    /// Create new record without record ID
+    pub fn from_fields(fields: Vec<RecordField>) -> Self {
+        Self {
+            record_id: None,
+            fields,
+        }
+    }
 }
 
 // Protobuf conversions

@@ -109,6 +109,7 @@ impl CommandCompletionServiceClient {
 }
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum CompletionResponse {
     Completion(Completion),
     OffsetCheckpoint(OffsetCheckpoint),

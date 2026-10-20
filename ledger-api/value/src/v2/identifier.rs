@@ -7,10 +7,21 @@ use super::errors::{IntoValueError as _, ValueError};
 
 /// Identifier of an entity (template, interface, data type, etc.)
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub struct Identifier<T: PackageIdentifier = PackageIdAny> {
     pub package_id: T,
     pub module_name: DottedName,
     pub entity_name: DottedName,
+}
+
+impl<T: PackageIdentifier> Identifier<T> {
+    pub fn new(package_id: T, module_name: DottedName, entity_name: DottedName) -> Self {
+        Self {
+            package_id,
+            module_name,
+            entity_name,
+        }
+    }
 }
 
 impl Identifier<PackageName> {

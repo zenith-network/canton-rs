@@ -1,0 +1,24 @@
+-- | Fixture of the stable Daml-LF 2.4 tests (`stable_lf24_tests` in
+-- src/generator.rs and `tests/stable_lf24.rs` in daml-lf): a template with a
+-- nonconsuming choice that makes an external call. daml-stdlib's
+-- `DA.ExternalCall.externalCall` compiles to the stable `EXTERNAL_CALL` builtin (74).
+module Fixture.Stable where
+
+import DA.ExternalCall (externalCall)
+
+data CallRequest = CallRequest with
+    configHex : Text
+    inputHex : Text
+  deriving (Eq, Show)
+
+template Caller
+  with
+    owner : Party
+  where
+    signatory owner
+
+    nonconsuming choice Caller_Call : Text
+      with
+        request : CallRequest
+      controller owner
+      do externalCall "fixture-extension" "echo" request.configHex request.inputHex

@@ -1,0 +1,11 @@
+# Compiled with SDK 3.6.0 (damlc 3.6.2, Canton 3.6.1) as stable Daml-LF 2.4:
+#   dpm build -o ../stable-lf24.dar
+sdk-version: 3.6.0
+name: stable-lf24
+version: 0.1.0
+source: daml
+dependencies:
+  - daml-prim
+  - daml-stdlib
+build-options:
+  - --target=2.4

@@ -1,0 +1,5 @@
+pub mod topology_manager_read_service;
+pub mod topology_manager_write_service;
+
+pub use topology_manager_read_service::TopologyManagerReadClient;
+pub use topology_manager_write_service::TopologyManagerWriteClient;

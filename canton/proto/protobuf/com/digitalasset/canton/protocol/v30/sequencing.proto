@@ -1,0 +1,78 @@
+// Copyright (c) 2026 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package com.digitalasset.canton.protocol.v30;
+
+import "com/digitalasset/canton/crypto/v30/crypto.proto";
+import "com/digitalasset/canton/v30/trace_context.proto";
+import "google/protobuf/duration.proto";
+import "scalapb/scalapb.proto";
+
+// Messages for sequencing
+message PossiblyIgnoredSequencedEvent {
+  int64 counter = 1;
+  int64 timestamp = 2; // in microseconds of UTC time since Unix epoch
+  com.digitalasset.canton.v30.TraceContext trace_context = 3;
+  bool is_ignored = 4;
+  optional bytes underlying = 5; // Serialized SignedContent[SequencedEvent]. Optional if is_ignored == true, required otherwise
+}
+
+// Protobuf has a hard limit on the nesting depth of messages, so this message could potentially hit
+// the nesting depth limit. However this probably won't be an issue any time soon.
+message RecipientsTree {
+  // Recipients of the request.
+  // Must be non-empty.
+  // A recipient is either a member (cf. MemberRecipient) or a set of members (cf. GroupRecipient such as AllMembersOfSynchronizer).
+  // TARGET STATE: Each recipient must be authorized at the underlying synchronizer (cf. Recipient.isAuthorized).
+  // CURRENT STATE: A recipient must be "known" to the sequencer.
+  //   A recipient in general remains "known" even after its topology transactions have been removed on the synchronizer.
+  repeated string recipients = 1;
+  repeated com.digitalasset.canton.protocol.v30.RecipientsTree children = 2;
+}
+
+message Recipients {
+  repeated RecipientsTree recipients_tree = 1;
+}
+
+message ServiceAgreement {
+  string id = 1; // A unique identifier of an agreement within a synchronizer, which must change when the legal text changes
+  string legal_text = 2;
+}
+
+// Messages used for synchronization between sequencer nodes
+
+// Submission cost computed by the sender for a SubmissionRequest
+message SequencingSubmissionCost {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+  // Computed cost
+  int64 cost = 1;
+}
+
+message StaticSynchronizerParameters {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  com.digitalasset.canton.crypto.v30.RequiredSigningSpecs required_signing_specs = 1;
+  com.digitalasset.canton.crypto.v30.RequiredEncryptionSpecs required_encryption_specs = 2;
+  repeated com.digitalasset.canton.crypto.v30.SymmetricKeyScheme required_symmetric_key_schemes = 3;
+  repeated com.digitalasset.canton.crypto.v30.HashAlgorithm required_hash_algorithms = 4;
+  repeated com.digitalasset.canton.crypto.v30.CryptoKeyFormat required_crypto_key_formats = 5;
+  repeated com.digitalasset.canton.crypto.v30.SignatureFormat required_signature_formats = 6;
+  int32 protocol_version = 7;
+
+  // Serial of the synchronizer. Must be non-negative.
+  int32 serial = 8;
+
+  // Flag to enable transparency checks.
+  bool enable_transparency_checks = 9;
+
+  google.protobuf.Duration topology_change_delay = 10;
+}
+
+message CompressedBatch {
+  enum CompressionAlgorithm {
+    COMPRESSION_ALGORITHM_UNSPECIFIED = 0;
+    COMPRESSION_ALGORITHM_GZIP = 1;
+  }
+}

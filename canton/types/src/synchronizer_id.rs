@@ -18,10 +18,13 @@ const fn is_valid(c: char) -> bool {
 pub struct SynchronizerId(String);
 
 impl SynchronizerId {
-    /// Create a new synchronizer ID.
-    ///
-    /// Return error if provided value is not a valid `SynchronizerId`.
-    pub fn new(value: String) -> Result<Self, SynchronizerIdError> {
+    /// Create a new synchronizer ID without validating the input.
+    pub fn new_unchecked(value: String) -> Self {
+        Self(value)
+    }
+
+    /// Return error if input is not a valid synchronizer ID.
+    pub fn validate(value: &str) -> Result<(), SynchronizerIdError> {
         if value.is_empty() {
             return Err(SynchronizerIdError {
                 kind: ErrorKind::Empty,
@@ -41,7 +44,15 @@ impl SynchronizerId {
             }
         }
 
-        Ok(Self(value))
+        Ok(())
+    }
+
+    /// Create a new synchronizer ID.
+    ///
+    /// Return error if provided value is not a valid `SynchronizerId`.
+    pub fn new(value: String) -> Result<Self, SynchronizerIdError> {
+        Self::validate(&value)?;
+        Ok(Self::new_unchecked(value))
     }
 
     /// Returns a byte slice of this `SynchronizerId`'s contents.

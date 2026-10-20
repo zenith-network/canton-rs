@@ -1,0 +1,172 @@
+// Copyright (c) 2026 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package com.digitalasset.canton.protocol.v30;
+
+import "com/digitalasset/canton/crypto/v30/crypto.proto";
+import "com/digitalasset/canton/protocol/v30/common.proto";
+import "com/digitalasset/canton/protocol/v30/merkle.proto";
+import "com/digitalasset/canton/protocol/v30/quorum.proto";
+import "google/protobuf/duration.proto";
+import "scalapb/scalapb.proto";
+
+// Messages sent by a participant as part of the transaction protocol
+
+message DeduplicationPeriod {
+  oneof period {
+    google.protobuf.Duration duration = 1;
+    int64 offset = 2; // if specified, it must be a valid absolute offset (positive integer) or zero (ledger begin offset)
+  }
+}
+
+message ParticipantMetadata {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  com.digitalasset.canton.crypto.v30.Salt salt = 1;
+  int64 ledger_time = 2; // in microseconds of UTC time since Unix epoch
+  int64 preparation_time = 3; // in microseconds of UTC time since Unix epoch
+  string workflow_id = 4; // optional
+}
+
+// RootHashMessage
+
+message RootHashMessage {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  bytes root_hash = 1;
+  string physical_synchronizer_id = 2;
+  ViewType view_type = 3;
+  int64 submission_topology_time = 4; // in microseconds of UTC time since Unix epoch
+  bytes payload = 5; // optional
+}
+
+// Messages sent by a participant as part of the transaction protocol
+
+message ViewNode {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  BlindableNode view_common_data = 1;
+  BlindableNode view_participant_data = 2;
+  MerkleSeq subviews = 3;
+}
+
+message ViewCommonData {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  com.digitalasset.canton.crypto.v30.Salt salt = 1;
+  repeated string informees = 2;
+  repeated v30.Quorum quorums = 3;
+}
+
+message Informee {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  string party = 1;
+  int32 weight = 2; // optional: only set if party is confirming
+}
+
+// EncryptedViewMessage
+
+message ViewParticipantMessage {
+  option deprecated = true;
+}
+
+// InformeeMessage
+
+message InformeeMessage {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  FullInformeeTree full_informee_tree = 1;
+  com.digitalasset.canton.crypto.v30.Signature submitting_participant_signature = 2;
+}
+
+message LightTransactionViewTree {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  GenTransactionTree tree = 1;
+  repeated ViewHashAndKey subview_hashes_and_keys = 2;
+}
+
+message ViewHashAndKey {
+  bytes view_hash = 1;
+  // The randomness used to derive the encryption key for the view
+  bytes view_encryption_key_randomness = 2;
+}
+
+message FullInformeeTree {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  GenTransactionTree tree = 1;
+}
+
+message CreatedContract {
+  bytes contract = 1; // Encoded ContractInstance
+  bool consumed_in_core = 2;
+  bool rolled_back = 3;
+}
+
+message InputContract {
+  bytes contract = 1; // Encoded ContractInstance
+  bool consumed = 2;
+}
+
+message CommonMetadata {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  com.digitalasset.canton.crypto.v30.Salt salt = 1;
+  // this used to contain a confirmation policy (Signatory or VIP) that no longer exists
+  reserved 2;
+  string physical_synchronizer_id = 3;
+  string uuid = 4;
+  int32 mediator_group = 5;
+}
+
+message ActionDescription {
+  message CreateActionDescription {
+    string contract_id = 1;
+    bytes node_seed = 2;
+  }
+
+  message ExerciseActionDescription {
+    string input_contract_id = 1;
+    string choice = 2;
+    bytes chosen_value = 3;
+    repeated string actors = 4;
+    bool by_key = 5;
+    bytes node_seed = 6;
+    bool failed = 8;
+    optional string interface_id = 9;
+    string template_id = 10;
+    repeated string package_preference = 11;
+  }
+
+  message FetchActionDescription {
+    string input_contract_id = 1;
+    repeated string actors = 2;
+    bool by_key = 3;
+    string template_id = 4;
+    optional string interface_id = 5;
+  }
+}
+
+// Messages sent by a participant as part of the transaction protocol
+
+message ViewParticipantData {
+  message RollbackContext {
+    repeated int32 rollback_scope = 1;
+    int32 next_child = 2;
+  }
+}
+
+// Additional signatures provided by a single party
+// The purpose of these signatures is to allow parties to authorize transactions
+// by signing it with a private key not known to the network.
+
+message ExternalPartyAuthorization {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  string party = 1; // Submitting party
+  repeated com.digitalasset.canton.crypto.v30.Signature signatures = 2; // Signatures
+}

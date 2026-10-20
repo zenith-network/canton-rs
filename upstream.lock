@@ -1,0 +1,30 @@
+[[capsule]]
+name = "admin-api-proto"
+source = "git+https://github.com/digital-asset/canton.git?ref=v3.6.2&rev=fad99cfe87ab5a4d400f2a0d45f1d4a31097e3d7"
+src = "community/admin-api/src/main/protobuf"
+dst = "admin-api/proto/protobuf"
+filter = "**/*.{proto,yaml,yml}"
+
+[[capsule]]
+name = "canton-proto"
+source = "git+https://github.com/digital-asset/canton.git?ref=v3.6.2&rev=fad99cfe87ab5a4d400f2a0d45f1d4a31097e3d7"
+src = "community/base/src/main/protobuf"
+dst = "canton/proto/protobuf"
+
+[[capsule]]
+name = "daml-lf-archive-proto"
+source = "git+https://github.com/digital-asset/canton.git?ref=v3.6.2&rev=fad99cfe87ab5a4d400f2a0d45f1d4a31097e3d7"
+src = "community/daml-lf/archive/src/main/protobuf"
+dst = "daml-lf/archive-proto/proto"
+
+[[capsule]]
+name = "ledger-api-proto"
+source = "git+https://github.com/digital-asset/canton.git?ref=v3.6.2&rev=fad99cfe87ab5a4d400f2a0d45f1d4a31097e3d7"
+src = "community/ledger-api-proto/src/main/protobuf"
+dst = "ledger-api/proto/protobuf"
+
+[[capsule]]
+name = "ledger-api-value-proto"
+source = "git+https://github.com/digital-asset/canton.git?ref=v3.6.2&rev=fad99cfe87ab5a4d400f2a0d45f1d4a31097e3d7"
+src = "community/daml-lf/ledger-api-value-proto/src/main/protobuf"
+dst = "ledger-api/value/proto/proto"

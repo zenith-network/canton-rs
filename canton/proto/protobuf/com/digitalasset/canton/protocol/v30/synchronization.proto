@@ -1,0 +1,43 @@
+// Copyright (c) 2026 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package com.digitalasset.canton.protocol.v30;
+
+import "com/digitalasset/canton/crypto/v30/crypto.proto";
+import "scalapb/scalapb.proto";
+
+// Messages depending on both participant_transaction.proto and participant_reassignment.proto.
+
+message TypedSignedProtocolMessageContent {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  oneof some_signed_protocol_message {
+    bytes confirmation_responses = 2;
+    bytes confirmation_result = 3;
+    bytes acs_commitment = 4;
+    bytes set_traffic_purchased = 5;
+  }
+}
+
+message SignedProtocolMessage {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  repeated com.digitalasset.canton.crypto.v30.Signature signature = 1;
+  bytes typed_signed_protocol_message_content = 2;
+}
+
+message LsuSequencingTestMessage {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  bytes content = 1;
+  com.digitalasset.canton.crypto.v30.Signature signatures = 2;
+}
+
+message LsuSequencingTestMessageContent {
+  option (scalapb.message).companion_extends = "com.digitalasset.canton.version.StableProtoVersion";
+
+  string physical_synchronizer_id = 1;
+  string sender = 2;
+}

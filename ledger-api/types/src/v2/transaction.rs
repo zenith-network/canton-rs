@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use canton_types::LedgerString;
+use canton_types::{LedgerString, NonEmpty, SynchronizerId};
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
@@ -12,9 +12,9 @@ pub struct Transaction<E> {
     pub command_id: Option<LedgerString>,
     pub workflow_id: Option<LedgerString>,
     pub effective_at: SystemTime,
-    pub events: Vec<E>,
+    pub events: NonEmpty<E>,
     pub offset: i64,
-    // pub synchronizer_id: SynchronizerId,
+    pub synchronizer_id: SynchronizerId,
     // pub trace_context: Option<TraceContext>,
     pub record_time: SystemTime,
     // pub external_transaction_hash: Option<TxHash>,
@@ -49,18 +49,25 @@ where
                 .no_msg()?
                 .try_into()
                 .unwrap(), // FIXME: change unwrap to error
-            events: tx
-                .events
-                .into_iter()
-                .enumerate()
-                .map(|(idx, event)| {
-                    event
-                        .try_into()
-                        .map_err(Into::into)
-                        .with_msg_owned(format!("failed to convert event[{idx}]"))
-                })
-                .collect::<Result<_, _>>()?,
+            events: NonEmpty::try_from(
+                tx.events
+                    .into_iter()
+                    .enumerate()
+                    .map(|(idx, event)| {
+                        event
+                            .try_into()
+                            .map_err(Into::into)
+                            .with_msg_owned(format!("failed to convert event[{idx}]"))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+            )
+            .map_err(|_| ValueError::raw_message("empty events list"))
+            .validated_of::<proto::Transaction>("events")
+            .no_msg()?,
             offset: tx.offset,
+            synchronizer_id: SynchronizerId::new(tx.synchronizer_id)
+                .validated_of::<proto::Transaction>("synchronizer_id")
+                .no_msg()?,
             record_time: tx
                 .record_time
                 .required_of::<proto::Transaction>("record_time")

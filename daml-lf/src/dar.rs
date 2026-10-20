@@ -65,8 +65,18 @@ impl DarFile<File> {
     pub fn read_from(path: impl AsRef<Path>) -> Result<Self, DarError> {
         let file =
             File::open(path).map_err(|err| DarError::io_error(err, "failed to open DAR file"))?;
-        let mut reader = ZipArchive::new(file)?;
+        let reader = ZipArchive::new(file)?;
+        Self::from_archive(reader)
+    }
+}
 
+impl<R: Read + Seek> DarFile<R> {
+    pub fn read(reader: R) -> Result<Self, DarError> {
+        let archive = ZipArchive::new(reader)?;
+        Self::from_archive(archive)
+    }
+
+    fn from_archive(mut reader: ZipArchive<R>) -> Result<Self, DarError> {
         let mut buf = String::new();
         reader
             .by_path(MANIFEST_FILENAME)

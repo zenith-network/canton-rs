@@ -1,0 +1,12 @@
+[package]
+name = "canton-version"
+version = "0.1.0"
+description = "Definition of the Canton version"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+semver = { workspace = true, default-features = true }
+
+[build-dependencies]
+semver.workspace = true

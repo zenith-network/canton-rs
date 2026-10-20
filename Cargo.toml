@@ -65,7 +65,7 @@ unicode-normalization = { version = "0.1.25", default-features = false }
 uuid = { version = "1.24.1", default-features = false }
 which = { version = "8.0.4", default-features = false }
 yaml_serde = "0.10.4"
-zip = { version = "8.6.0", default-features = false }
+zip = { version = "9.0.5", default-features = false }
 
 # Local workspace dependencies
 

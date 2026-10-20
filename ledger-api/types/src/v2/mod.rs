@@ -1,4 +1,5 @@
 mod acs;
+mod admin;
 mod commands;
 mod completion;
 mod empty;
@@ -18,6 +19,7 @@ mod update_format;
 mod version;
 
 pub use acs::{ActiveContract, ContractEntry, IncompleteAssigned, IncompleteUnassigned};
+pub use admin::PartyDetails;
 pub use commands::{
     Command, Commands, Create, CreateAndExercise, CreateAndExerciseCommand, CreateCommand,
     Exercise, ExerciseByKey, ExerciseByKeyCommand, ExerciseCommand,
@@ -43,4 +45,7 @@ pub use transaction_format::TransactionFormat;
 pub use transaction_shape::{AcsDelta, LedgerEffects, TransactionShape, TxShape};
 pub use update::Update;
 pub use update_format::UpdateFormat;
-pub use version::FeaturesDescriptor;
+pub use version::{
+    ExperimentalFeatures, FeaturesDescriptor, OffsetCheckpointFeature, PackageFeature,
+    PartyManagementFeature, UserManagementFeature,
+};

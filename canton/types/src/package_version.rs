@@ -74,6 +74,13 @@ impl PackageVersion {
                 kind: ErrorKind::Empty,
             });
         }
+        // Duplicate check from Self::new to catch this error earlier before allocating
+        if s.len() > MAX_STR_LEN {
+            return Err(PackageVersionError {
+                kind: ErrorKind::TooLong { len: s.len() },
+            });
+        }
+
         let version = s
             .split('.')
             .map(|segment| {

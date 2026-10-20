@@ -9,13 +9,19 @@ workflows:
         - 'arduino/setup-protoc@v3.0.0'
         - 'swatinem/rust-cache@v2.9.2'
         - 'zenith-network/setup-daml@v1.0.0'
+    '.github/workflows/integration-tests.yaml':
+        - 'actions-rs/toolchain@v1.0.7'
+        - 'actions/checkout@v4.4.0'
+        - 'actions/setup-java@v6.1.0'
+        - 'arduino/setup-protoc@v3.0.0'
+        - 'swatinem/rust-cache@v2.9.2'
+        - 'zenith-network/setup-daml@v1.0.0'
     '.github/workflows/rust-checks.yaml':
         - 'actions-rs/toolchain@v1.0.7'
         - 'actions/checkout@v4.4.0'
         - 'arduino/setup-protoc@v3.0.0'
         - 'swatinem/rust-cache@v2.9.2'
         - 'uncenter/setup-taplo@v1.0.8'
-        - 'zenith-network/setup-daml@v1.0.0'
 dependencies:
     'actions-rs/toolchain@v1.0.7':
         ref: 'v1.0.7'
@@ -27,6 +33,11 @@ dependencies:
         commit: 'sha1-11d5960a326750d5838078e36cf38b85af677262'
         owner_id: 44036562
         repo_id: 197814629
+    'actions/setup-java@v6.1.0':
+        ref: 'v6.1.0'
+        commit: 'sha1-b843ebf9b913146b38da2eaa7aeddf76074ae1ad'
+        owner_id: 44036562
+        repo_id: 196057608
     'arduino/setup-protoc@v3.0.0':
         ref: 'v3.0.0'
         commit: 'sha1-c65c819552d16ad3c9b72d9dfd5ba5237b9c906b'

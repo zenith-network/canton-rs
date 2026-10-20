@@ -1,0 +1,31 @@
+error: sandbox fixture requires an async function; place it above #[tokio::test]
+ --> tests/fail/signatures.rs:2:1
+  |
+2 | fn synchronous(_sandbox: &sandbox::Sandbox) {}
+  | ^^
+
+error: sandbox test must receive exactly one &Sandbox argument
+ --> tests/fail/signatures.rs:4:1
+  |
+4 | #[sandbox::sandbox(fresh)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: sandbox argument must be an immutable &Sandbox reference
+ --> tests/fail/signatures.rs:8:19
+  |
+8 | async fn by_value(_sandbox: sandbox::Sandbox) {}
+  |                   ^^^^^^^^
+
+error: sandbox argument must be an immutable &Sandbox reference
+  --> tests/fail/signatures.rs:11:18
+   |
+11 | async fn mutable(_sandbox: &mut sandbox::Sandbox) {}
+   |                  ^^^^^^^^
+
+error: sandbox tests cannot be generic, unsafe, extern, or variadic
+  --> tests/fail/signatures.rs:14:1
+   |
+14 | async fn generic<T>(_sandbox: &sandbox::Sandbox) {}
+   | ^^^^^

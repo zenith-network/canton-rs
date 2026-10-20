@@ -16,7 +16,31 @@ members = [
   "ledger-api/value/derive",
   "ledger-api/value/proto",
   "protobuf-utils",
+  "tests/ledger-api-integration",
+  "tests/sandbox",
+  "tests/sandbox-macro",
 ]
+
+# Exclude dev crates
+default-members = [
+  "canton",
+  "canton/types",
+  "canton/types/derive",
+  "canton-paths",
+  "daml-lf",
+  "daml-lf/archive-proto",
+  "daml-lf/codegen",
+  "daml-lf/version",
+  "dpm-build",
+  "ledger-api",
+  "ledger-api/proto",
+  "ledger-api/types",
+  "ledger-api/value",
+  "ledger-api/value/derive",
+  "ledger-api/value/proto",
+  "protobuf-utils",
+]
+
 resolver = "3"
 
 [workspace.package]
@@ -92,3 +116,5 @@ daml-lf-version = { path = "daml-lf/version", default-features = false }
 # Auxiliary crates
 dpm-build = { path = "dpm-build", default-features = false }
 protobuf-utils = { path = "protobuf-utils" }
+sandbox = { path = "tests/sandbox" }
+sandbox-macro = { path = "tests/sandbox-macro" }

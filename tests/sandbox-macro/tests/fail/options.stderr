@@ -1,0 +1,49 @@
+error: choose a sandbox mode: shared or fresh
+ --> tests/fail/options.rs:1:1
+  |
+1 | #[sandbox::sandbox()]
+  | ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: choose exactly one sandbox mode
+ --> tests/fail/options.rs:4:28
+  |
+4 | #[sandbox::sandbox(shared, fresh)]
+  |                            ^^^^^
+
+error: choose exactly one sandbox mode
+ --> tests/fail/options.rs:7:28
+  |
+7 | #[sandbox::sandbox(shared, shared)]
+  |                            ^^^^^^
+
+error: shared group must not be empty
+  --> tests/fail/options.rs:10:36
+   |
+10 | #[sandbox::sandbox(shared, group = "")]
+   |                                    ^^
+
+error: group requires shared mode
+  --> tests/fail/options.rs:13:35
+   |
+13 | #[sandbox::sandbox(fresh, group = "my-group")]
+   |                                   ^^^^^^^^^^
+
+error: duplicate group
+  --> tests/fail/options.rs:16:41
+   |
+16 | #[sandbox::sandbox(shared, group = "a", group = "b")]
+   |                                         ^^^^^
+
+error: duplicate config provider
+  --> tests/fail/options.rs:19:44
+   |
+19 | #[sandbox::sandbox(fresh, config = config, config = config)]
+   |                                            ^^^^^^
+
+error: expected shared, fresh, group, or config
+  --> tests/fail/options.rs:22:20
+   |
+22 | #[sandbox::sandbox(unknown)]
+   |                    ^^^^^^^

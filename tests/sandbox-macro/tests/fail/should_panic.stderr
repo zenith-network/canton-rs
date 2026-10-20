@@ -1,0 +1,17 @@
+error: should_panic sandbox tests must return ()
+ --> tests/fail/should_panic.rs:3:46
+  |
+3 | async fn result(_sandbox: &sandbox::Sandbox) -> Result<(), String> {
+  |                                              ^
+
+error: expected #[should_panic] or #[should_panic(expected = "message")]
+ --> tests/fail/should_panic.rs:8:1
+  |
+8 | #[should_panic(expected = 42)]
+  | ^
+
+error: duplicate should_panic attribute
+  --> tests/fail/should_panic.rs:13:1
+   |
+13 | #[should_panic]
+   | ^

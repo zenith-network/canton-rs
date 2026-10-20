@@ -1,0 +1,96 @@
+# This workflow is managed by gh actions-lock.
+
+name: Integration Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+
+jobs:
+  harness:
+    name: Sandbox harness
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4.4.0
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: "1.99.0"
+          default: true
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Use Rust cache
+        uses: Swatinem/rust-cache@v2.9.2
+      - name: Run tests
+        run: |
+          cargo test --package sandbox --package sandbox-macro --all-features --verbose
+
+  codegen:
+    name: Rust codegen
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4.4.0
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: "1.99.0"
+          default: true
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install dpm and Daml SDK
+        uses: zenith-network/setup-daml@v1.0.0
+        with:
+          dpm-version: "1.0.22"
+          sdk-version: "3.5.9"
+      - name: Use Rust cache
+        uses: Swatinem/rust-cache@v2.9.2
+      - name: Run tests
+        run: |
+          cargo test --package daml-lf-codegen --all-features --test test_codegen --verbose
+
+  ledger-api:
+    name: Ledger API
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4.4.0
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: "1.99.0"
+          default: true
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install dpm and Daml SDK
+        uses: zenith-network/setup-daml@v1.0.0
+        with:
+          dpm-version: "1.0.22"
+          sdk-version: "3.5.9"
+      - name: Install Java Runtime Environment
+        uses: actions/setup-java@v6.1.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          java-package: 'jre'
+      - name: Use Rust cache
+        uses: Swatinem/rust-cache@v2.9.2
+      - name: Run tests
+        env:
+          SANDBOX_CAPACITY: "2"
+          SANDBOX_IDLE_TIMEOUT_MS: "3000"
+          DPM_SDK_VERSION: "3.5.9"
+        run: |
+          cargo test --package ledger-api-integration --all-features --verbose --test ledger_api_integration

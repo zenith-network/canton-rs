@@ -1,0 +1,30 @@
+[package]
+name = "ledger-api-integration"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+canton = { workspace = true, features = ["derive", "ledger-api"] }
+
+[dev-dependencies]
+ledger-api = { workspace = true, features = ["v2", "tracing"] }
+ledger-api-proto = { workspace = true, features = ["v2-testing"] }
+ledger-api-types = { workspace = true, features = ["v2"] }
+pretty_assertions.workspace = true
+prost = { workspace = true, features = ["std"] }
+prost-types = { workspace = true, features = ["std"] }
+sandbox.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }
+tokio-stream.workspace = true
+tonic = { workspace = true, features = ["transport"] }
+tonic-types.workspace = true
+uuid = { workspace = true, features = ["v4"] }
+
+[build-dependencies]
+daml-lf-archive-proto = { workspace = true, features = ["v2", "std"] }
+daml-lf-codegen = { workspace = true, features = ["v2", "format", "env"] }
+dpm-build.workspace = true
+prost = { workspace = true, features = ["std"] }
+zip = { workspace = true, features = ["deflate"] }

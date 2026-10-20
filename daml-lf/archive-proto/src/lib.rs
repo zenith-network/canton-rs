@@ -64,3 +64,45 @@ pub const SUPPORTED_VERSIONS: &[Version] = &[
 pub fn is_supported(version: &Version) -> bool {
     SUPPORTED_VERSIONS.iter().find(|v| v == &version).is_some()
 }
+
+#[cfg(test)]
+mod tests {
+    use daml_lf_version::{MinorVersion, Version};
+
+    use super::is_supported;
+
+    #[cfg(feature = "v2")]
+    #[test]
+    fn external_call_builtin_has_stable_and_legacy_dev_ids() {
+        use crate::com::digitalasset::daml::lf::archive::v2::BuiltinFunction;
+
+        // Stable LF 2.4 (Canton 3.6.1, damlc 3.6.2).
+        assert_eq!(
+            BuiltinFunction::try_from(74),
+            Ok(BuiltinFunction::ExternalCall)
+        );
+        // Archives from earlier 2.dev compilers.
+        assert_eq!(
+            BuiltinFunction::try_from(5001),
+            Ok(BuiltinFunction::ExternalCallLegacyDev)
+        );
+    }
+
+    #[cfg(feature = "v2")]
+    #[test]
+    fn supports_stable_lf_2_4_but_not_2_5() {
+        let stable = |version| Version {
+            major: 2,
+            minor: MinorVersion::Stable { version },
+        };
+        assert!(is_supported(&stable(4)));
+        assert!(!is_supported(&stable(5)));
+        assert!(!is_supported(&Version {
+            major: 2,
+            minor: MinorVersion::Staging {
+                version: 4,
+                revision: 2,
+            },
+        }));
+    }
+}

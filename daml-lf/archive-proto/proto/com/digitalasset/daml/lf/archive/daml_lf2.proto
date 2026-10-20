@@ -370,8 +370,9 @@ enum BuiltinFunction {
   SHA256_HEX = 71;
   SECP256K1_WITH_ECDSA_BOOL = 72;
   SECP256K1_VALIDATE_KEY = 73; // *Available in versions >= 2.3
+  EXTERNAL_CALL = 74; // *Available in versions >= 2.4*
 
-  // Next id is 74.
+  // Next id is 75.
 
   /* Dev Builtins */
   // We use fields above 1000 for dev features
@@ -391,7 +392,9 @@ enum BuiltinFunction {
 
   //SECP256K1_VALIDATE_KEY = 4001; // REMAINS HERE TEMPORARELY TO PARSE CHECKED IN DARS
 
-  EXTERNAL_CALL = 5001; // *Available in versions >= 2.dev*
+  // REMAINS HERE TEMPORARILY TO PARSE DARS FROM A damlc THAT STILL ENCODES THE OLD DEV ID;
+  // remove once the re-pinned damlc emits EXTERNAL_CALL = 74.
+  EXTERNAL_CALL_LEGACY_DEV = 5001;
 }
 
 // Builtin literals
@@ -1040,6 +1043,16 @@ message Update {
     Expr cid = 2;
   }
 
+  message UnpackTemplate {
+    TypeConId template = 1;
+    Expr cid = 2;
+  }
+
+  message UnpackInterface {
+    TypeConId interface = 1;
+    Expr cid = 2;
+  }
+
   // Embedded Expression Update
   message EmbedExpr {
     // Expression type
@@ -1049,7 +1062,7 @@ message Update {
   }
 
   // Retrieve by key Update
-  // used as both FetchByKey and LookupByKey (both queries have same parameters, but different type/auth rules)
+  // used for FetchByKey, named as such since pre-NUCk it used to also be used for LookupByKey
   message RetrieveByKey {
     TypeConId template = 1;
     // Note: The following field could be reused as it was dropped when RetrieveByKey was still in 2.dev
@@ -1079,7 +1092,6 @@ message Update {
     ExerciseByKey exercise_by_key = 10; // from 2.3
     Fetch fetch = 5;
     Unit get_time = 6;
-    RetrieveByKey lookup_by_key = 8; // from 2.dev
     QueryNByKey query_n_by_key = 16; // from 2.3
     RetrieveByKey fetch_by_key = 9; // from 2.3
     EmbedExpr embed_expr = 7;
@@ -1091,7 +1103,13 @@ message Update {
     Expr ledger_time_lt = 15;
 
     // Next id is 17.
+
+    // from 2.dev
+    UnpackTemplate unpack_template = 1000;
+    UnpackInterface unpack_interface = 1001;
   }
+
+  reserved 8; // was RetrieveByKey lookup_by_key = 8
 }
 
 // Template choice definition.

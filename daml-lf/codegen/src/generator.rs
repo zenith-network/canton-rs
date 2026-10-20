@@ -387,3 +387,47 @@ mod transitive_deps_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod stable_lf24_tests {
+    use daml_lf::dar::DarFile;
+
+    use super::*;
+
+    /// `tests/assets/stable-lf24.dar`, compiled by SDK 3.6.0 (damlc 3.6.2,
+    /// `--target=2.4`) from `tests/assets/stable-lf24`
+    /// (`dpm build -o ../stable-lf24.dar`).
+    const FIXTURE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/assets/stable-lf24.dar");
+
+    #[test]
+    fn generates_bindings_for_a_stable_lf24_dar() {
+        let outdir =
+            std::env::temp_dir().join(format!("canton-rs-stable-lf24-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&outdir);
+        fs::create_dir_all(&outdir).unwrap();
+        let mut dar = DarFile::read_from(FIXTURE).expect("fixture DAR");
+        let mut config = Config::default();
+        config.outdir(&outdir);
+        let output =
+            Generator::generate(&mut dar, config).expect("bindings for a stable LF 2.4 DAR");
+        let source = output
+            .files
+            .iter()
+            .map(|path| fs::read_to_string(path).unwrap())
+            .collect::<String>();
+        fs::remove_dir_all(&outdir).unwrap();
+
+        for expected in [
+            "struct Caller {",
+            "struct CallerCall ",
+            "struct CallRequest {",
+            "consuming = false",
+            "name = \"Caller_Call\"",
+        ] {
+            assert!(
+                source.contains(expected),
+                "{expected} missing from {source}"
+            );
+        }
+    }
+}

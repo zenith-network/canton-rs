@@ -31,7 +31,7 @@ pub use events::{
 };
 pub use filters::{CumulativeFilter, Filters, InterfaceFilter, TemplateFilter, WildcardFilter};
 pub use offset_checkpoint::{OffsetCheckpoint, SynchronizerTime};
-pub use pagination::{Page, PageToken};
+pub use pagination::{Page, PageBytesToken, PageStringToken};
 pub use reassignment::{AssignedEvent, Reassignment, ReassignmentEvent, UnassignedEvent};
 pub use template::{
     ChoiceByKeyValue, ChoiceValue, Implements, Interface, TemplateOrInterface, TemplateValue,

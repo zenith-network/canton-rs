@@ -1,0 +1,7 @@
+[default]
+git = { url = "https://github.com/digital-asset/canton.git", rev = "0dc3b765a90326fa887830236417ce0187ecb7fc" }
+
+[capsules]
+daml-lf-archive-proto = { dst = "daml-lf/archive-proto/proto", src = "community/daml-lf/archive/src/main/protobuf" }
+ledger-api-proto = { dst = "ledger-api/proto/protobuf", src = "community/ledger-api-proto/src/main/protobuf" }
+ledger-api-value-proto = { dst = "ledger-api/value/proto/proto", src = "community/daml-lf/ledger-api-value-proto/src/main/protobuf" }

@@ -1,16 +1,17 @@
 use ledger_api_proto::com::daml::ledger::api::v2::{
     GetUpdateByIdRequest, GetUpdateByOffsetRequest, GetUpdateResponse, GetUpdatesPageRequest,
-    GetUpdatesRequest, GetUpdatesResponse, update_service_client as svc_proto,
+    GetUpdatesPageResponse, GetUpdatesRequest, GetUpdatesResponse,
+    update_service_client as svc_proto,
 };
 use ledger_api_types::{
     canton_types::LedgerString,
     v2::{
-        Empty, OffsetCheckpoint, Page, PageToken, Reassignment, Transaction, TxShape, Update,
+        Empty, OffsetCheckpoint, Page, PageBytesToken, Reassignment, Transaction, TxShape, Update,
         UpdateFormat,
     },
     value::v2::errors::IntoValueError,
 };
-use protobuf_utils::RequiredProtoField as _;
+use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 use tokio_stream::{Stream, StreamExt as _};
 use tonic::Status;
 
@@ -28,6 +29,13 @@ pub type StreamingUpdate<S> =
 // FIXME: add topology tx type
 /// Update type for other methods
 pub type SingleUpdate<S> = Update<Transaction<<S as TxShape>::Event>, Reassignment, Empty, Empty>;
+
+/// Page of updates
+pub struct UpdatesPage<S: TxShape> {
+    pub page: Page<PageBytesToken, SingleUpdate<S>>,
+    pub lowest_page_offset_exclusive: i64,
+    pub highest_page_offset_inclusive: i64,
+}
 
 /// Wrapped for [`svc_proto::UpdateServiceClient`]
 #[derive(Clone, Debug)]
@@ -173,8 +181,8 @@ impl UpdateServiceClient {
         end_inclusive: Option<i64>,
         max_page_size: Option<i32>,
         update_format: UpdateFormat<S>,
-        page_token: Option<PageToken>,
-    ) -> Result<Page<SingleUpdate<S>>, CantonError> {
+        page_token: Option<PageBytesToken>,
+    ) -> Result<UpdatesPage<S>, CantonError> {
         let request = GetUpdatesPageRequest {
             begin_offset_exclusive: begin_exclusive,
             end_offset_inclusive: end_inclusive,
@@ -191,7 +199,7 @@ impl UpdateServiceClient {
             })
             .await?;
 
-        Ok(Page {
+        let page = Page {
             items: response
                 .updates
                 .into_iter()
@@ -205,9 +213,15 @@ impl UpdateServiceClient {
                         .map_err(CantonError::value_error)
                 })
                 .collect::<Result<_, _>>()?,
+            next_page_token: PageBytesToken::try_from_proto(response.next_page_token)
+                .validated_of::<GetUpdatesPageResponse>("next_page_token")
+                .no_msg()?,
+        };
+
+        Ok(UpdatesPage {
+            page,
             lowest_page_offset_exclusive: response.lowest_page_offset_exclusive,
             highest_page_offset_inclusive: response.highest_page_offset_inclusive,
-            next_page_token: response.next_page_token.map(PageToken::new),
         })
     }
 }

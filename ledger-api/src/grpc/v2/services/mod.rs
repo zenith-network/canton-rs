@@ -13,5 +13,5 @@ pub use command_submission_service::CommandSubmissionServiceClient;
 pub use event_query_service::{CreatedAndArchived, EventQueryServiceClient};
 pub use package_service::PackageServiceClient;
 pub use state_service::{ActiveContractResponse, StateServiceClient};
-pub use update_service::{SingleUpdate, StreamingUpdate, UpdateServiceClient};
+pub use update_service::{SingleUpdate, StreamingUpdate, UpdateServiceClient, UpdatesPage};
 pub use version_service::{ApiVersion, VersionServiceClient};

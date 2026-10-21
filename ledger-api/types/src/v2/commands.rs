@@ -422,10 +422,7 @@ mod tests {
             "global-domain::1220be58c29e65de40bf273be1dc2b266d43a9a002ea5b18955aeef7aac881bb471a";
         for contract in [disclosed(Some(sync)), disclosed(None)] {
             let encoded: proto::DisclosedContract = contract.clone().into();
-            assert_eq!(
-                encoded.created_event_blob,
-                contract.created_event_blob
-            );
+            assert_eq!(encoded.created_event_blob, contract.created_event_blob);
             let decoded = DisclosedContract::try_from(encoded).unwrap();
             assert_eq!(decoded, contract);
         }

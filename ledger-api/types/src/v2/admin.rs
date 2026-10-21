@@ -5,6 +5,7 @@ use protobuf_utils::InvalidProtoField as _;
 
 /// Party details
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct PartyDetails {
     /// The stable unique identifier of a Daml party.
     pub party: PartyId,

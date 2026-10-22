@@ -83,6 +83,7 @@ fn contract_id_from_tx(
         .filter_map(|event| match event {
             Event::Created(event) => Some(event.cast::<MyTemplate>()),
             Event::Archived(_) => None,
+            t => unreachable!("unsupported event type: {t:?}"),
         })
         .next()
         .expect("created event is expected")

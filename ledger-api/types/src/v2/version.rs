@@ -5,6 +5,7 @@ use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct ExperimentalFeatures {
     /// Ledger is in the static time mode and exposes a time service
     pub static_time: Option<bool>,
@@ -23,6 +24,7 @@ impl From<proto::ExperimentalFeatures> for ExperimentalFeatures {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct UserManagementFeature {
     /// Whether the Ledger API server provides the user management service.
     pub supported: bool,
@@ -49,6 +51,7 @@ impl From<proto::UserManagementFeature> for UserManagementFeature {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct PartyManagementFeature {
     /// The maximum number of parties the server can return in a single response (page).
     pub max_parties_page_size: i32,
@@ -63,8 +66,9 @@ impl From<proto::PartyManagementFeature> for PartyManagementFeature {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct OffsetCheckpointFeature {
-    /// The maximum delay to emmit a new OffsetCheckpoint if it exists
+    /// The maximum delay to emit a new OffsetCheckpoint if it exists
     pub max_offset_checkpoint_emission_delay: Duration,
 }
 
@@ -86,6 +90,7 @@ impl TryFrom<proto::OffsetCheckpointFeature> for OffsetCheckpointFeature {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct PackageFeature {
     /// The maximum number of vetted packages the server can return in a single
     /// response (page) when listing them.
@@ -102,6 +107,7 @@ impl From<proto::PackageFeature> for PackageFeature {
 
 /// Description of features enabled on the participant
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct FeaturesDescriptor {
     /// Features under development or features that are used
     /// for ledger implementation testing purposes only.

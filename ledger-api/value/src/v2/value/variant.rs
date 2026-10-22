@@ -10,10 +10,30 @@ use crate::v2::{
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub struct Variant {
     pub variant_id: Option<Identifier<PackageId>>,
     pub constructor: Name,
     pub value: Value,
+}
+
+impl Variant {
+    pub fn new(variant_id: Option<Identifier<PackageId>>, constructor: Name, value: Value) -> Self {
+        Self {
+            variant_id,
+            constructor,
+            value,
+        }
+    }
+
+    /// Create new variant without variant ID
+    pub fn without_id(constructor: Name, value: Value) -> Self {
+        Self {
+            variant_id: None,
+            constructor,
+            value,
+        }
+    }
 }
 
 // Protobuf conversions

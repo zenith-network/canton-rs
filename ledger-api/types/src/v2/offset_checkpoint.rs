@@ -6,6 +6,7 @@ use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub struct OffsetCheckpoint {
     pub offset: i64,
     pub synchronizer_times: Vec<SynchronizerTime>,
@@ -27,6 +28,7 @@ impl TryFrom<proto::OffsetCheckpoint> for OffsetCheckpoint {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub struct SynchronizerTime {
     pub synchronizer_id: SynchronizerId,
     pub record_time: SystemTime,

@@ -161,6 +161,7 @@ impl EventQueryServiceClient {
 // TODO: this return type drops synchronizer ID from created and archived, need to deal with it
 
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct CreatedAndArchived<C, A> {
     /// The create event for the contract with the `contract_id` given in the request provided it
     /// exists and has not yet been pruned.

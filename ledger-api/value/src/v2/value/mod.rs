@@ -23,6 +23,7 @@ pub use variant::Variant;
 
 /// Aggregated type of all possible Ledger API values
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub enum Value {
     Unit,
     Bool(bool),

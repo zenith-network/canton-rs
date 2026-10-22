@@ -14,6 +14,7 @@ use crate::v2::{ChoiceValue, Empty, TemplateValue, TemplateValueWithKey};
 
 /// Generic event type
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum Event<C = Empty, A = Empty, E = Empty> {
     Created(C),
     Archived(A),
@@ -53,6 +54,7 @@ pub struct CastError {}
 
 /// `Created` event
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Created<T: TemplateValue> {
     pub offset: i64,
     pub node_id: i32,
@@ -68,6 +70,7 @@ pub struct Created<T: TemplateValue> {
 
 /// `Created` event for a template with key
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct CreatedWithKey<T: TemplateValueWithKey> {
     pub offset: i64,
     pub node_id: i32,
@@ -85,6 +88,7 @@ pub struct CreatedWithKey<T: TemplateValueWithKey> {
 
 /// `Created` event
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct CreatedEvent {
     pub offset: i64,
     pub node_id: i32,
@@ -277,6 +281,7 @@ impl TryFrom<proto::CreatedEvent> for CreatedEvent {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Archived<T: TemplateValue> {
     pub offset: i64,
     pub node_id: i32,
@@ -287,6 +292,7 @@ pub struct Archived<T: TemplateValue> {
 
 /// Archived event
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ArchivedEvent {
     pub offset: i64,
     pub node_id: i32,
@@ -370,6 +376,7 @@ impl TryFrom<proto::ArchivedEvent> for ArchivedEvent {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Exercised<T: TemplateValue, C: ChoiceValue<T>> {
     pub offset: i64,
     pub node_id: i32,
@@ -384,6 +391,7 @@ pub struct Exercised<T: TemplateValue, C: ChoiceValue<T>> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ExercisedEvent {
     pub offset: i64,
     pub node_id: i32,

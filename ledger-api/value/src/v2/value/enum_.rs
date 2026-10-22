@@ -9,9 +9,27 @@ use crate::v2::{
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub struct Enum {
     pub enum_id: Option<Identifier<PackageId>>,
     pub constructor: Name,
+}
+
+impl Enum {
+    pub fn new(enum_id: Option<Identifier<PackageId>>, constructor: Name) -> Self {
+        Self {
+            enum_id,
+            constructor,
+        }
+    }
+
+    /// Create new enum without enum ID
+    pub fn from_constructor(constructor: Name) -> Self {
+        Self {
+            enum_id: None,
+            constructor,
+        }
+    }
 }
 
 // Protobuf conversions

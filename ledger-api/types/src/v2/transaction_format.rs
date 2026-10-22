@@ -3,12 +3,17 @@ use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use crate::v2::{AcsDelta, EventFormat, LedgerEffects, TransactionShape, TxShape};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct TransactionFormat<S: TxShape = TransactionShape> {
     pub event_format: EventFormat,
     pub transaction_shape: S,
 }
 
 impl TransactionFormat<TransactionShape> {
+    /// Create transaction format with runtime-defined transaction shape.
+    ///
+    /// For statically defined transaction shapes, consider using
+    /// `TransactionFormat::<AcsDelta>::new()` and `TransactionFormat::<LedgerEffects>::new()`.
     pub fn new(event_format: EventFormat, transaction_shape: TransactionShape) -> Self {
         Self {
             event_format,
@@ -18,6 +23,7 @@ impl TransactionFormat<TransactionShape> {
 }
 
 impl TransactionFormat<AcsDelta> {
+    /// Create transaction format with `ACS_DELTA` transaction shape.
     pub fn new(event_format: EventFormat) -> Self {
         Self {
             event_format,
@@ -27,6 +33,7 @@ impl TransactionFormat<AcsDelta> {
 }
 
 impl TransactionFormat<LedgerEffects> {
+    /// Create transaction format with `LEDGER_EFFECTS` transaction shape.
     pub fn new(event_format: EventFormat) -> Self {
         Self {
             event_format,

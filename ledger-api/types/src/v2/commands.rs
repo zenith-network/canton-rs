@@ -16,6 +16,7 @@ use crate::v2::{
 
 /// A composite command that groups multiple erased commands together
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub struct Commands {
     pub workflow_id: Option<LedgerString>,
     pub user_id: Option<UserId>,
@@ -116,6 +117,7 @@ impl From<Commands> for proto::Commands {
 
 /// Command with erased types
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum Command {
     Create(CreateCommand),
     Exercise(ExerciseCommand),
@@ -169,11 +171,16 @@ impl From<CreateAndExerciseCommand> for Command {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Create<T: TemplateValue> {
     pub create_arguments: T,
 }
 
 impl<T: TemplateValue> Create<T> {
+    pub fn new(create_arguments: T) -> Self {
+        Self { create_arguments }
+    }
+
     /// Erase type information, converting to raw command
     pub fn erase(self) -> CreateCommand {
         CreateCommand {
@@ -185,10 +192,20 @@ impl<T: TemplateValue> Create<T> {
 
 /// Create command with erased type
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct CreateCommand {
     /// We use package-name here because package-id is marked as deprecated in Protobuf
     pub template_id: Identifier<PackageName>,
     pub create_arguments: Record,
+}
+
+impl CreateCommand {
+    pub fn new(template_id: Identifier<PackageName>, create_arguments: Record) -> Self {
+        Self {
+            template_id,
+            create_arguments,
+        }
+    }
 }
 
 impl From<CreateCommand> for proto::CreateCommand {
@@ -201,12 +218,20 @@ impl From<CreateCommand> for proto::CreateCommand {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Exercise<R: TemplateOrInterface, C: ChoiceValue<R>> {
     pub contract_id: ContractId<R>,
     pub choice_argument: C,
 }
 
 impl<R: TemplateOrInterface, C: ChoiceValue<R>> Exercise<R, C> {
+    pub fn new(contract_id: ContractId<R>, choice_argument: C) -> Self {
+        Self {
+            contract_id,
+            choice_argument,
+        }
+    }
+
     /// Erase type information, converting to raw command
     pub fn erase(self) -> ExerciseCommand {
         ExerciseCommand {
@@ -220,12 +245,29 @@ impl<R: TemplateOrInterface, C: ChoiceValue<R>> Exercise<R, C> {
 
 /// Exercise command with erased type
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ExerciseCommand {
     /// We use package-name here because package-id is marked as deprecated in Protobuf
     pub template_id: Identifier<PackageName>,
     pub contract_id: ContractId,
     pub choice: Name,
     pub choice_argument: Value,
+}
+
+impl ExerciseCommand {
+    pub fn new(
+        template_id: Identifier<PackageName>,
+        contract_id: ContractId,
+        choice: Name,
+        choice_argument: Value,
+    ) -> Self {
+        Self {
+            template_id,
+            contract_id,
+            choice,
+            choice_argument,
+        }
+    }
 }
 
 impl From<ExerciseCommand> for proto::ExerciseCommand {
@@ -240,12 +282,20 @@ impl From<ExerciseCommand> for proto::ExerciseCommand {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ExerciseByKey<T: TemplateValueWithKey, C: ChoiceByKeyValue<T>> {
     pub contract_key: T::Key,
     pub choice_argument: C,
 }
 
 impl<T: TemplateValueWithKey, C: ChoiceByKeyValue<T>> ExerciseByKey<T, C> {
+    pub fn new(contract_key: T::Key, choice_argument: C) -> Self {
+        Self {
+            contract_key,
+            choice_argument,
+        }
+    }
+
     /// Erase type information, converting to raw command
     pub fn erase(self) -> ExerciseByKeyCommand {
         ExerciseByKeyCommand {
@@ -259,11 +309,28 @@ impl<T: TemplateValueWithKey, C: ChoiceByKeyValue<T>> ExerciseByKey<T, C> {
 
 /// ExerciseByKey command with erased type
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct ExerciseByKeyCommand {
     pub template_id: Identifier<PackageName>,
     pub contract_key: Value,
     pub choice: Name,
     pub choice_argument: Value,
+}
+
+impl ExerciseByKeyCommand {
+    pub fn new(
+        template_id: Identifier<PackageName>,
+        contract_key: Value,
+        choice: Name,
+        choice_argument: Value,
+    ) -> Self {
+        Self {
+            template_id,
+            contract_key,
+            choice,
+            choice_argument,
+        }
+    }
 }
 
 impl From<ExerciseByKeyCommand> for proto::ExerciseByKeyCommand {
@@ -278,12 +345,20 @@ impl From<ExerciseByKeyCommand> for proto::ExerciseByKeyCommand {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct CreateAndExercise<T: TemplateValue + TemplateOrInterface, C: ChoiceValue<T>> {
     pub create_arguments: T,
     pub choice_argument: C,
 }
 
 impl<T: TemplateValue + TemplateOrInterface, C: ChoiceValue<T>> CreateAndExercise<T, C> {
+    pub fn new(create_arguments: T, choice_argument: C) -> Self {
+        Self {
+            create_arguments,
+            choice_argument,
+        }
+    }
+
     /// Erase type information, converting to raw command
     pub fn erase(self) -> CreateAndExerciseCommand {
         CreateAndExerciseCommand {
@@ -297,11 +372,28 @@ impl<T: TemplateValue + TemplateOrInterface, C: ChoiceValue<T>> CreateAndExercis
 
 /// CreateAndExercise command with erased type
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct CreateAndExerciseCommand {
     pub template_id: Identifier<PackageName>,
     pub create_arguments: Record,
     pub choice: Name,
     pub choice_argument: Value,
+}
+
+impl CreateAndExerciseCommand {
+    pub fn new(
+        template_id: Identifier<PackageName>,
+        create_arguments: Record,
+        choice: Name,
+        choice_argument: Value,
+    ) -> Self {
+        Self {
+            template_id,
+            create_arguments,
+            choice,
+            choice_argument,
+        }
+    }
 }
 
 impl From<CreateAndExerciseCommand> for proto::CreateAndExerciseCommand {

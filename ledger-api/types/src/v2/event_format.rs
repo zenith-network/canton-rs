@@ -7,6 +7,7 @@ use crate::v2::Filters;
 
 /// Runtime-defined event format
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub struct EventFormat {
     pub filters_by_party: HashMap<PartyId, Filters>,
     pub filters_for_any_party: Option<Filters>,

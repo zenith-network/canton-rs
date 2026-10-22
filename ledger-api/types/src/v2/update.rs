@@ -4,6 +4,7 @@ use ledger_api_value::v2::errors::ValueError;
 use crate::v2::Empty;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum Update<T = Empty, R = Empty, C = Empty, P = Empty> {
     Transaction(T),
     Reassignment(R),

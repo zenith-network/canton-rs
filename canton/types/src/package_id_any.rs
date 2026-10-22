@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// Package ID in any reference format: package-id or package-name
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PackageIdAny {
     /// package-id reference format
     Id(PackageId),
@@ -151,4 +151,186 @@ enum ErrorKind {
     PackageName(PackageNameError),
 }
 
-// TODO: add PartialEq, Eq, PartialOrd, Ord impls, so that you can compare any to name or id
+impl PartialEq<PackageId> for PackageIdAny {
+    fn eq(&self, other: &PackageId) -> bool {
+        match self {
+            Self::Id(id) => id == other,
+            Self::Name(_) => false,
+        }
+    }
+}
+
+impl PartialEq<&PackageId> for PackageIdAny {
+    fn eq(&self, other: &&PackageId) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<PackageIdAny> for PackageId {
+    fn eq(&self, other: &PackageIdAny) -> bool {
+        other == self
+    }
+}
+
+impl PartialEq<PackageIdAny> for &PackageId {
+    fn eq(&self, other: &PackageIdAny) -> bool {
+        *self == other
+    }
+}
+
+impl PartialEq<PackageName> for PackageIdAny {
+    fn eq(&self, other: &PackageName) -> bool {
+        match self {
+            Self::Id(_) => false,
+            Self::Name(name) => name == other,
+        }
+    }
+}
+
+impl PartialEq<&PackageName> for PackageIdAny {
+    fn eq(&self, other: &&PackageName) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<PackageIdAny> for PackageName {
+    fn eq(&self, other: &PackageIdAny) -> bool {
+        other == self
+    }
+}
+
+impl PartialEq<PackageIdAny> for &PackageName {
+    fn eq(&self, other: &PackageIdAny) -> bool {
+        *self == other
+    }
+}
+
+impl PartialOrd<PackageId> for PackageIdAny {
+    fn partial_cmp(&self, other: &PackageId) -> Option<std::cmp::Ordering> {
+        match self {
+            Self::Id(id) => id.partial_cmp(other),
+            Self::Name(_) => None,
+        }
+    }
+}
+
+impl PartialOrd<PackageIdAny> for PackageId {
+    fn partial_cmp(&self, other: &PackageIdAny) -> Option<std::cmp::Ordering> {
+        match other {
+            PackageIdAny::Id(id) => self.partial_cmp(id),
+            PackageIdAny::Name(_) => None,
+        }
+    }
+}
+
+impl PartialOrd<PackageName> for PackageIdAny {
+    fn partial_cmp(&self, other: &PackageName) -> Option<std::cmp::Ordering> {
+        match self {
+            Self::Id(_) => None,
+            Self::Name(name) => name.partial_cmp(other),
+        }
+    }
+}
+
+impl PartialOrd<PackageIdAny> for PackageName {
+    fn partial_cmp(&self, other: &PackageIdAny) -> Option<std::cmp::Ordering> {
+        match other {
+            PackageIdAny::Id(_) => None,
+            PackageIdAny::Name(name) => self.partial_cmp(name),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    #[test]
+    fn test_package_id_any_id_equality() {
+        let id = PackageId::new_unchecked("pkg-123");
+        let any_id = PackageIdAny::new_id("pkg-123".into()).unwrap();
+        let any_id2 = PackageIdAny::new_id("pkg-456".into()).unwrap();
+
+        assert_eq!(any_id, id);
+        assert_eq!(&any_id, &id);
+        assert_eq!(id, any_id);
+        assert_eq!(&id, &any_id);
+        assert_ne!(any_id2, id);
+
+        assert_eq!(any_id.as_str(), "pkg-123");
+    }
+
+    #[test]
+    fn test_package_id_any_name_equality() {
+        let name = PackageName::new_unchecked("my-pkg");
+        let any_name = PackageIdAny::new_name("my-pkg".into()).unwrap();
+        let any_name2 = PackageIdAny::new_name("other-pkg".into()).unwrap();
+
+        assert_eq!(any_name, name);
+        assert_eq!(&any_name, &name);
+        assert_eq!(name, any_name);
+        assert_eq!(&name, &any_name);
+        assert_ne!(any_name2, name);
+
+        assert_eq!(any_name.as_str(), "my-pkg");
+    }
+
+    #[test]
+    fn test_package_id_any_cross_equality() {
+        let id = PackageId::new_unchecked("pkg-123");
+        let name = PackageName::new_unchecked("pkg-123");
+        let any_id = PackageIdAny::new_id("pkg-123".into()).unwrap();
+        let any_name = PackageIdAny::new_name("pkg-123".into()).unwrap();
+
+        assert_eq!(any_id, id);
+        assert_ne!(any_id, name);
+        assert_eq!(any_name, name);
+        assert_ne!(any_name, id);
+        assert_ne!(any_id, any_name);
+    }
+
+    #[test]
+    fn test_package_id_any_partial_ord() {
+        let id1 = PackageId::new_unchecked("aaa");
+        let id2 = PackageId::new_unchecked("bbb");
+        let any_id1 = PackageIdAny::new_id("aaa".into()).unwrap();
+        let any_id2 = PackageIdAny::new_id("bbb".into()).unwrap();
+        let any_name = PackageIdAny::new_name("aaa".into()).unwrap();
+
+        assert!(any_id1 < id2);
+        assert!(id1 < any_id2);
+        assert!(any_id1 < any_id2);
+        assert_eq!(
+            any_id1.partial_cmp(&any_name),
+            Some(std::cmp::Ordering::Less)
+        );
+        assert_eq!(any_name.partial_cmp(&id1), None);
+    }
+
+    #[test]
+    fn test_package_id_any_hash_and_collections() {
+        let any_id = PackageIdAny::new_id("pkg-123".into()).unwrap();
+        let any_name = PackageIdAny::new_name("pkg-123".into()).unwrap();
+
+        let mut set = HashSet::new();
+        set.insert(any_id.clone());
+        set.insert(any_name.clone());
+
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(&any_id));
+        assert!(set.contains(&any_name));
+    }
+
+    #[test]
+    fn test_parse() {
+        let id = PackageIdAny::parse("my-package-id").unwrap();
+        assert!(id.is_id());
+        assert_eq!(id.as_str(), "my-package-id");
+
+        let name = PackageIdAny::parse("#my-package-name").unwrap();
+        assert!(name.is_name());
+        assert_eq!(name.as_str(), "my-package-name");
+    }
+}

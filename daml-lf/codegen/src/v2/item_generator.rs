@@ -558,11 +558,7 @@ impl<'a> ItemGenerator<'a> {
             && type_path.path.segments.len() == 1
         {
             let type_ident = &type_path.path.segments[0].ident;
-            if generics
-                .type_params()
-                .find(|tp| &tp.ident == type_ident)
-                .is_some()
-            {
+            if generics.type_params().any(|tp| &tp.ident == type_ident) {
                 // if there is a colliding type parameter, prepend `self`
                 type_path
                     .path

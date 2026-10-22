@@ -143,21 +143,23 @@ impl DalfFile {
             archive_payload::Sum::DamlLf2(_) => 2,
         };
 
-        let minor = match minor {
-            "dev" => MinorVersion::Dev,
-            v if let Some((v, rc)) = v.split_once("-rc") => MinorVersion::Staging {
+        let minor = if minor == "dev" {
+            MinorVersion::Dev
+        } else if let Some((v, rc)) = minor.split_once("-rc") {
+            MinorVersion::Staging {
                 version: v
                     .parse()
                     .map_err(|err| DalfError::invalid_version(err, major, minor.to_owned()))?,
                 revision: rc
                     .parse()
                     .map_err(|err| DalfError::invalid_version(err, major, minor.to_owned()))?,
-            },
-            v => MinorVersion::Stable {
-                version: v
+            }
+        } else {
+            MinorVersion::Stable {
+                version: minor
                     .parse()
                     .map_err(|err| DalfError::invalid_version(err, major, minor.to_owned()))?,
-            },
+            }
         };
 
         Ok(Version { major, minor })

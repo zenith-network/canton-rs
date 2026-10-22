@@ -142,10 +142,10 @@ impl Dispatcher {
     }
 
     fn write_file(file: &syn::File, path: impl AsRef<Path>) -> Result<(), Error> {
-        let output = cfg_select! {
-            feature = "format" => prettyplease::unparse(file),
-            _ => quote::ToTokens::into_token_stream(file).to_string(),
-        };
+        #[cfg(feature = "format")]
+        let output = prettyplease::unparse(file);
+        #[cfg(not(feature = "format"))]
+        let output = quote::ToTokens::into_token_stream(file).to_string();
 
         fs::write(path, output).map_err(OutputError::from)?;
         Ok(())

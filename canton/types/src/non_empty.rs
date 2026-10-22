@@ -70,6 +70,13 @@ impl<T> From<NonEmpty<T>> for (Vec<T>, T) {
     }
 }
 
+impl<T> From<NonEmpty<T>> for Vec<T> {
+    fn from(mut value: NonEmpty<T>) -> Self {
+        value.base.push(value.tail);
+        value.base
+    }
+}
+
 /// This error is returned when a conversion from vector to non-empty fails.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("source vector is empty")]
@@ -101,5 +108,12 @@ mod tests {
         #[case] result: Result<NonEmpty<u32>, EmptyVecError>,
     ) {
         assert_eq!(NonEmpty::try_from(source), result);
+    }
+
+    #[rstest]
+    #[case::single(NonEmpty::single(42), vec![42])]
+    #[case::multiple(NonEmpty { base: vec![1, 2], tail: 3 }, vec![1, 2, 3])]
+    fn test_into_vec(#[case] source: NonEmpty<u32>, #[case] expected: Vec<u32>) {
+        assert_eq!(Vec::from(source), expected);
     }
 }

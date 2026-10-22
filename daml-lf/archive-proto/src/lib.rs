@@ -57,5 +57,5 @@ pub const SUPPORTED_VERSIONS: &[Version] = &[
 ];
 
 pub fn is_supported(version: &Version) -> bool {
-    SUPPORTED_VERSIONS.iter().find(|v| v == &version).is_some()
+    SUPPORTED_VERSIONS.iter().any(|v| v == version)
 }

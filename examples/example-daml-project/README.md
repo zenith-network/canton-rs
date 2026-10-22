@@ -7,10 +7,16 @@ This is an example of using Canton Rust SDK with Daml project.
 
 ## Build dependencies
 
-- `dpm` + Daml SDK v3.6.1-snapshot.20260611.81.0.vb9b28f28 (for compiling Daml code)
+- Rust
+- `dpm` + Daml SDK (for compiling Daml code)
 - `protoc` (for Canton SDK)
 
 ## Build
 
 `build.rs` in `my-contracts` will build Daml sources using DPM and generate Rust bindings
 for produced .dar file.
+
+## Run
+
+This example is not supposed to be executed. It's provided only as a demo code.
+It has dummy values inside it and there is no participant provided to interact with.

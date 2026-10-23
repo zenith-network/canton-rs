@@ -84,7 +84,10 @@ impl TryFrom<proto::OffsetCheckpointFeature> for OffsetCheckpointFeature {
                 )
                 .no_msg()?
                 .try_into()
-                .unwrap(),
+                .validated_of::<proto::OffsetCheckpointFeature>(
+                    "max_offset_checkpoint_emission_delay",
+                )
+                .no_msg()?,
         })
     }
 }
@@ -167,5 +170,53 @@ impl TryFrom<proto::FeaturesDescriptor> for FeaturesDescriptor {
                 .no_msg()?
                 .into(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error as _;
+
+    use super::*;
+
+    #[test]
+    fn offset_checkpoint_rejects_negative_duration() {
+        for (seconds, nanos) in [(-1, 0), (0, -1)] {
+            let mut value = proto::OffsetCheckpointFeature {
+                max_offset_checkpoint_emission_delay: Some(Default::default()),
+            };
+            let duration = value.max_offset_checkpoint_emission_delay.as_mut().unwrap();
+            duration.seconds = seconds;
+            duration.nanos = nanos;
+
+            let error = OffsetCheckpointFeature::try_from(value).unwrap_err();
+            let source = error.source().unwrap();
+            assert!(
+                source
+                    .to_string()
+                    .contains("OffsetCheckpointFeature.max_offset_checkpoint_emission_delay")
+            );
+            assert!(source.source().is_some());
+        }
+    }
+
+    #[test]
+    fn offset_checkpoint_preserves_nonnegative_duration() {
+        for duration in [Duration::ZERO, Duration::new(3, 42)] {
+            let value = proto::OffsetCheckpointFeature {
+                max_offset_checkpoint_emission_delay: Some(duration.try_into().unwrap()),
+            };
+            let feature = OffsetCheckpointFeature::try_from(value).unwrap();
+            assert_eq!(feature.max_offset_checkpoint_emission_delay, duration);
+        }
+    }
+
+    #[test]
+    fn offset_checkpoint_requires_duration() {
+        let error = OffsetCheckpointFeature::try_from(proto::OffsetCheckpointFeature {
+            max_offset_checkpoint_emission_delay: None,
+        })
+        .unwrap_err();
+        assert!(error.source().unwrap().to_string().contains("is missing"));
     }
 }

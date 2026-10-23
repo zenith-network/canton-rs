@@ -1,0 +1,7 @@
+module Smoke where
+
+template Smoke
+  with
+    owner : Party
+  where
+    signatory owner

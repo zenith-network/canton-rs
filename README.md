@@ -1,6 +1,29 @@
 # Canton Rust SDK
 
-WIP
+> NOTE: This SDK is under active development.
+
+## Build dependencies
+
+Required to build SDK:
+
+- Rust
+- `protoc`
+
+```sh
+cargo build
+```
+
+## Development dependencies
+
+In addition to build dependencies, required to run tests:
+
+- Java runtime
+- DPM, Daml SDK
+
+```sh
+cargo build --workspace
+cargo test --workspace --all-features
+```
 
 ## Synchronization with Canton
 

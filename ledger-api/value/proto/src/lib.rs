@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 pub mod com {
     pub mod daml {
         pub mod ledger {

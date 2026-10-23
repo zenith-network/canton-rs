@@ -13,6 +13,7 @@ use crate::grpc::v2::{
     },
 };
 
+#[cfg(feature = "_tls-any")]
 pub use tonic::transport::ClientTlsConfig;
 
 #[cfg(not(feature = "tracing"))]
@@ -39,6 +40,7 @@ pub(crate) type InterceptedService =
 /// ```
 pub struct CantonClientBuilder {
     endpoint: String,
+    #[cfg(feature = "_tls-any")]
     tls_config: Option<ClientTlsConfig>,
     token: Option<String>,
     max_decoding_message_size: Option<usize>,
@@ -51,6 +53,7 @@ impl CantonClientBuilder {
     pub fn new(endpoint: impl Into<String>) -> Self {
         Self {
             endpoint: endpoint.into(),
+            #[cfg(feature = "_tls-any")]
             tls_config: None,
             token: None,
             max_decoding_message_size: None,
@@ -60,6 +63,7 @@ impl CantonClientBuilder {
         }
     }
 
+    #[cfg(feature = "_tls-any")]
     pub fn with_tls(mut self, config: ClientTlsConfig) -> Self {
         self.tls_config = Some(config);
         self
@@ -118,14 +122,23 @@ impl CantonClientBuilder {
     }
 
     fn build_endpoint(&mut self) -> Result<Endpoint, ClientBuildError> {
-        let mut endpoint = Endpoint::from_shared(mem::take(&mut self.endpoint))?
+        let endpoint = Endpoint::from_shared(mem::take(&mut self.endpoint))?
             .http2_keep_alive_interval(self.http2_keep_alive_interval)
             .keep_alive_timeout(self.keep_alive_timeout)
             .keep_alive_while_idle(true);
 
-        if let Some(tls) = self.tls_config.take() {
-            endpoint = endpoint.tls_config(tls)?;
+        // We check this to prevent accidentally sending data in plaintext
+        #[cfg(not(feature = "_tls-any"))]
+        if endpoint.uri().scheme() == Some(&http::uri::Scheme::HTTPS) {
+            return Err(ClientBuildError::TlsNotSupported);
         }
+
+        #[cfg(feature = "_tls-any")]
+        let endpoint = if let Some(tls) = self.tls_config.take() {
+            endpoint.tls_config(tls)?
+        } else {
+            endpoint
+        };
 
         Ok(endpoint)
     }

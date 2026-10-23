@@ -76,7 +76,6 @@ async fn connection_and_version_match_real_participant(sandbox: &Sandbox) {
 /// Checks experimental feature flags map to their corresponding server fields.
 #[sandbox(shared, config = sandbox_config)]
 #[tokio::test]
-#[ignore = "tracking issue: #44"]
 async fn experimental_version_features_match_real_participant(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
     let raw = ok(

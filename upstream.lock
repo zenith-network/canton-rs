@@ -1,4 +1,17 @@
 [[capsule]]
+name = "admin-api-proto"
+source = "git+https://github.com/digital-asset/canton.git?ref=0dc3b765a90326fa887830236417ce0187ecb7fc&rev=0dc3b765a90326fa887830236417ce0187ecb7fc"
+src = "community/admin-api/src/main/protobuf"
+dst = "admin-api/proto/protobuf"
+filter = "**/*.{proto,yaml,yml}"
+
+[[capsule]]
+name = "canton-proto"
+source = "git+https://github.com/digital-asset/canton.git?ref=0dc3b765a90326fa887830236417ce0187ecb7fc&rev=0dc3b765a90326fa887830236417ce0187ecb7fc"
+src = "community/base/src/main/protobuf"
+dst = "canton/proto/protobuf"
+
+[[capsule]]
 name = "daml-lf-archive-proto"
 source = "git+https://github.com/digital-asset/canton.git?ref=0dc3b765a90326fa887830236417ce0187ecb7fc&rev=0dc3b765a90326fa887830236417ce0187ecb7fc"
 src = "community/daml-lf/archive/src/main/protobuf"

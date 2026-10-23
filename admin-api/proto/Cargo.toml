@@ -1,0 +1,29 @@
+[package]
+name = "admin-api-proto"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["std", "client", "transport"]
+
+# Enables tonic client generation
+client = ["std", "dep:tonic", "dep:tonic-prost"]
+
+# Enables tonic server generation
+server = ["std", "dep:tonic", "dep:tonic-prost"]
+
+transport = ["client", "tonic/channel"]
+
+# Enables std support
+std = ["prost/std", "prost-types/std"]
+
+[dependencies]
+prost = { workspace = true, features = ["derive"] }
+prost-types.workspace = true
+tonic = { workspace = true, features = ["codegen"], optional = true }
+tonic-prost = { workspace = true, optional = true }
+
+[build-dependencies]
+glob.workspace = true
+tonic-prost-build = { workspace = true, features = ["transport"] }

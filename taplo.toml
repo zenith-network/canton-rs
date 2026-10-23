@@ -1,4 +1,4 @@
-include = ["**/Cargo.toml", "**/upstream.toml"]
+include = ["**/Cargo.toml", "**/upstream.toml", "**/deny.toml"]
 
 exclude = [
   "target/**",

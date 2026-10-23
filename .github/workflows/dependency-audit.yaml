@@ -1,0 +1,30 @@
+name: Dependency Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  pull_request:
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "**/deny.toml"
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-deny:
+    name: cargo deny
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4.4.0
+
+      - name: Run cargo deny
+        uses: EmbarkStudios/cargo-deny-action@v2.1.1
+        with:
+          command: check bans licenses sources

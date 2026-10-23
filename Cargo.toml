@@ -3,6 +3,7 @@ members = [
   "canton",
   "canton/types",
   "canton/types/derive",
+  "canton/version",
   "canton-paths",
   "daml-lf",
   "daml-lf/archive-proto",
@@ -26,6 +27,7 @@ default-members = [
   "canton",
   "canton/types",
   "canton/types/derive",
+  "canton/version",
   "canton-paths",
   "daml-lf",
   "daml-lf/archive-proto",
@@ -67,6 +69,7 @@ prost-build = { version = "0.14.3", default-features = false }
 prost-types = { version = "0.14.3", default-features = false }
 quote = "1.0.45"
 rstest = { version = "0.26.1", default-features = false }
+semver = { version = "1.0.28", default-features = false }
 serde = { version = "1.0.228", default-features = false }
 serde_json = { version = "1.0.150", default-features = false }
 sha2 = { version = "0.11.0", default-features = false }
@@ -98,6 +101,7 @@ canton = { path = "canton", default-features = false }
 canton-paths = { path = "canton-paths" }
 canton-types = { path = "canton/types", default-features = false }
 canton-types-derive = { path = "canton/types/derive", default-features = false }
+canton-version = { path = "canton/version", default-features = false }
 
 # Ledger API crates
 ledger-api = { path = "ledger-api", default-features = false }

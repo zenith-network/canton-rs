@@ -18,7 +18,9 @@ impl From<proto::ExperimentalFeatures> for ExperimentalFeatures {
     fn from(value: proto::ExperimentalFeatures) -> Self {
         Self {
             static_time: value.static_time.map(|inner| inner.supported),
-            command_inspection_service: value.static_time.map(|inner| inner.supported),
+            command_inspection_service: value
+                .command_inspection_service
+                .map(|inner| inner.supported),
         }
     }
 }

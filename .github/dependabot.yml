@@ -1,0 +1,16 @@
+version: 2
+
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Disable regular version updates, only create PRs for vulnerabilities
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Disable regular version updates, only create PRs for vulnerabilities
+    open-pull-requests-limit: 0

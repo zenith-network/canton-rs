@@ -206,9 +206,8 @@ impl CantonClient {
     /// (see [`supported_versions()`][crate::supported_versions()]). Note that cached value will
     /// be nullified for all copies of the client in this case.
     ///
-    /// Cached results are shared among all copies of the client. Client will remember these values
-    /// and respect them in the future. This function can be called again to update the cached
-    /// values for all existing copies of the client.
+    /// Cached results are shared among all copies of the client. This function can be called again
+    /// to update the cached values for all existing copies of the client.
     ///
     /// By default, if the version wasn't resolved, client treats server as compatible.
     ///

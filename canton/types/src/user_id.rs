@@ -28,15 +28,18 @@ const fn is_valid(c: char) -> bool {
 
 /// User ID
 ///
-/// Non-empry string with length <= 128 that match the regexp ``[a-zA-Z0-9@^$.!`\-#+'~_|:]+``
+/// Non-empty string with length <= 128 that match the regexp ``[a-zA-Z0-9@^$.!`\-#+'~_|:]+``
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UserId(String);
 
 impl UserId {
-    /// Create a new user ID.
-    ///
-    /// Return error if provided value is not a valid user ID.
-    pub fn new(value: String) -> Result<Self, UserIdError> {
+    /// Create a new user ID without validating the input.
+    pub fn new_unchecked(value: String) -> Self {
+        Self(value)
+    }
+
+    /// Return an error if the input is not a valid user ID.
+    pub fn validate(value: &str) -> Result<(), UserIdError> {
         if value.is_empty() {
             return Err(UserIdError {
                 kind: ErrorKind::Empty,
@@ -56,7 +59,15 @@ impl UserId {
             }
         }
 
-        Ok(Self(value))
+        Ok(())
+    }
+
+    /// Create a new user ID.
+    ///
+    /// Return error if provided value is not a valid user ID.
+    pub fn new(value: String) -> Result<Self, UserIdError> {
+        Self::validate(&value)?;
+        Ok(Self::new_unchecked(value))
     }
 
     /// Returns a byte slice of this user ID's contents.

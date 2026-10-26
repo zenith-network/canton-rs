@@ -3,6 +3,9 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
+    '.github/workflows/dependency-audit.yaml':
+        - 'actions/checkout@v4.4.0'
+        - 'embarkstudios/cargo-deny-action@v2.1.1'
     '.github/workflows/examples-checks.yaml':
         - 'actions-rs/toolchain@v1.0.7'
         - 'actions/checkout@v4.4.0'
@@ -43,6 +46,11 @@ dependencies:
         commit: 'sha1-c65c819552d16ad3c9b72d9dfd5ba5237b9c906b'
         owner_id: 379109
         repo_id: 216797458
+    'embarkstudios/cargo-deny-action@v2.1.1':
+        ref: 'v2.1.1'
+        commit: 'sha1-3c6349835b2b7b196a839186cb8b78e02f7b5f25'
+        owner_id: 44887257
+        repo_id: 228054692
     'swatinem/rust-cache@v2.9.2':
         ref: 'v2.9.2'
         commit: 'sha1-6323deb102c322ba6fcbdcafc7e3dddab59af2b6'

@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt, time::Duration};
 
+use canton_version::semver::Version;
 use ledger_api_types::{canton_types::LedgerString, value::v2::errors::ValueError};
 use thiserror::Error;
 use tonic_types::{ErrorDetail, ErrorInfo, StatusExt as _};
@@ -60,6 +61,10 @@ pub enum CantonError {
     /// the client
     #[error("failed to parse response from Ledger API")]
     ValueError(#[from] ValueError),
+
+    /// This error is returned when client doesn't support the version of the server.
+    #[error(transparent)]
+    UnsupportedServerVersion(#[from] UnsupportedServerVersion),
 }
 
 impl CantonError {
@@ -87,6 +92,43 @@ impl From<Status> for CantonError {
             // Fallback to raw gRPC status
             Self::Raw(status)
         }
+    }
+}
+
+/// Error which is returned when client doesn't support the API version of the server.
+#[derive(Clone, Debug, Error)]
+pub struct UnsupportedServerVersion {
+    server_version: Version,
+}
+
+impl UnsupportedServerVersion {
+    pub fn new(server_version: Version) -> Self {
+        Self { server_version }
+    }
+
+    /// Version of the server.
+    ///
+    /// Note: This is **not** a Ledger API schema version (like `v2`). It's a Canton release
+    /// version, e.g. `3.6.0`.
+    pub fn server_version(&self) -> &Version {
+        &self.server_version
+    }
+}
+
+impl fmt::Display for UnsupportedServerVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "unsupported server version: '{}' (supported: ",
+            self.server_version
+        )?;
+        for (index, version_req) in crate::supported_versions().iter().enumerate() {
+            if index > 0 {
+                f.write_str(" OR ")?;
+            }
+            write!(f, "'{version_req}'")?;
+        }
+        f.write_str(")")
     }
 }
 

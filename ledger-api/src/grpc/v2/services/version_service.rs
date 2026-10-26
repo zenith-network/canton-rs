@@ -1,3 +1,4 @@
+use canton_version::semver::Version;
 use ledger_api_proto::com::daml::ledger::api::v2::{
     GetLedgerApiVersionRequest, GetLedgerApiVersionResponse, version_service_client as svc_proto,
 };
@@ -49,12 +50,35 @@ impl VersionServiceClient {
 
         response.try_into().map_err(CantonError::value_error)
     }
+
+    /// Get the server version
+    ///
+    /// Comparing to [`get_ledger_api_version`][VersionServiceClient::get_ledger_api_version()],
+    /// this one doesn't decode the feature descriptor. This allows to check the version without
+    /// failing on descriptor decoding.
+    pub async fn get_server_version(&mut self) -> Result<Version, CantonError> {
+        let response = self
+            .retry_handler
+            .call(&self.service, &(), |mut svc, _| async move {
+                svc.get_ledger_api_version(GetLedgerApiVersionRequest {})
+                    .await
+            })
+            .await?;
+        Version::parse(&response.version)
+            .validated_of::<GetLedgerApiVersionResponse>("version")
+            .with_msg("expected a SemVer-compatible version")
+            .map_err(Into::into)
+    }
 }
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct ApiVersion {
-    pub version: String,
+    /// Version of the server.
+    ///
+    /// Note: This is **not** a Ledger API schema version (like `v2`). It's a Canton release
+    /// version, e.g. `3.6.0`.
+    pub version: Version,
     pub features: FeaturesDescriptor,
 }
 
@@ -63,7 +87,9 @@ impl TryFrom<GetLedgerApiVersionResponse> for ApiVersion {
 
     fn try_from(value: GetLedgerApiVersionResponse) -> Result<Self, Self::Error> {
         Ok(Self {
-            version: value.version,
+            version: Version::parse(&value.version)
+                .validated_of::<GetLedgerApiVersionResponse>("version")
+                .with_msg("expected a SemVer-compatible version")?,
             features: value
                 .features
                 .required_of::<GetLedgerApiVersionResponse>("features")

@@ -16,10 +16,15 @@ In addition to SDK build dependencies, required:
 ## Running
 
 ```sh
-cargo test --test ledger_api_integration
+cargo test -p ledger-api-integration --all-features --test ledger_api_integration
 ```
 
 This will run all Ledger API integration tests.
+
+## Different version of Canton
+
+By default, tests are running against current default version. Set `DPM_SDK_VERSION=x.y.z`
+to run against custom version of Canton.
 
 ## Coverage notes
 

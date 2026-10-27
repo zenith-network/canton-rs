@@ -59,9 +59,16 @@ jobs:
         run: |
           cargo test --package daml-lf-codegen --all-features --test test_codegen --verbose
 
-  ledger-api:
-    name: Ledger API
+  ledger-api-versions:
+    name: Ledger API (Canton ${{ matrix.canton-version }})
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # Exact releases supported by the current Rust SDK. Add pins during upgrades.
+        canton-version: ["3.5.12", "3.6.2"]
+    env:
+      DPM_SDK_VERSION: ${{ matrix.canton-version }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4.4.0
@@ -78,7 +85,7 @@ jobs:
         uses: zenith-network/setup-daml@v1.0.0
         with:
           dpm-version: "1.0.22"
-          sdk-version: "3.6.2"
+          sdk-version: ${{ matrix.canton-version }}
       - name: Install Java Runtime Environment
         uses: actions/setup-java@v6.1.0
         with:
@@ -87,10 +94,22 @@ jobs:
           java-package: 'jre'
       - name: Use Rust cache
         uses: Swatinem/rust-cache@v2.9.2
+        with:
+          key: ledger-api-${{ matrix.canton-version }}
       - name: Run tests
         env:
           SANDBOX_CAPACITY: "2"
           SANDBOX_IDLE_TIMEOUT_MS: "3000"
-          DPM_SDK_VERSION: "3.6.2"
         run: |
           cargo test --package ledger-api-integration --all-features --verbose --test ledger_api_integration
+
+  ledger-api:
+    name: Ledger API
+    if: ${{ always() }}
+    needs: ledger-api-versions
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require all Canton versions to pass
+        env:
+          MATRIX_RESULT: ${{ needs.ledger-api-versions.result }}
+        run: test "$MATRIX_RESULT" = success

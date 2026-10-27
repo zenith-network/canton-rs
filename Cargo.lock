@@ -1046,7 +1046,7 @@ name = "ledger-api-integration"
 version = "0.1.0"
 dependencies = [
  "canton",
- "daml-lf-archive-proto",
+ "daml-lf",
  "daml-lf-codegen",
  "dpm-build",
  "ledger-api",
@@ -1056,12 +1056,12 @@ dependencies = [
  "prost",
  "prost-types",
  "sandbox",
+ "semver",
  "tokio",
  "tokio-stream",
  "tonic",
  "tonic-types",
  "uuid",
- "zip",
 ]
 
 [[package]]

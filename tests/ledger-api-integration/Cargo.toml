@@ -9,6 +9,7 @@ publish = false
 canton = { workspace = true, features = ["derive", "ledger-api"] }
 
 [dev-dependencies]
+daml-lf.workspace = true
 ledger-api = { workspace = true, features = ["v2", "tracing"] }
 ledger-api-proto = { workspace = true, features = ["v2-testing"] }
 ledger-api-types = { workspace = true, features = ["v2"] }
@@ -23,8 +24,6 @@ tonic-types.workspace = true
 uuid = { workspace = true, features = ["v4"] }
 
 [build-dependencies]
-daml-lf-archive-proto = { workspace = true, features = ["v2", "std"] }
 daml-lf-codegen = { workspace = true, features = ["v2", "format", "env"] }
 dpm-build.workspace = true
-prost = { workspace = true, features = ["std"] }
-zip = { workspace = true, features = ["deflate"] }
+semver.workspace = true

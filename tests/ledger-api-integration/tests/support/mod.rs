@@ -29,8 +29,21 @@ pub fn sandbox_config() -> SandboxConfig {
     static CONFIG: OnceLock<SandboxConfig> = OnceLock::new();
     CONFIG
         .get_or_init(|| {
+            let version = env!("TEST_CANTON_SDK_VERSION");
+            if let Some(runtime_version) = std::env::var_os("DPM_SDK_VERSION") {
+                assert_eq!(
+                    runtime_version,
+                    std::ffi::OsStr::new(version),
+                    "DPM_SDK_VERSION differs from the SDK used to build this test binary \
+                     ({version}); select the version through \
+                     DPM_SDK_VERSION=<version> cargo test -p ledger-api-integration \
+                     --all-features --test ledger_api_integration so Cargo rebuilds the fixtures \
+                     and minimum-version configuration"
+                );
+            }
             SandboxConfig::builder()
-                .with_dar(include_bytes!(concat!(env!("OUT_DIR"), "/fixtures.dar")).as_slice())
+                .sdk_version(version)
+                .with_dar(ledger_api_integration::DAR_BYTES)
                 .build()
                 .expect("valid integration sandbox configuration")
         })

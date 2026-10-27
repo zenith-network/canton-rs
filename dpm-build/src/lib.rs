@@ -74,6 +74,8 @@ pub struct DamlYaml {
 
 impl ResolvedConfig {
     fn build(&self) -> Result<BuildResult, DpmError> {
+        println!("cargo::rerun-if-env-changed=DPM_SDK_VERSION");
+
         // If there is a known daml.yaml file and "source" is specified there,
         // we put it under cargo::rerun-if-changed
         let daml_yaml_path = self.package_root.join("daml.yaml");
@@ -186,6 +188,7 @@ impl Config {
         } else {
             PathBuf::from("dpm")
         };
+        println!("cargo::rerun-if-env-changed=DPM");
 
         let package_root = if let Some(package_root) = &self.package_root {
             package_root.clone()

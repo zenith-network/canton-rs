@@ -40,20 +40,6 @@ service InteractiveSubmissionService {
   // Similar to ExecuteSubmissionAndWait but additionally returns the transaction
   rpc ExecuteSubmissionAndWaitForTransaction(ExecuteSubmissionAndWaitForTransactionRequest) returns (ExecuteSubmissionAndWaitForTransactionResponse);
 
-  // A preferred package is the highest-versioned package for a provided package-name
-  // that is vetted by all the participants hosting the provided parties.
-  //
-  // Ledger API clients should use this endpoint for constructing command submissions
-  // that are compatible with the provided preferred package, by making informed decisions on:
-  // - which are the compatible packages that can be used to create contracts
-  // - which contract or exercise choice argument version can be used in the command
-  // - which choices can be executed on a template or interface of a contract
-  //
-  // Can be accessed by any Ledger API client with a valid token when Ledger API authorization is enabled.
-  //
-  // Provided for backwards compatibility, it will be removed in the Canton version 3.4.0
-  rpc GetPreferredPackageVersion(GetPreferredPackageVersionRequest) returns (GetPreferredPackageVersionResponse);
-
   // Compute the preferred packages for the vetting requirements in the request.
   // A preferred package is the highest-versioned package for a provided package-name
   // that is vetted by all the participants hosting the provided parties.
@@ -68,8 +54,6 @@ service InteractiveSubmissionService {
   // a `FAILED_PRECONDITION` error will be returned.
   //
   // Can be accessed by any Ledger API client with a valid token when Ledger API authorization is enabled.
-  //
-  // Experimental API: this endpoint is not guaranteed to provide backwards compatibility in future releases
   rpc GetPreferredPackages(GetPreferredPackagesRequest) returns (GetPreferredPackagesResponse);
 }
 
@@ -88,6 +72,45 @@ message CostEstimationHints {
   //
   // Optional: can be empty
   repeated SigningAlgorithmSpec expected_signatures = 2;
+}
+
+// Estimation of re-assignment costs
+// This is the cost of re-assigning contracts from another synchronizer if necessary.
+message ReassignmentCost {
+  // The synchronizer the contracts are currently assigned to, and against whose traffic balance
+  // the unassignment cost is charged
+  //
+  // Required
+  string source_synchronizer_id = 1;
+  // The synchronizer the contracts will be re-assigned to, and against whose traffic balance
+  // the assignment cost is charged
+  //
+  // Required
+  string target_synchronizer_id = 2;
+  // The contracts that will be unassigned together in this single unassignment request
+  //
+  // Required: must be non-empty
+  repeated string contract_ids = 3;
+  // Estimated traffic cost of the unassignment confirmation request
+  //
+  // Required
+  uint64 unassignment_request_traffic_cost_estimation = 4;
+  // Estimated traffic cost of the unassignment confirmation response
+  //
+  // Required
+  uint64 unassignment_response_traffic_cost_estimation = 5;
+  // Estimated traffic cost of the assignment confirmation request
+  //
+  // Required
+  uint64 assignment_request_traffic_cost_estimation = 6;
+  // Estimated traffic cost of the assignment confirmation response
+  //
+  // Required
+  uint64 assignment_response_traffic_cost_estimation = 7;
+  // Sum of the fields above
+  //
+  // Required
+  uint64 total_reassignment_cost_estimation = 8;
 }
 
 // Estimation of the cost of submitting the prepared transaction
@@ -113,6 +136,10 @@ message CostEstimation {
   //
   // Required
   uint64 total_traffic_cost_estimation = 4;
+  // Estimated cost of re-assigning contracts if necessary
+  //
+  // Optional: can be empty
+  repeated ReassignmentCost reassignment_costs = 5;
 }
 
 message PrepareSubmissionRequest {
@@ -220,6 +247,8 @@ message PrepareSubmissionRequest {
 
   // The hashing scheme version to be used when building the hash.
   // Defaults to HASHING_SCHEME_VERSION_V2.
+  // HASHING_SCHEME_VERSION_V4 requires a synchronizer running protocol version 36 or later and is
+  // rejected on synchronizers running older protocol versions.
   //
   // Optional
   optional HashingSchemeVersion hashing_scheme_version = 17;
@@ -240,6 +269,9 @@ enum HashingSchemeVersion {
   reserved 1; // Hashing Scheme V1 - unsupported
   HASHING_SCHEME_VERSION_V2 = 2;
   HASHING_SCHEME_VERSION_V3 = 3;
+  // Development-protocol-only hashing scheme for LF development-version prepared transactions.
+  // V4 includes exercise external_call_results in the prepared transaction hash.
+  HASHING_SCHEME_VERSION_V4 = 4;
 }
 // [docs-entry-end: HashingSchemeVersion]
 
@@ -256,7 +288,9 @@ message PrepareSubmissionResponse {
   // Required: must be non-empty
   bytes prepared_transaction_hash = 2;
 
-  // The hashing scheme version used when building the hash
+  // The hashing scheme version used when building the hash.
+  // HASHING_SCHEME_VERSION_V4 is only returned for synchronizers running protocol version 36 or
+  // later.
   //
   // Required
   HashingSchemeVersion hashing_scheme_version = 3;
@@ -338,7 +372,9 @@ message ExecuteSubmissionRequest {
   // Optional
   string user_id = 6;
 
-  // The hashing scheme version used when building the hash
+  // The hashing scheme version used when building the hash.
+  // HASHING_SCHEME_VERSION_V4 requires a synchronizer running protocol version 36 or later and is
+  // rejected on synchronizers running older protocol versions.
   //
   // Required
   HashingSchemeVersion hashing_scheme_version = 7;
@@ -396,7 +432,9 @@ message ExecuteSubmissionAndWaitRequest {
   // Optional
   string user_id = 6;
 
-  // The hashing scheme version used when building the hash
+  // The hashing scheme version used when building the hash.
+  // HASHING_SCHEME_VERSION_V4 requires a synchronizer running protocol version 36 or later and is
+  // rejected on synchronizers running older protocol versions.
   //
   // Required
   HashingSchemeVersion hashing_scheme_version = 7;
@@ -465,7 +503,9 @@ message ExecuteSubmissionAndWaitForTransactionRequest {
   // Optional
   string user_id = 6;
 
-  // The hashing scheme version used when building the hash
+  // The hashing scheme version used when building the hash.
+  // HASHING_SCHEME_VERSION_V4 requires a synchronizer running protocol version 36 or later and is
+  // rejected on synchronizers running older protocol versions.
   //
   // Required
   HashingSchemeVersion hashing_scheme_version = 7;
@@ -663,50 +703,6 @@ message DamlTransaction {
   //
   // Required: must be non-empty
   repeated NodeSeed node_seeds = 4;
-}
-
-message GetPreferredPackageVersionRequest {
-  // The parties whose participants' vetting state should be considered when resolving the preferred package.
-  //
-  // Required: must be non-empty
-  repeated string parties = 1;
-  // The package-name for which the preferred package should be resolved.
-  //
-  // Required
-  string package_name = 2;
-
-  // The synchronizer whose vetting state should be used for resolving this query.
-  // If not specified, the vetting states of all synchronizers to which the participant is connected are used.
-  //
-  // Optional
-  string synchronizer_id = 3;
-
-  // The timestamp at which the package vetting validity should be computed
-  // on the latest topology snapshot as seen by the participant.
-  // If not provided, the participant's current clock time is used.
-  //
-  // Optional
-  google.protobuf.Timestamp vetting_valid_at = 4;
-}
-
-message GetPreferredPackageVersionResponse {
-  // Not populated when no preferred package is found
-  //
-  // Optional
-  PackagePreference package_preference = 1;
-}
-
-message PackagePreference {
-  // The package reference of the preferred package.
-  //
-  // Required
-  PackageReference package_reference = 1;
-
-  // The synchronizer for which the preferred package was computed.
-  // If the synchronizer_id was specified in the request, then it matches the request synchronizer_id.
-  //
-  // Required
-  string synchronizer_id = 2;
 }
 
 // Defines a package-name for which the commonly vetted package with the highest version must be found.

@@ -34,6 +34,10 @@ message ComponentStatus {
   message StatusData {
     optional string description = 1;
   }
+  // Optional metadata labels
+  // For participant nodes, it can be  "synchronizer" -> physical synchronizer id for components
+  // that exist once per connected synchronizer.
+  map<string, string> labels = 6;
 }
 
 message NotInitialized {
@@ -46,6 +50,7 @@ message NotInitialized {
 
   bool active = 1; // Indicate if the node is active, usually true unless it's a replicated node that is passive
   WaitingForExternalInput waiting_for_external_input = 2; // Indicates whether the node is waiting for external input
+  string version = 3; // Version of the binary
 }
 
 message Status {

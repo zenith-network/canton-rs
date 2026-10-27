@@ -86,6 +86,9 @@ pub mod com {
             pub mod topology {
                 pub mod admin {
                     pub mod v30 {
+                        // Re-export here for convenience
+                        pub use admin_api_proto::com::digitalasset::canton::topology::admin::v30::*;
+
                         include!(concat!(
                             env!("OUT_DIR"),
                             "/com.digitalasset.canton.topology.admin.v30.rs"
@@ -116,3 +119,6 @@ pub mod google {
         include!(concat!(env!("OUT_DIR"), "/google.rpc.rs"));
     }
 }
+
+// Re-export
+pub use admin_api_proto;

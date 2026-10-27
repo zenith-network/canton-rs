@@ -83,7 +83,7 @@ impl SandboxConfig {
 /// use std::time::Duration;
 ///
 /// let config = SandboxConfig::builder()
-///     .sdk_version("3.6.0")
+///     .sdk_version("3.6.2")
 ///     .max_sandboxes(3)
 ///     .idle_timeout(Duration::from_secs(1))
 ///     .build()?;

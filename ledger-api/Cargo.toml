@@ -7,23 +7,37 @@ license.workspace = true
 
 [features]
 default = ["v2"]
-tracing = ["dep:tracing", "dep:http"]
-v2 = ["ledger-api-proto/v2-full", "ledger-api-types/v2"]
+
+# Enables tracing
+tracing = ["dep:tracing"]
+
+# Enabling TLS cryptography provider
+tls-ring = ["tonic/tls-ring", "_tls-any"]
+tls-aws-lc = ["tonic/tls-aws-lc", "_tls-any"]
+
+# Enabling TLS certificate root sources support
+tls-webpki-roots = ["tonic/tls-webpki-roots", "_tls-any"]
+tls-native-roots = ["tonic/tls-native-roots", "_tls-any"]
+
+# Internal feature, don't use it
+_tls-any = []
+
+v2 = ["ledger-api-proto/v2", "ledger-api-types/v2"]
 
 [dependencies]
 canton-version.workspace = true
-http = { workspace = true, optional = true }
-ledger-api-proto.workspace = true
+http.workspace = true
+ledger-api-proto = { workspace = true, features = [
+  "std",
+  "client",
+  "transport",
+] }
 ledger-api-types.workspace = true
 protobuf-utils.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["time"] }
 tokio-stream.workspace = true
-tonic = { workspace = true, features = [
-  "channel",
-  "tls-ring",
-  "tls-webpki-roots",
-] }
+tonic = { workspace = true, features = ["channel"] }
 tonic-types.workspace = true
 tower = { workspace = true, features = ["retry"] }
 tracing = { workspace = true, optional = true }

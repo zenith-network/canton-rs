@@ -70,6 +70,14 @@ impl<T> From<NonEmpty<T>> for (Vec<T>, T) {
     }
 }
 
+impl<T> From<NonEmpty<T>> for Vec<T> {
+    fn from(value: NonEmpty<T>) -> Self {
+        let NonEmpty { mut base, tail } = value;
+        base.push(tail);
+        base
+    }
+}
+
 /// This error is returned when a conversion from vector to non-empty fails.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("source vector is empty")]

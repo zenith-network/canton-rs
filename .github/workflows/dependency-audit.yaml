@@ -11,7 +11,8 @@ on:
     paths:
       - "**/Cargo.toml"
       - "**/Cargo.lock"
-      - "**/deny.toml"
+      - "deny.toml"
+      - ".github/workflows/dependency-audit.yaml"
 
 permissions:
   contents: read

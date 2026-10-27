@@ -19,6 +19,10 @@ canton-types-derive = { workspace = true, optional = true }
 daml-lf = { workspace = true, default-features = true, optional = true }
 daml-lf-codegen = { workspace = true, default-features = true, optional = true }
 dpm-build = { workspace = true, default-features = true, optional = true }
-ledger-api = { workspace = true, default-features = true, optional = true }
+ledger-api = { workspace = true, default-features = true, features = [
+  "tls-ring",
+  "tls-webpki-roots",
+  "tls-native-roots",
+], optional = true }
 ledger-api-types = { workspace = true, default-features = true }
 ledger-api-value = { workspace = true, default-features = true }

@@ -6,12 +6,12 @@ edition.workspace = true
 license.workspace = true
 
 [features]
-default = ["v2"]
+default = ["std", "v2"]
+std = ["prost/std"]
 v2 = []
 
 [dependencies]
 prost = { workspace = true, features = ["derive"] }
-thiserror = { workspace = true, optional = true }
 
 [build-dependencies]
 prost-build.workspace = true

@@ -20,6 +20,11 @@ pub use tonic_types::ResourceInfo;
 pub enum ClientBuildError {
     #[error(transparent)]
     Transport(#[from] tonic::transport::Error),
+
+    /// Returned when building a client with `https://` schema without enabled TLS feature
+    /// (e.g. `"tls-ring"`).
+    #[error("HTTPS endpoint requires a TLS feature")]
+    TlsNotSupported,
 }
 
 // TODO: Fix issues with error sizes - they are too big for enum variants. Probably we want to Box

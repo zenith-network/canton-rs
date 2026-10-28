@@ -74,6 +74,14 @@ impl ResolvedConfig {
             }
         }
 
+        // These variables affect 'dpm build' behavior
+        println!("cargo::rerun-if-env-changed=DPM_SDK_VERSION");
+        println!("cargo::rerun-if-env-changed=DPM_MULTI_PACKAGE");
+        println!("cargo::rerun-if-env-changed=DPM_HOME");
+        println!("cargo::rerun-if-env-changed=DPM_EDITION");
+        println!("cargo::rerun-if-env-changed=DPM_ASSEMBLY");
+        println!("cargo::rerun-if-env-changed=DPM_LOCKFILE_ENABLED");
+
         let mut cmd = Command::new(&self.dpm_exe);
         cmd.env("DAML_PACKAGE", &self.package_root)
             .arg("build")
@@ -133,12 +141,18 @@ impl Config {
         self
     }
 
+    /// Set `dpm` executable path.
+    ///
+    /// If `DPM` environment variable is set, it will take presence over this setting.
+    /// If neither `dpm_exe()` nor `DPM` env var is specified, defaults to `dpm`, expecting it to be
+    /// available under `PATH`.
     pub fn dpm_exe(&mut self, path: impl AsRef<Path>) -> &mut Self {
         self.dpm_exe = Some(path.as_ref().to_path_buf());
         self
     }
 
     fn resolve(&self) -> Result<ResolvedConfig, DpmError> {
+        println!("cargo::rerun-if-env-changed=DPM");
         let dpm_exe = if let Ok(dpm_exe) = env::var("DPM") {
             PathBuf::from(dpm_exe)
         } else if let Some(dpm_exe) = &self.dpm_exe {

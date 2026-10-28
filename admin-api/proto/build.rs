@@ -9,6 +9,12 @@ fn main() {
 
     let source_dir = manifest_dir.join("protobuf");
 
+    // Export protobuf sources as meta variable, so that dependent crates can use it to
+    // include these protobufs.
+    // Because 'links = "admin-api-proto"' is set in Cargo.toml, this value will be available as
+    // 'DEP_ADMIN_API_PROTO_INCLUDE_DIR' in dependent build scripts (e.g. see canton-proto).
+    println!("cargo::metadata=INCLUDE_DIR={}", source_dir.display());
+
     let protos = collect_protos(&source_dir);
 
     if protos.is_empty() {

@@ -71,6 +71,24 @@ pub mod com {
                         ));
                     }
                 }
+                pub mod topology {
+                    pub mod v30 {
+                        include!(concat!(
+                            env!("OUT_DIR"),
+                            "/com.digitalasset.canton.admin.topology.v30.rs"
+                        ));
+                    }
+                }
+            }
+            pub mod topology {
+                pub mod admin {
+                    pub mod v30 {
+                        include!(concat!(
+                            env!("OUT_DIR"),
+                            "/com.digitalasset.canton.topology.admin.v30.rs"
+                        ));
+                    }
+                }
             }
         }
     }

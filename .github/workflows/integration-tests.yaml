@@ -52,7 +52,7 @@ jobs:
         uses: zenith-network/setup-daml@v1.0.0
         with:
           dpm-version: "1.0.22"
-          sdk-version: "3.5.9"
+          sdk-version: "3.6.2"
       - name: Use Rust cache
         uses: Swatinem/rust-cache@v2.9.2
       - name: Run tests
@@ -78,7 +78,7 @@ jobs:
         uses: zenith-network/setup-daml@v1.0.0
         with:
           dpm-version: "1.0.22"
-          sdk-version: "3.5.9"
+          sdk-version: "3.6.2"
       - name: Install Java Runtime Environment
         uses: actions/setup-java@v6.1.0
         with:
@@ -91,6 +91,6 @@ jobs:
         env:
           SANDBOX_CAPACITY: "2"
           SANDBOX_IDLE_TIMEOUT_MS: "3000"
-          DPM_SDK_VERSION: "3.5.9"
+          DPM_SDK_VERSION: "3.6.2"
         run: |
           cargo test --package ledger-api-integration --all-features --verbose --test ledger_api_integration

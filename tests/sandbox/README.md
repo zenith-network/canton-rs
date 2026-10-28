@@ -54,7 +54,7 @@ For custom settings in runtime, supply a function returning configuration:
 ```rust
 fn sandbox_config() -> sandbox::SandboxConfig {
     sandbox::SandboxConfig::builder()
-        .sdk_version("3.6.0")
+        .sdk_version("3.6.2")
         .max_sandboxes(3)
         // .with_dar(include_bytes!("fixtures.dar").as_slice())
         .build()

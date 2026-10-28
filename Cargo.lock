@@ -264,6 +264,7 @@ dependencies = [
 name = "canton-proto"
 version = "0.1.0"
 dependencies = [
+ "admin-api-proto",
  "glob",
  "prost",
  "prost-types",

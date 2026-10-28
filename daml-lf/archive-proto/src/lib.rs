@@ -44,8 +44,13 @@ pub const SUPPORTED_VERSIONS: &[Version] = &[
     #[cfg(feature = "v2")]
     Version {
         major: 2,
+        minor: daml_lf_version::MinorVersion::Stable { version: 4 },
+    },
+    #[cfg(feature = "v2")]
+    Version {
+        major: 2,
         minor: daml_lf_version::MinorVersion::Staging {
-            version: 4,
+            version: 5,
             revision: 1,
         },
     },

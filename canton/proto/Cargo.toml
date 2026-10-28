@@ -8,17 +8,18 @@ license.workspace = true
 default = ["std", "client", "transport"]
 
 # Enables tonic client generation
-client = ["std", "dep:tonic", "dep:tonic-prost"]
+client = ["std", "dep:tonic", "dep:tonic-prost", "admin-api-proto/client"]
 
 # Enables tonic server generation
-server = ["std", "dep:tonic", "dep:tonic-prost"]
+server = ["std", "dep:tonic", "dep:tonic-prost", "admin-api-proto/server"]
 
-transport = ["client", "tonic/channel"]
+transport = ["client", "tonic/channel", "admin-api-proto/transport"]
 
 # Enables std support
-std = ["prost/std", "prost-types/std"]
+std = ["prost/std", "prost-types/std", "admin-api-proto/std"]
 
 [dependencies]
+admin-api-proto = { workspace = true }
 prost = { workspace = true, features = ["derive"] }
 prost-types.workspace = true
 tonic = { workspace = true, features = ["codegen"], optional = true }

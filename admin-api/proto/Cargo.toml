@@ -3,6 +3,11 @@ name = "admin-api-proto"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
+# TODO: This feature is misused - this crate doesn't link any system libraries.
+#       However currently this is a stable way to expose proto include dir from this crate
+#       without relying on the project directory layout. We're basically waiting for Cargo
+#       to provide a proper way of doing this.
+links = "admin-api-proto"
 
 [features]
 default = ["std", "client", "transport"]

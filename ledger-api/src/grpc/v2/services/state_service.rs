@@ -45,7 +45,10 @@ impl StateServiceClient {
     ///
     /// Subscriptions started with the returned offset will serve events after this RPC was called.
     pub async fn get_ledger_end(&mut self) -> Result<i64, CantonError> {
-        let request = GetLedgerEndRequest {};
+        let request = GetLedgerEndRequest {
+            // This client method returns only ledger end, so we set synchronizer_id to empty
+            synchronizer_id: Vec::new(),
+        };
         let response = self
             .retry_handler
             .call(&self.service, &request, |mut svc, req| async move {

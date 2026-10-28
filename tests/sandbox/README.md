@@ -68,7 +68,7 @@ async fn configured_test(sandbox: &sandbox::Sandbox) {
 }
 ```
 
-Runtime-defined settings take precedence over environment variables.
+Environment variables take precedence over runtime-defined settings.
 
 ## What harness does
 

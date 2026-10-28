@@ -18,6 +18,8 @@ mod text_map;
 mod traits;
 mod user_id;
 
+pub mod topology;
+
 #[cfg(feature = "testing")]
 pub mod test_fixtures;
 
@@ -75,3 +77,5 @@ pub type Timestamp = chrono::DateTime<chrono::Utc>;
 // FIXME: this is not a precise representation of date/time types in Daml, needs correction
 
 // TODO: add serde support
+// TODO: consider refactoring types like PartyId to avoid confusion: root type is a Ledger API
+//       representation

@@ -25,6 +25,7 @@ _tls-any = []
 v2 = ["ledger-api-proto/v2", "ledger-api-types/v2"]
 
 [dependencies]
+canton-version.workspace = true
 http.workspace = true
 ledger-api-proto = { workspace = true, features = [
   "std",

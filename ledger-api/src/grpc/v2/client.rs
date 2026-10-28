@@ -1,14 +1,18 @@
-use std::{mem, time::Duration};
+use std::{mem, sync::Arc, time::Duration};
 
+use canton_version::semver::Version;
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
+use ledger_api_types::value::v2::errors::IntoValueError as _;
+use protobuf_utils::InvalidProtoField as _;
+use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 
 use crate::grpc::v2::{
     auth::AuthInterceptor,
-    error::ClientBuildError,
+    error::{CantonError, ClientBuildError, UnsupportedServerVersion},
     retry::{RetryConfig, RetryHandler},
     services::{
-        CommandServiceClient, PackageServiceClient, PartyManagementServiceClient,
+        ApiVersion, CommandServiceClient, PackageServiceClient, PartyManagementServiceClient,
         StateServiceClient, UpdateServiceClient, VersionServiceClient,
     },
 };
@@ -158,6 +162,7 @@ impl CantonClientBuilder {
             interceptor,
             max_decoding_message_size,
             retry_handler: self.retry_config.into_handler(),
+            server_caps: Arc::new(RwLock::new(None)),
         }
     }
 }
@@ -169,6 +174,7 @@ pub struct CantonClient {
     interceptor: AuthInterceptor,
     max_decoding_message_size: usize,
     retry_handler: RetryHandler,
+    server_caps: Arc<RwLock<Option<ApiVersion>>>,
 }
 
 impl CantonClient {
@@ -199,6 +205,72 @@ impl CantonClient {
     /// Reference to the retry configuration of the client
     pub fn retry_config(&self) -> &RetryConfig {
         self.retry_handler.config()
+    }
+
+    /// Resolved server capabilities, cached in the client (if some).
+    pub async fn server_caps(&self) -> Option<ApiVersion> {
+        self.server_caps.read().await.clone()
+    }
+
+    /// Resolve server version and enabled features through [`VersionServiceClient`] and cache these
+    /// results inside the client.
+    ///
+    /// An error will be returned, if the server version is not compatible with client version
+    /// (see [`supported_versions()`][crate::supported_versions()]). Note that cached value will
+    /// be nullified for all copies of the client in this case.
+    ///
+    /// Cached results are shared among all copies of the client. This function can be called again
+    /// to update the cached values for all existing copies of the client.
+    ///
+    /// By default, if the version wasn't resolved, client treats server as compatible.
+    ///
+    /// Note that during client lifetime the server may change its capabilities (e.g. it may be
+    /// upgraded to a newer version). The client cannot detect these situations automatically,
+    /// because the underlying channel could be silently re-created. Given that, in your application
+    /// it might be a good idea to run this resolution periodically, thus making error messages more
+    /// precise.
+    pub async fn resolve_server_capabilities(&self) -> Result<(), CantonError> {
+        // We use a raw service without a wrapper to decode the features descriptor based on the
+        // supported version. VersionServiceClient wrapper doesn't allow that.
+        let version_service =
+            proto::version_service_client::VersionServiceClient::with_interceptor(
+                self.channel.clone(),
+                self.interceptor.clone(),
+            )
+            .max_decoding_message_size(self.max_decoding_message_size);
+        let mut retry_handler = self.retry_handler.clone();
+
+        let response = retry_handler
+            .call(&version_service, &(), |mut svc, _| async move {
+                svc.get_ledger_api_version(proto::GetLedgerApiVersionRequest {})
+                    .await
+            })
+            .await?;
+
+        let server_version = Version::parse(&response.version)
+            .validated_of::<proto::GetLedgerApiVersionResponse>("version")
+            .with_msg("expected a SemVer-compatible version")?;
+        let supported = crate::is_supported_version(&server_version);
+
+        #[cfg(feature = "tracing")]
+        tracing::debug!(%server_version, supported, "Resolved server version");
+
+        if supported {
+            // We should be able to decode features descriptor in this case
+            let api_version = ApiVersion::try_from(response)?;
+
+            #[cfg(feature = "tracing")]
+            tracing::debug!(features = ?api_version.features, "Resolved Ledger API features");
+
+            let mut server_caps = self.server_caps.write().await;
+            *server_caps = Some(api_version);
+
+            Ok(())
+        } else {
+            let mut server_caps = self.server_caps.write().await;
+            *server_caps = None;
+            Err(UnsupportedServerVersion::new(server_version).into())
+        }
     }
 
     pub fn command(&self) -> CommandServiceClient {

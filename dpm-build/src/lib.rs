@@ -38,7 +38,18 @@ impl fmt::Display for MultiPackage {
 
 #[derive(Clone, Debug)]
 pub struct BuildResult {
+    /// Path to the built DAR file.
     pub output: PathBuf,
+
+    /// `daml.yaml` file which was read during the build
+    ///
+    /// Note that it represents only the **content of the manifest file**, but not the actual values
+    /// used during build process. E.g. manifest file may have `sdk-version` set, but during build
+    /// it was overwritten by `DPM_SDK_VERSION`.
+    ///
+    /// If there were any issues with reading the manifest file, despite the build succeeded, this
+    /// will still be `None`.
+    pub manifest: Option<DamlYaml>,
 }
 
 struct ResolvedConfig {
@@ -48,11 +59,17 @@ struct ResolvedConfig {
     dpm_exe: PathBuf,
 }
 
+/// Stripped (not full) representation of `daml.yaml`.
 #[derive(Clone, Debug, Deserialize)]
+#[non_exhaustive]
 pub struct DamlYaml {
     // We don't care about the rest of the fields now
-    #[serde(default)]
+    /// `source` field in `daml.yaml`
     pub source: Option<String>,
+
+    /// `sdk-version` field in `daml.yaml`
+    #[serde(rename = "sdk-version")]
+    pub sdk_version: Option<String>,
 }
 
 impl ResolvedConfig {
@@ -61,18 +78,26 @@ impl ResolvedConfig {
         // we put it under cargo::rerun-if-changed
         let daml_yaml_path = self.package_root.join("daml.yaml");
         println!("cargo::rerun-if-changed={}", daml_yaml_path.display());
-        if let Ok(file) = File::open(&daml_yaml_path) {
-            let source = yaml_serde::from_reader::<_, DamlYaml>(file)
-                .map(|daml_yaml| daml_yaml.source)
-                .ok()
-                .flatten();
-            if let Some(source) = source {
-                println!(
-                    "cargo::rerun-if-changed={}",
-                    self.package_root.join(source).display()
-                );
-            }
-        }
+        let manifest = if let Ok(file) = File::open(&daml_yaml_path) {
+            let manifest = yaml_serde::from_reader::<_, DamlYaml>(file)
+                .inspect_err(|error| {
+                    eprintln!(
+                        "warning: failed to read manifest file '{}': {error}",
+                        daml_yaml_path.display(),
+                    )
+                })
+                .ok();
+            manifest.inspect(|manifest| {
+                if let Some(source) = &manifest.source {
+                    println!(
+                        "cargo::rerun-if-changed={}",
+                        self.package_root.join(source).display()
+                    );
+                }
+            })
+        } else {
+            None
+        };
 
         // These variables affect 'dpm build' behavior
         println!("cargo::rerun-if-env-changed=DPM_SDK_VERSION");
@@ -106,6 +131,7 @@ impl ResolvedConfig {
 
         Ok(BuildResult {
             output: self.output.clone(),
+            manifest,
         })
     }
 }

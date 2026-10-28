@@ -1,5 +1,11 @@
+# Build artifacts
 /target
+**/.daml
+
+# VSCode
 /.vscode
+
+# Agents
 /.agents
 /.codex
-/.daml
+/.aws

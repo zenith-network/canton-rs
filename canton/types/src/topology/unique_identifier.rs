@@ -179,7 +179,7 @@ impl From<UniqueIdentifier> for String {
     }
 }
 
-// Note: There is an inconsistency in string conversions for values created directly from
+// NOTE: There is an inconsistency in string conversions for values created directly from
 //       constructor: ("id:", "ns") will become "id:::ns" and then will be parsed as ("id", ":ns").
 //       However this inconsistency exists in Canton sources as well. For that reason, to match
 //       Canton behavior, we will keep it here - we don't want to make the parser stricter than it

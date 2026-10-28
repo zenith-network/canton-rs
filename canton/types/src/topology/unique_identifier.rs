@@ -151,7 +151,7 @@ impl PartialEq<Cow<'_, str>> for UniqueIdentifier {
     }
 }
 
-// Note: UID "id:::ns" could be treated as both: ("id:", "ns") and ("id", ":ns").
+// NOTE: UID "id:::ns" could be treated as both: ("id:", "ns") and ("id", ":ns").
 //       Therefore implementing `PartialEq<UniqueIdentifier> for String` (and similar) would break
 //       transitive requirements of `PartialEq`. That's why we do not implement them.
 

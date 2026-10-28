@@ -14,7 +14,7 @@ pub struct Namespace(Fingerprint);
 
 impl Namespace {
     /// Reserved delimiter
-    pub const RESERVER_DELIM: &str = "::";
+    pub const RESERVED_DELIM: &str = "::";
 
     /// Cast fingerprint to namespace type
     pub const fn from_fingerprint(fingerprint: Fingerprint) -> Self {
@@ -184,7 +184,7 @@ enum ErrorKind {
 
     #[error(
         "namespace contains reserved delimiter {:?}",
-        Namespace::RESERVER_DELIM
+        Namespace::RESERVED_DELIM
     )]
     ReservedDelimiter,
 }

@@ -16,7 +16,7 @@ pub struct UniqueIdentifier {
 
 impl UniqueIdentifier {
     /// Delimiter of the unique identifier
-    pub const DELIMITER: &str = Namespace::RESERVER_DELIM;
+    pub const DELIMITER: &str = Namespace::RESERVED_DELIM;
 
     /// Create new unique identifier
     pub fn new(identifier: String, namespace: Namespace) -> Result<Self, UniqueIdentifierError> {

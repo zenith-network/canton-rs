@@ -16,7 +16,7 @@ pub struct Fingerprint(String);
 
 impl Fingerprint {
     /// Reserved delimiter
-    pub const RESERVER_DELIM: &str = "::";
+    pub const RESERVED_DELIM: &str = "::";
 
     /// Create a new fingerprint without validating the input.
     pub const fn new_unchecked(fingerprint: String) -> Self {
@@ -46,7 +46,7 @@ impl Fingerprint {
         }
 
         // Canton fingerprints must be representable as part of a UniqueIdentifier.
-        if fingerprint.contains(Self::RESERVER_DELIM) {
+        if fingerprint.contains(Self::RESERVED_DELIM) {
             return Err(FingerprintError {
                 kind: ErrorKind::ReservedDelimiter,
             });
@@ -183,7 +183,7 @@ pub(super) enum ErrorKind {
 
     #[error(
         "fingerprint contains reserved delimiter {:?}",
-        Fingerprint::RESERVER_DELIM
+        Fingerprint::RESERVED_DELIM
     )]
     ReservedDelimiter,
 }

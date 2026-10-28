@@ -1671,6 +1671,7 @@ dependencies = [
 name = "sandbox"
 version = "0.1.0"
 dependencies = [
+ "canton-version",
  "daml-lf",
  "dpm-build",
  "futures-util",

@@ -82,15 +82,17 @@ jobs:
       - name: Install Java Runtime Environment
         uses: actions/setup-java@v6.1.0
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          java-package: 'jre'
+          distribution: "temurin"
+          java-version: "21"
+          java-package: "jre"
       - name: Use Rust cache
         uses: Swatinem/rust-cache@v2.9.2
       - name: Run tests
         env:
           SANDBOX_CAPACITY: "2"
           SANDBOX_IDLE_TIMEOUT_MS: "3000"
+          SANDBOX_CANTON_VERSION: "3.6.2"
           DPM_SDK_VERSION: "3.6.2"
+          DPM_AUTO_INSTALL: "false"
         run: |
           cargo test --package ledger-api-integration --all-features --verbose --test ledger_api_integration

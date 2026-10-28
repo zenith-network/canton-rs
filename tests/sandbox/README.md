@@ -1,7 +1,7 @@
 # Canton sandbox harness
 
 In-memory Canton sandboxes for async integration tests, with sharing, capacity, and process cleanup
-managed internally. Requires DPM, Java, and an installed SDK; supports Linux and macOS.
+managed internally. Requires DPM, Java, and the Canton component; supports Linux and macOS.
 
 ```rust
 use sandbox::{Sandbox, sandbox};
@@ -46,7 +46,7 @@ You can use environment variables to tweak harness settings:
 | --- | --- | --- |
 | `SANDBOX_CAPACITY` | `2` | Max number of concurrent sandboxes allowed to run |
 | `SANDBOX_IDLE_TIMEOUT_MS` | `3000` | How long to wait before destroying sandbox |
-| `DPM_SDK_VERSION` | Latest installed SDK | Daml SDK version to use for sandbox |
+| `SANDBOX_CANTON_VERSION` | `canton-version` crate's pin | Exact Canton server release |
 | `DPM` | `"dpm"` | Path to `dpm` executable |
 
 For custom settings in runtime, supply a function returning configuration:
@@ -54,7 +54,7 @@ For custom settings in runtime, supply a function returning configuration:
 ```rust
 fn sandbox_config() -> sandbox::SandboxConfig {
     sandbox::SandboxConfig::builder()
-        .sdk_version("3.6.2")
+        .canton_version("3.5.12")
         .max_sandboxes(3)
         // .with_dar(include_bytes!("fixtures.dar").as_slice())
         .build()

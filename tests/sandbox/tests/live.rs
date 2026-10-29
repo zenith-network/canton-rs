@@ -1,4 +1,4 @@
-//! Explicit acceptance check: dpm, Java, protoc, and SDK 3.6 are required.
+//! Explicit acceptance check: DPM, Java, protoc, a fixture SDK, and Canton are required.
 use ledger_api_proto::com::daml::ledger::api::v2::{self as p, admin as a};
 use sandbox::{Sandbox, SandboxConfig, sandbox};
 use std::{path::PathBuf, sync::OnceLock, time::Duration};
@@ -69,7 +69,6 @@ fn fixture() -> &'static (SandboxConfig, String) {
             .to_string();
         let bytes = std::fs::read(dar).unwrap();
         let config = SandboxConfig::builder()
-            .sdk_version("3.6.2")
             .with_dar(bytes)
             .max_sandboxes(2)
             .idle_timeout(Duration::from_millis(100))
@@ -85,7 +84,7 @@ fn config() -> SandboxConfig {
 
 #[sandbox(shared, config = config)]
 #[tokio::test]
-#[ignore = "requires dpm, Java, and installed SDK 3.6.2; run --test live -- --ignored"]
+#[ignore = "requires dpm, Java, a fixture SDK, and Canton; run --test live -- --ignored"]
 async fn preload_sharing_group_isolation_and_fresh_state(sandbox: &Sandbox) {
     let artifacts = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("canton-rs-sandbox");
     assert!(sandbox.artifacts_dir().starts_with(artifacts));

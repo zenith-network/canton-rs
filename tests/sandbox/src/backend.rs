@@ -135,14 +135,14 @@ impl Backend for Canton {
                     .current_dir(&attempt_directory)
                     .env_remove("DAML_PACKAGE")
                     .env_remove("DAML_PROJECT")
+                    .args(["component", "run", "canton-open-source"])
+                    .arg(&config.canton_version)
+                    .arg("--")
                     .args(["sandbox", "--nuck", "--canton-port-file"])
                     .arg(&port_file)
                     .args(["--log-file-appender", "flat", "--log-file-name"])
                     .arg(attempt_directory.join("canton.log"))
                     .args(["--log-level-canton", "DEBUG", "--log-level-stdout", "INFO"]);
-                if let Some(version) = &config.sdk_version {
-                    command.env("DPM_SDK_VERSION", version);
-                }
                 for (path, _) in &dars {
                     command.arg("--dar").arg(path);
                 }

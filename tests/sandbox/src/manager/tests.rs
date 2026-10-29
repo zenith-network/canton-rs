@@ -150,7 +150,7 @@ impl Running for FakeRunning {
 fn pool(fake: &Arc<Fake>, capacity: usize) -> Arc<Pool> {
     Arc::new(Pool::with_backend(
         SandboxConfig::builder()
-            .sdk_version("fake")
+            .canton_version("0.0.0")
             .max_sandboxes(capacity)
             .idle_timeout(Duration::ZERO)
             .build()
@@ -243,7 +243,7 @@ async fn idle_delay_reacquisition_and_capacity_eviction() {
     let task = tokio::spawn(
         Manager::new(
             SandboxConfig::builder()
-                .sdk_version("fake")
+                .canton_version("0.0.0")
                 .max_sandboxes(1)
                 .build()
                 .unwrap(),
@@ -313,7 +313,7 @@ async fn cancelling_startup_release_and_dropped_leases_leaves_no_claims() {
 
     let pool = Arc::new(Pool::with_backend(
         SandboxConfig::builder()
-            .sdk_version("fake")
+            .canton_version("0.0.0")
             .idle_timeout(Duration::from_secs(60))
             .build()
             .unwrap(),
@@ -424,7 +424,7 @@ async fn cancellation_after_lost_grant_and_during_pool_close_waits_for_cleanup()
         let manager = tokio::spawn(
             Manager::new(
                 SandboxConfig::builder()
-                    .sdk_version("fake")
+                    .canton_version("0.0.0")
                     .build()
                     .unwrap(),
                 Arc::new(fake.clone()),
@@ -478,7 +478,7 @@ async fn dropping_one_coalesced_request_does_not_stop_other_users() {
     let manager = tokio::spawn(
         Manager::new(
             SandboxConfig::builder()
-                .sdk_version("fake")
+                .canton_version("0.0.0")
                 .idle_timeout(Duration::ZERO)
                 .build()
                 .unwrap(),

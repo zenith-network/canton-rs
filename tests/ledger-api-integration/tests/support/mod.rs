@@ -24,7 +24,7 @@ pub use rpc::{endpoint, ok, within};
 /// Apply the same deadline to RPC calls and stream consumption.
 pub const LIMIT: Duration = Duration::from_secs(30);
 
-/// Preload the fixture DAR into every sandbox using the fixture's SDK version.
+/// Preload the fixture DAR into every sandbox, with Canton selected independently.
 pub fn sandbox_config() -> SandboxConfig {
     static CONFIG: OnceLock<SandboxConfig> = OnceLock::new();
     CONFIG

@@ -38,7 +38,7 @@ fn signal_child_entry() {
         .into();
     let first = Pool::with_backend(
         SandboxConfig::builder()
-            .sdk_version("fake")
+            .canton_version("0.0.0")
             .shutdown_timeout(Duration::from_millis(100))
             .build()
             .unwrap(),
@@ -49,7 +49,7 @@ fn signal_child_entry() {
     );
     let second = Pool::with_backend(
         SandboxConfig::builder()
-            .sdk_version("fake")
+            .canton_version("0.0.0")
             .shutdown_timeout(Duration::from_millis(100))
             .build()
             .unwrap(),

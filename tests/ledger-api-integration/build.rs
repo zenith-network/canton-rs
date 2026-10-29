@@ -4,6 +4,7 @@ use std::{env, fs::File, io::Read, path::PathBuf};
 fn main() {
     println!("cargo:rerun-if-env-changed=DPM");
     println!("cargo:rerun-if-env-changed=DPM_SDK_VERSION");
+    println!("cargo:rerun-if-env-changed=SANDBOX_CANTON_VERSION");
     println!("cargo:rerun-if-changed=fixtures");
     let out = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let fixtures = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("fixtures");

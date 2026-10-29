@@ -31,6 +31,8 @@
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
 compile_error!("sandbox currently supports Linux and macOS");
 
+use canton_version::semver::Version;
+
 #[doc(hidden)]
 pub mod __private;
 mod backend;
@@ -44,7 +46,10 @@ pub use error::Error;
 pub use pool::SandboxLease;
 pub use sandbox_macro::sandbox;
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::LazyLock,
+};
 
 /// Name of the group used by `#[sandbox(shared)]` and [`Sandbox::shared`].
 ///
@@ -137,3 +142,10 @@ impl Sandbox {
         &self.artifacts
     }
 }
+
+/// Version of Canton which was this sandbox built for.
+pub static SANDBOX_CANTON_VERSION: LazyLock<Version> =
+    LazyLock::new(|| match Version::parse(env!("SANDBOX_CANTON_VERSION")) {
+        Ok(version) => version,
+        Err(_) => unreachable!("SANDBOX_CANTON_VERSION must be verified by build script"),
+    });

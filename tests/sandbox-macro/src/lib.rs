@@ -1,87 +1,77 @@
 //! Attribute glue for `sandbox`. It never starts external processes at expansion.
 
+use std::sync::LazyLock;
+
+use canton_version::semver::Version;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    Attribute, FnArg, Ident, ItemFn, LitStr, Meta, Path, ReturnType, Token, Type,
-    parse::{Parse, ParseStream},
-    parse_macro_input,
-    punctuated::Punctuated,
-    spanned::Spanned,
+    Attribute, Ident, ItemFn, LitStr, Meta, parse_macro_input, parse_quote, spanned::Spanned,
 };
 
-struct Options {
-    config: Option<Path>,
-    shared: bool,
-    group: Option<LitStr>,
+mod options;
+
+use options::Options;
+
+/// Version of Canton which was this sandbox built for.
+static SANDBOX_CANTON_VERSION: LazyLock<Version> =
+    LazyLock::new(|| match Version::parse(env!("SANDBOX_CANTON_VERSION")) {
+        Ok(version) => version,
+        Err(_) => unreachable!("SANDBOX_CANTON_VERSION must be verified by build script"),
+    });
+
+struct ShouldPanic {
+    expected: Option<LitStr>,
 }
 
-impl Parse for Options {
-    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-        let mut config = None;
-        let mut mode = None;
-        let mut group = None;
-        while !input.is_empty() {
-            let key: Ident = input.parse()?;
-            match key.to_string().as_str() {
-                "config" => {
-                    if config.is_some() {
-                        return Err(syn::Error::new(key.span(), "duplicate config provider"));
-                    }
-                    input.parse::<Token![=]>()?;
-                    config = Some(input.parse()?);
+impl ShouldPanic {
+    /// Call only for `should_panic` attributes
+    fn parse_attr(attribute: &Attribute) -> syn::Result<Self> {
+        debug_assert!(attribute.path().is_ident("should_panic"));
+
+        let expected = match &attribute.meta {
+            // #[should_panic]
+            Meta::Path(_) => None,
+            // #[should_panic = "..."]
+            Meta::NameValue(value) => match &value.value {
+                syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(message),
+                    ..
+                }) => Some(message.clone()),
+                value => return Err(syn::Error::new_spanned(value, "expected a string literal")),
+            },
+            // #[should_panic(expected = "...")]
+            Meta::List(list) => {
+                if !matches!(list.delimiter, syn::MacroDelimiter::Paren(_)) {
+                    return Err(syn::Error::new_spanned(list, "expected parentheses"));
                 }
-                "group" => {
-                    if group.is_some() {
-                        return Err(syn::Error::new(key.span(), "duplicate group"));
+
+                let mut expected = None;
+                attribute.parse_nested_meta(|meta| {
+                    if !meta.path.is_ident("expected") {
+                        return Err(meta.error("expected `expected = \"message\"`"));
                     }
-                    input.parse::<Token![=]>()?;
-                    let name: LitStr = input.parse()?;
-                    if name.value().is_empty() {
-                        return Err(syn::Error::new(
-                            name.span(),
-                            "shared group must not be empty",
-                        ));
+                    if expected.is_some() {
+                        return Err(meta.error("duplicate expected argument"));
                     }
-                    group = Some(name);
-                }
-                "shared" | "fresh" => {
-                    if mode.is_some() {
-                        return Err(syn::Error::new(
-                            key.span(),
-                            "choose exactly one sandbox mode",
-                        ));
-                    }
-                    mode = Some(key == "shared");
-                }
-                _ => {
-                    return Err(syn::Error::new(
-                        key.span(),
-                        "expected shared, fresh, group, or config",
-                    ));
-                }
+                    expected = Some(meta.value()?.parse::<LitStr>()?);
+                    Ok(())
+                })?;
+
+                Some(expected.ok_or_else(|| {
+                    syn::Error::new_spanned(list, "expected `expected = \"message\"`")
+                })?)
             }
-            if !input.is_empty() {
-                input.parse::<Token![,]>()?;
-            }
-        }
-        let shared = mode.ok_or_else(|| {
-            syn::Error::new(Span::call_site(), "choose a sandbox mode: shared or fresh")
-        })?;
-        if !shared && let Some(group) = &group {
-            return Err(syn::Error::new(group.span(), "group requires shared mode"));
-        }
-        Ok(Self {
-            config,
-            shared,
-            group,
-        })
+        };
+
+        Ok(Self { expected })
     }
 }
 
-/// Add sandbox acquisition and awaited teardown to an asynchronous test.
-/// Put this attribute above `#[tokio::test]`; see the `sandbox` crate README.
+/// Add sandbox acquisition and awaited teardown to a test.
+///
+/// Put this attribute above `#[tokio::test]`. See the `sandbox` crate README for more info.
 #[proc_macro_attribute]
 pub fn sandbox(options: TokenStream, input: TokenStream) -> TokenStream {
     let options = parse_macro_input!(options as Options);
@@ -104,14 +94,113 @@ pub fn sandbox(options: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 fn expand(
-    options: Options,
+    options: options::Options,
     mut function: ItemFn,
     root: proc_macro2::TokenStream,
 ) -> syn::Result<proc_macro2::TokenStream> {
+    check_function(&function)?;
+
+    let mut attrs = Vec::new();
+    let mut should_panic = None;
+    for attribute in std::mem::take(&mut function.attrs) {
+        if attribute.path().is_ident("should_panic") {
+            if should_panic.is_some() {
+                return Err(syn::Error::new(
+                    attribute.span(),
+                    "duplicate should_panic attribute",
+                ));
+            }
+            should_panic = Some(ShouldPanic::parse_attr(&attribute)?);
+        } else {
+            attrs.push(attribute);
+        }
+    }
+
+    if let Some(canton_version_req) = &options.canton_version_req
+        && !canton_version_req.matches(&SANDBOX_CANTON_VERSION)
+    {
+        let reason = format!("runs on Canton {canton_version_req}");
+        // If the test already has #[ignore], it will be reported
+        // We want to suppress the warning about the second ignore being unused though
+        attrs.push(parse_quote!(#[allow(unused_attributes)]));
+        attrs.push(parse_quote!(#[ignore = #reason]));
+    }
+
+    let mode = if options.shared {
+        let group = options
+            .group
+            .map_or_else(|| quote!(#root::DEFAULT_GROUP), |group| quote!(#group));
+        quote!(#root::__private::Mode::Shared(#group))
+    } else {
+        quote!(#root::__private::Mode::Fresh)
+    };
+
+    let config = match options.config {
+        Some(config) => quote!(Some(#config)),
+        None => quote!(None),
+    };
+
+    let orig_body_ident = Ident::new("__orig_body", Span::mixed_site());
+    let name = &function.sig.ident;
+
+    let output = &function.sig.output;
+    let orig_body = &function.block;
+    // Safe to unwrap after check_function()
+    let sb_ref = function.sig.inputs.first().unwrap();
+
+    // This is essentially the original function without attributes
+    let orig_body = quote! { async fn #orig_body_ident(#sb_ref) #output #orig_body };
+
+    let block = match &should_panic {
+        Some(should_panic) => {
+            let expected = match &should_panic.expected {
+                Some(message) => quote!(::core::option::Option::Some(#message)),
+                None => quote!(::core::option::Option::None),
+            };
+            parse_quote!({
+                #orig_body
+
+                #root::__private::run_should_panic(
+                    #config,
+                    ::core::option_env!("CARGO_TARGET_TMPDIR"),
+                    #mode,
+                    concat!(module_path!(), "::", stringify!(#name)),
+                    #expected,
+                    #orig_body_ident,
+                ).await
+            })
+        }
+        None => parse_quote!({
+            #orig_body
+
+            #root::__private::run(
+                #config,
+                ::core::option_env!("CARGO_TARGET_TMPDIR"),
+                #mode,
+                concat!(module_path!(), "::", stringify!(#name)),
+                #orig_body_ident,
+            ).await
+        }),
+    };
+
+    // For wrapper we leave the whole signature untouched, except clearing fn arguments
+    function.sig.inputs.clear();
+
+    let wrapped_function = ItemFn {
+        attrs,
+        block,
+        ..function
+    };
+
+    Ok(quote!(#wrapped_function))
+}
+
+fn check_function(function: &ItemFn) -> syn::Result<()> {
+    // Currently only async tests are supported
     if function.sig.asyncness.is_none() {
         return Err(syn::Error::new(
             function.sig.fn_token.span,
-            "sandbox fixture requires an async function; place it above #[tokio::test]",
+            "sandbox fixture requires an async function",
         ));
     }
     if !function.sig.generics.params.is_empty()
@@ -128,96 +217,8 @@ fn expand(
     if function.sig.inputs.len() != 1 {
         return Err(syn::Error::new(
             function.sig.inputs.span(),
-            "sandbox test must receive exactly one &Sandbox argument",
+            "sandbox test must receive exactly one argument",
         ));
     }
-    let argument = function.sig.inputs.first().unwrap().clone();
-    match &argument {
-        FnArg::Typed(argument) if matches!(&*argument.ty, Type::Reference(reference) if reference.mutability.is_none()) =>
-            {}
-        _ => {
-            return Err(syn::Error::new(
-                argument.span(),
-                "sandbox argument must be an immutable &Sandbox reference",
-            ));
-        }
-    }
-    let mut expected = None;
-    let mut attributes = Vec::new();
-    for attribute in std::mem::take(&mut function.attrs) {
-        if attribute.path().is_ident("should_panic") {
-            if expected.is_some() {
-                return Err(syn::Error::new(
-                    attribute.span(),
-                    "duplicate should_panic attribute",
-                ));
-            }
-            expected = Some(parse_expected(&attribute)?);
-        } else {
-            attributes.push(attribute);
-        }
-    }
-    if expected.is_some() && !is_unit(&function.sig.output) {
-        return Err(syn::Error::new(
-            function.sig.output.span(),
-            "should_panic sandbox tests must return ()",
-        ));
-    }
-    let expected = match expected {
-        None => quote!(#root::__private::ExpectedPanic::No),
-        Some(None) => quote!(#root::__private::ExpectedPanic::Yes(None)),
-        Some(Some(message)) => quote!(#root::__private::ExpectedPanic::Yes(Some(#message))),
-    };
-    let mode = if options.shared {
-        let group = options
-            .group
-            .map_or_else(|| quote!(#root::DEFAULT_GROUP), |group| quote!(#group));
-        quote!(#root::__private::Mode::Shared(#group))
-    } else {
-        quote!(#root::__private::Mode::Fresh)
-    };
-    let config = match options.config {
-        Some(config) => quote!(Some(#config)),
-        None => quote!(None),
-    };
-    let name = &function.sig.ident;
-    let helper = Ident::new("__sandbox_body", Span::mixed_site());
-    let output = &function.sig.output;
-    let body = &function.block;
-    let wrapper = quote!({
-        async fn #helper(#argument) #output #body
-        #root::__private::run(
-            #config, ::core::option_env!("CARGO_TARGET_TMPDIR"), #mode,
-            concat!(module_path!(), "::", stringify!(#name)),
-            #expected, #helper,
-        ).await
-    });
-    function.attrs = attributes;
-    function.sig.inputs.clear();
-    *function.block = syn::parse2(wrapper)?;
-    Ok(quote!(#function))
-}
-
-fn is_unit(output: &ReturnType) -> bool {
-    matches!(output, ReturnType::Default)
-        || matches!(output, ReturnType::Type(_, ty) if matches!(&**ty, Type::Tuple(tuple) if tuple.elems.is_empty()))
-}
-
-fn parse_expected(attribute: &Attribute) -> syn::Result<Option<LitStr>> {
-    if matches!(attribute.meta, Meta::Path(_)) {
-        return Ok(None);
-    }
-    let args = attribute.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
-    if args.len() == 1
-        && let Some(Meta::NameValue(value)) = args.first()
-        && value.path.is_ident("expected")
-        && let syn::Expr::Lit(literal) = &value.value
-        && let syn::Lit::Str(message) = &literal.lit
-    {
-        return Ok(Some(message.clone()));
-    }
-    Err(syn::Error::new(
-        attribute.span(),
-        "expected #[should_panic] or #[should_panic(expected = \"message\")]",
-    ))
+    Ok(())
 }

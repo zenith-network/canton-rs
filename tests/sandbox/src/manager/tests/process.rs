@@ -37,22 +37,20 @@ fn signal_child_entry() {
         .expect("internal subprocess only")
         .into();
     let first = Pool::with_backend(
-        SandboxConfig::builder()
-            .canton_version("0.0.0")
-            .shutdown_timeout(Duration::from_millis(100))
-            .build()
-            .unwrap(),
+        SandboxConfig {
+            shutdown: Duration::from_millis(100),
+            ..test_config()
+        },
         Arc::new(Shell {
             directory: directory.clone(),
             name: "first",
         }),
     );
     let second = Pool::with_backend(
-        SandboxConfig::builder()
-            .canton_version("0.0.0")
-            .shutdown_timeout(Duration::from_millis(100))
-            .build()
-            .unwrap(),
+        SandboxConfig {
+            shutdown: Duration::from_millis(100),
+            ..test_config()
+        },
         Arc::new(Shell {
             directory,
             name: "second",

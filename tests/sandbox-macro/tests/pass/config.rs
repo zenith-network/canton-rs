@@ -1,9 +1,7 @@
 use sandbox::{Sandbox, SandboxConfig, SandboxConfigBuilder, sandbox};
 
 fn config() -> SandboxConfig {
-    let builder: SandboxConfigBuilder = SandboxConfig::builder()
-        .canton_version("3.5.12")
-        .max_sandboxes(3);
+    let builder: SandboxConfigBuilder = SandboxConfig::builder().max_sandboxes(3);
     builder.build().unwrap()
 }
 

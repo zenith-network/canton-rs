@@ -1,23 +1,15 @@
-error[E0277]: the trait bound `u32: sandbox::__private::TestOutput` is not satisfied
+error[E0277]: the trait bound `u32: Termination` is not satisfied
  --> tests/fail/output.rs:1:1
   |
 1 | #[sandbox::sandbox(fresh)]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `sandbox::__private::TestOutput` is not implemented for `u32`
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Termination` is not implemented for `u32`
   |
-help: the following other types implement trait `sandbox::__private::TestOutput`
- --> $WORKSPACE/tests/sandbox/src/__private.rs
-  |
-  | impl TestOutput for () {
-  | ^^^^^^^^^^^^^^^^^^^^^^ `()`
-...
-  | impl<E: Debug> TestOutput for Result<(), E> {
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Result<(), E>`
 note: required by a bound in `sandbox::__private::run`
  --> $WORKSPACE/tests/sandbox/src/__private.rs
   |
   | pub async fn run<T, F>(
   |              --- required by a bound in this function
 ...
-  |     T: TestOutput,
-  |        ^^^^^^^^^^ required by this bound in `run`
+  |     T: Termination,
+  |        ^^^^^^^^^^^ required by this bound in `run`
   = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)

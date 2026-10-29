@@ -185,15 +185,11 @@ impl Drop for Claim {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
+    use crate::config::test_config;
 
     #[test]
     fn conflicting_configuration_cannot_create_another_pool() {
-        let builder = SandboxConfig::builder()
-            .dpm_executable("dpm")
-            .max_sandboxes(2)
-            .idle_timeout(Duration::ZERO);
-        let config = builder.clone().build().unwrap();
+        let config = test_config();
         let pool = global(Some(config.clone()), Some("target/tmp")).unwrap();
         assert_eq!(
             pool.config.artifacts,
@@ -213,34 +209,39 @@ mod tests {
             pool,
             global(None, Some("other-target/tmp")).unwrap()
         ));
-        let matching = builder
-            .clone()
-            .artifacts_dir(pool.config.artifacts.as_ref().unwrap())
-            .build()
-            .unwrap();
+        let matching = SandboxConfig {
+            artifacts: pool.config.artifacts.clone(),
+            ..config.clone()
+        };
         assert!(std::ptr::eq(pool, global(Some(matching), None).unwrap()));
         assert!(matches!(
             global(
-                Some(
-                    builder
-                        .clone()
-                        .artifacts_dir("other-artifacts")
-                        .build()
-                        .unwrap()
-                ),
+                Some(SandboxConfig {
+                    artifacts: Some("other-artifacts".into()),
+                    ..config.clone()
+                }),
                 None,
             ),
             Err(Error::Configuration(_))
         ));
         assert!(matches!(
             global(
-                Some(builder.clone().max_sandboxes(3).build().unwrap()),
+                Some(SandboxConfig {
+                    capacity: 3.try_into().unwrap(),
+                    ..config.clone()
+                }),
                 None
             ),
             Err(Error::Configuration(_))
         ));
         assert!(matches!(
-            global(Some(builder.with_dar(vec![1, 2, 3]).build().unwrap()), None),
+            global(
+                Some(SandboxConfig {
+                    dars: vec![vec![1, 2, 3].into()],
+                    ..config.clone()
+                }),
+                None
+            ),
             Err(Error::Configuration(_))
         ));
         assert!(std::ptr::eq(
@@ -251,11 +252,7 @@ mod tests {
 
     #[test]
     fn artifact_directory_defaults_and_explicit_override() {
-        let builder = SandboxConfig::builder()
-            .dpm_executable("dpm")
-            .max_sandboxes(2)
-            .idle_timeout(Duration::ZERO);
-        let system_default = Pool::new(builder.clone().build().unwrap(), None).unwrap();
+        let system_default = Pool::new(test_config(), None).unwrap();
         assert_eq!(
             system_default.config.artifacts,
             Some(
@@ -264,7 +261,10 @@ mod tests {
                     .join("canton-rs-sandbox")
             )
         );
-        let explicit = builder.artifacts_dir("custom-artifacts").build().unwrap();
+        let explicit = SandboxConfig {
+            artifacts: Some("custom-artifacts".into()),
+            ..test_config()
+        };
         let pool = Pool::new(explicit.clone(), Some("target/tmp")).unwrap();
         assert_eq!(pool.config, explicit);
     }

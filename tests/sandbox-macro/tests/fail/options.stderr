@@ -47,3 +47,21 @@ error: expected shared, fresh, group, or config
    |
 22 | #[sandbox::sandbox(unknown)]
    |                    ^^^^^^^
+
+error: unexpected character 'l' while parsing major version number
+  --> tests/fail/options.rs:25:44
+   |
+25 | #[sandbox::sandbox(fresh, canton_version = "latest")]
+   |                                            ^^^^^^^^
+
+error: duplicate canton_version
+  --> tests/fail/options.rs:28:50
+   |
+28 | #[sandbox::sandbox(fresh, canton_version = "^3", canton_version = "^4")]
+   |                                                  ^^^^^^^^^^^^^^
+
+error: expected string literal
+  --> tests/fail/options.rs:31:44
+   |
+31 | #[sandbox::sandbox(fresh, canton_version = 42)]
+   |                                            ^^

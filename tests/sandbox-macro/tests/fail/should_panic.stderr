@@ -1,17 +1,81 @@
-error: should_panic sandbox tests must return ()
- --> tests/fail/should_panic.rs:3:46
-  |
-3 | async fn result(_sandbox: &sandbox::Sandbox) -> Result<(), String> {
-  |                                              ^
-
-error: expected #[should_panic] or #[should_panic(expected = "message")]
- --> tests/fail/should_panic.rs:8:1
+error: expected string literal
+ --> tests/fail/should_panic.rs:8:27
   |
 8 | #[should_panic(expected = 42)]
-  | ^
+  |                           ^^
 
 error: duplicate should_panic attribute
   --> tests/fail/should_panic.rs:13:1
    |
 13 | #[should_panic]
    | ^
+
+error: expected a string literal
+  --> tests/fail/should_panic.rs:17:18
+   |
+17 | #[should_panic = 42]
+   |                  ^^
+
+error: expected `expected = "message"`
+  --> tests/fail/should_panic.rs:21:3
+   |
+21 | #[should_panic()]
+   |   ^^^^^^^^^^^^^^
+
+error: duplicate expected argument
+  --> tests/fail/should_panic.rs:25:36
+   |
+25 | #[should_panic(expected = "first", expected = "second")]
+   |                                    ^^^^^^^^
+
+error[E0271]: type mismatch resolving `<fn(&Sandbox) -> impl Future<Output = Result<(), String>> {__orig_body} as AsyncFnOnce<(&Sandbox,)>>::Output == ()`
+ --> tests/fail/should_panic.rs:1:1
+  |
+1 | #[sandbox::sandbox(fresh)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | |
+  | expected `()`, found `Result<(), String>`
+  | required by a bound introduced by this call
+  |
+  = note: expected unit type `()`
+                  found enum `Result<(), String>`
+note: required by a bound in `sandbox::__private::run_should_panic`
+ --> $WORKSPACE/tests/sandbox/src/__private.rs
+  |
+  | pub async fn run_should_panic<F>(
+  |              ---------------- required by a bound in this function
+...
+  |     F: for<'a> AsyncFnOnce(&'a Sandbox),
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `run_should_panic`
+  = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: type mismatch resolving `<fn(&Sandbox) -> impl Future<Output = Result<(), String>> {__orig_body} as AsyncFnOnce<(&Sandbox,)>>::Output == ()`
+ --> tests/fail/should_panic.rs:1:1
+  |
+1 | #[sandbox::sandbox(fresh)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `()`, found `Result<(), String>`
+  |
+  = note: expected unit type `()`
+                  found enum `Result<(), String>`
+note: required by a bound in `sandbox::__private::run_should_panic`
+ --> $WORKSPACE/tests/sandbox/src/__private.rs
+  |
+  | pub async fn run_should_panic<F>(
+  |              ---------------- required by a bound in this function
+...
+  |     F: for<'a> AsyncFnOnce(&'a Sandbox),
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `run_should_panic`
+  = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+ --> tests/fail/should_panic.rs:1:1
+  |
+1 | #[sandbox::sandbox(fresh)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<(), String>`, found `()`
+  |
+  = note:   expected enum `Result<(), String>`
+          found unit type `()`
+help: try wrapping the expression in `Ok`
+  |
+1 | Ok(#[sandbox::sandbox(fresh)])
+  | +++                          +

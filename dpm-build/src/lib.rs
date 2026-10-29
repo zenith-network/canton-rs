@@ -1,6 +1,7 @@
 //! Simple wrapper for `dpm` to execute from build scripts.
 
 use std::{
+    collections::HashMap,
     env, error,
     ffi::OsStr,
     fmt,
@@ -57,6 +58,7 @@ struct ResolvedConfig {
     output: PathBuf,
     multi_package: MultiPackage,
     dpm_exe: PathBuf,
+    env: HashMap<String, String>,
 }
 
 /// Stripped (not full) representation of `daml.yaml`.
@@ -108,7 +110,8 @@ impl ResolvedConfig {
         println!("cargo::rerun-if-env-changed=DPM_LOCKFILE_ENABLED");
 
         let mut cmd = Command::new(&self.dpm_exe);
-        cmd.env("DAML_PACKAGE", &self.package_root)
+        cmd.envs(&self.env)
+            .env("DAML_PACKAGE", &self.package_root)
             .arg("build")
             .args(["--enable-multi-package", &self.multi_package.to_string()])
             .args([OsStr::new("--output"), self.output.as_os_str()]);
@@ -142,6 +145,7 @@ pub struct Config {
     output: Option<PathBuf>,
     multi_package: MultiPackage,
     dpm_exe: Option<PathBuf>,
+    env: HashMap<String, String>,
 }
 
 const DEFAULT_PACKAGE_NAME: &str = "package.dar";
@@ -169,11 +173,22 @@ impl Config {
 
     /// Set `dpm` executable path.
     ///
-    /// If `DPM` environment variable is set, it will take presence over this setting.
+    /// If `DPM` environment variable is set, it will take precedence over this setting.
     /// If neither `dpm_exe()` nor `DPM` env var is specified, defaults to `dpm`, expecting it to be
     /// available under `PATH`.
     pub fn dpm_exe(&mut self, path: impl AsRef<Path>) -> &mut Self {
         self.dpm_exe = Some(path.as_ref().to_path_buf());
+        self
+    }
+
+    /// Add an environment variable, which will be passed to `dpm` subprocess on launch.
+    ///
+    /// Specifying the same key twice overwrites the old value.
+    ///
+    /// Note that the builder always passes `DAML_PACKAGE` environment variable to `dpm` **after**
+    /// these variables, so setting it here does nothing. Use [`Config::package_root()`] instead.
+    pub fn env_var(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
+        self.env.insert(key.into(), value.into());
         self
     }
 
@@ -206,6 +221,7 @@ impl Config {
             output,
             multi_package: self.multi_package,
             dpm_exe,
+            env: self.env.clone(),
         })
     }
 

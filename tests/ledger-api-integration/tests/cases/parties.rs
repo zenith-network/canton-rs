@@ -42,7 +42,7 @@ fn unknown_party(ctx: &Context) -> PartyId {
 }
 
 /// Checks participant IDs agree with the server and remain stable across client handles.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn participant_id_matches_server(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -58,7 +58,7 @@ async fn participant_id_matches_server(sandbox: &Sandbox) {
 }
 
 /// Checks allocation with and without a hint returns local parties matching server details.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn allocation_returns_observable_party_details(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -80,7 +80,7 @@ async fn allocation_returns_observable_party_details(sandbox: &Sandbox) {
 }
 
 /// Checks explicit synchronizer and user fields allocate a party and grant the user's act-as right.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn allocation_on_synchronizer_grants_user_rights(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -139,7 +139,7 @@ async fn allocation_on_synchronizer_grants_user_rights(sandbox: &Sandbox) {
 }
 
 /// Checks lookup returns all requested known parties and omits an unknown party.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn lookup_returns_only_known_parties(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -160,7 +160,7 @@ async fn lookup_returns_only_known_parties(sandbox: &Sandbox) {
 }
 
 /// Checks an unknown-only lookup preserves the server's successful empty result.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn lookup_unknown_party_returns_empty_result(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -176,7 +176,7 @@ async fn lookup_unknown_party_returns_empty_result(sandbox: &Sandbox) {
 }
 
 /// Checks an empty lookup request succeeds and returns the same empty result as the server.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn lookup_empty_request_returns_empty_result(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -191,7 +191,7 @@ async fn lookup_empty_request_returns_empty_result(sandbox: &Sandbox) {
 }
 
 /// Checks default listing includes setup parties and an exact-ID filter returns one matching party.
-#[sandbox(fresh, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", fresh, config = sandbox_config)]
 #[tokio::test]
 async fn listing_defaults_and_exact_filter_match_server(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -234,7 +234,7 @@ async fn listing_defaults_and_exact_filter_match_server(sandbox: &Sandbox) {
 }
 
 /// Checks small filtered pages preserve tokens, ordering, and every allocated party without duplicates.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn filtered_pages_are_complete_and_ordered(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -306,7 +306,7 @@ async fn filtered_pages_are_complete_and_ordered(sandbox: &Sandbox) {
 }
 
 /// Checks a filter with no matches preserves the server's successful empty party list.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn listing_unmatched_filter_returns_empty_result(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -336,7 +336,7 @@ async fn listing_unmatched_filter_returns_empty_result(sandbox: &Sandbox) {
 }
 
 /// Checks continuation after a full final page preserves the server's empty terminal page.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn listing_full_page_continuation_returns_empty_result(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -380,7 +380,7 @@ async fn listing_full_page_continuation_returns_empty_result(sandbox: &Sandbox) 
 }
 
 /// Checks exceeding the advertised page limit preserves the server's structured error and details.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn listing_page_limit_error_matches_server(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;

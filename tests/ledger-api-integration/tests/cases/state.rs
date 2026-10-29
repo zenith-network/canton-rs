@@ -27,7 +27,7 @@ async fn snapshot(
 }
 
 /// Checks snapshot offsets, party/template filters, verbosity, and archival against server responses.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 #[ignore = "tracking issue: #43"]
 async fn state_snapshots_filters_and_verbose_values(sandbox: &Sandbox) {

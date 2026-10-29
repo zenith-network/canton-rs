@@ -11,7 +11,7 @@ use tokio_stream::StreamExt;
 use crate::support::*;
 
 /// Checks lookup by ID and offset agrees with an ordered, bounded update stream.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn updates_by_id_offset_and_bounded_stream_are_consistent(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -72,7 +72,7 @@ async fn updates_by_id_offset_and_bounded_stream_are_consistent(sandbox: &Sandbo
 }
 
 /// Checks small pages and continuation tokens return every transaction in order without duplicates.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn update_pages_continue_without_missing_or_duplicate_transactions(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;

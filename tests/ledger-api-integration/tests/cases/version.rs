@@ -7,7 +7,7 @@ use pretty_assertions::assert_eq;
 use crate::support::*;
 
 /// Checks eager and lazy connections expose the same API version and feature fields as the server.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn connection_and_version_match_real_participant(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -74,7 +74,7 @@ async fn connection_and_version_match_real_participant(sandbox: &Sandbox) {
 }
 
 /// Checks experimental feature flags map to their corresponding server fields.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn experimental_version_features_match_real_participant(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;

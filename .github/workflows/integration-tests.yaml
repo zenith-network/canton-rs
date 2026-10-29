@@ -60,7 +60,11 @@ jobs:
           cargo test --package daml-lf-codegen --all-features --test test_codegen --verbose
 
   ledger-api:
-    name: Ledger API
+    strategy:
+      fail-fast: false
+      matrix:
+        canton-version: ["3.5.19", "3.6.2"]
+    name: Ledger API (Canton ${{ matrix.canton-version }})
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout sources
@@ -78,7 +82,11 @@ jobs:
         uses: zenith-network/setup-daml@v1.0.0
         with:
           dpm-version: "1.0.22"
+          # We install the SDK which is used to build the fixture contracts
+          # Specific Canton version is fetched automatically with DPM_AUTO_INSTALL=true
           sdk-version: "3.6.2"
+          # Avoid API rate limit
+          github-token: ${{ github.token }}
       - name: Install Java Runtime Environment
         uses: actions/setup-java@v6.1.0
         with:
@@ -87,12 +95,13 @@ jobs:
           java-package: "jre"
       - name: Use Rust cache
         uses: Swatinem/rust-cache@v2.9.2
+        with:
+          key: canton-${{ matrix.canton-version }}
       - name: Run tests
         env:
           SANDBOX_CAPACITY: "2"
           SANDBOX_IDLE_TIMEOUT_MS: "3000"
-          SANDBOX_CANTON_VERSION: "3.6.2"
-          DPM_SDK_VERSION: "3.6.2"
-          DPM_AUTO_INSTALL: "false"
+          SANDBOX_BUILD_CANTON_VERSION: ${{ matrix.canton-version }}
+          DPM_AUTO_INSTALL: "true"
         run: |
-          cargo test --package ledger-api-integration --all-features --verbose --test ledger_api_integration
+          cargo test --package ledger-api-integration --verbose --test ledger_api_integration

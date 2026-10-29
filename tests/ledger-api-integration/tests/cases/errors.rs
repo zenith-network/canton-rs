@@ -12,7 +12,7 @@ use tonic_types::StatusExt;
 use crate::support::*;
 
 /// Checks an unknown package produces the same decoded error code and details as the server.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn unknown_package_error_matches_real_error_info(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -36,7 +36,7 @@ async fn unknown_package_error_matches_real_error_info(sandbox: &Sandbox) {
 }
 
 /// Checks an unknown update produces the same decoded error code and details as the server.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn unknown_update_error_matches_real_error_info(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -67,7 +67,7 @@ async fn unknown_update_error_matches_real_error_info(sandbox: &Sandbox) {
 }
 
 /// Checks a contract hidden by party filters produces the same structured error as the server.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn filtered_contract_event_error_matches_real_error_info(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -94,7 +94,7 @@ async fn filtered_contract_event_error_matches_real_error_info(sandbox: &Sandbox
 }
 
 /// Checks duplicate-command errors preserve server details, completion offsets, and submission IDs.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn duplicate_command_error_matches_real_error_info(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -136,7 +136,7 @@ async fn duplicate_command_error_matches_real_error_info(sandbox: &Sandbox) {
 }
 
 /// Checks exercising an archived contract produces the same structured error as the server.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn archived_contract_exercise_error_matches_real_error_info(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -224,7 +224,7 @@ async fn structured_daml_failure(sandbox: &Sandbox, state_dependent: bool) {
 }
 
 /// Checks a state-independent Daml failure preserves its category, metadata, and controlled message.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 #[ignore = "tracking issue: #38"]
 async fn state_independent_daml_failure_is_parsed(sandbox: &Sandbox) {
@@ -232,7 +232,7 @@ async fn state_independent_daml_failure_is_parsed(sandbox: &Sandbox) {
 }
 
 /// Checks a state-dependent Daml failure preserves its category, metadata, and controlled message.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 #[ignore = "tracking issue: #38"]
 async fn state_dependent_daml_failure_is_parsed(sandbox: &Sandbox) {
@@ -240,7 +240,7 @@ async fn state_dependent_daml_failure_is_parsed(sandbox: &Sandbox) {
 }
 
 /// Checks errors received while consuming an update stream retain the server's structured details.
-#[sandbox(fresh, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", fresh, config = sandbox_config)]
 #[tokio::test]
 async fn streaming_error_is_decoded_when_the_stream_is_consumed(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;

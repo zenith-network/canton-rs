@@ -87,6 +87,12 @@ jobs:
           sdk-version: "3.6.2"
           # Avoid API rate limit
           github-token: ${{ github.token }}
+      - name: Install Canton component
+        env:
+          DPM_AUTO_INSTALL: "true"
+        # This will download the component. After that we use DPM_AUTO_INSTALL=false.
+        run: |
+          dpm component run canton-open-source ${{ matrix.canton-version }} -- sandbox --version
       - name: Install Java Runtime Environment
         uses: actions/setup-java@v6.1.0
         with:
@@ -102,7 +108,7 @@ jobs:
           SANDBOX_CAPACITY: "2"
           SANDBOX_IDLE_TIMEOUT_MS: "3000"
           SANDBOX_BUILD_CANTON_VERSION: ${{ matrix.canton-version }}
-          DPM_AUTO_INSTALL: "true"
+          DPM_AUTO_INSTALL: "false"
         run: |
           cargo test --package ledger-api-integration --verbose --test ledger_api_integration
 
@@ -112,7 +118,8 @@ jobs:
       matrix:
         canton-version: ["3.5.19", "3.6.2"]
     name: Admin API (Canton ${{ matrix.canton-version }})
-    runs-on: ubuntu-24.04
+    # Dedicated larger runner
+    runs-on: ubuntu-latest-m
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4.4.0
@@ -133,6 +140,12 @@ jobs:
           # Specific Canton version is fetched automatically with DPM_AUTO_INSTALL=true
           # Avoid API rate limit
           github-token: ${{ github.token }}
+      - name: Install Canton component
+        env:
+          DPM_AUTO_INSTALL: "true"
+        # This will download the component. After that we use DPM_AUTO_INSTALL=false.
+        run: |
+          dpm component run canton-open-source ${{ matrix.canton-version }} -- sandbox --version
       - name: Install Java Runtime Environment
         uses: actions/setup-java@v6.1.0
         with:
@@ -145,9 +158,9 @@ jobs:
           key: canton-admin-api-${{ matrix.canton-version }}
       - name: Run tests
         env:
-          SANDBOX_CAPACITY: "2"
+          SANDBOX_CAPACITY: "6"
           SANDBOX_IDLE_TIMEOUT_MS: "3000"
           SANDBOX_BUILD_CANTON_VERSION: ${{ matrix.canton-version }}
-          DPM_AUTO_INSTALL: "true"
+          DPM_AUTO_INSTALL: "false"
         run: |
           cargo test --package admin-api-integration --verbose --test admin_api_integration

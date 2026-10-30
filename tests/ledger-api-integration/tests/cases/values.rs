@@ -8,7 +8,7 @@ use pretty_assertions::assert_eq;
 use crate::support::*;
 
 /// Checks empty collections, alternate variants, and a consuming choice returning unit decode correctly.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn empty_collections_variant_and_unit_choice_results_are_parsed(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -56,7 +56,7 @@ async fn empty_collections_variant_and_unit_choice_results_are_parsed(sandbox: &
 }
 
 /// Checks generated records restore a trailing Optional None omitted by Canton.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 #[ignore = "tracking issue: #42"]
 async fn trailing_none_record_fields_are_decoded(sandbox: &Sandbox) {
@@ -83,7 +83,7 @@ async fn trailing_none_record_fields_are_decoded(sandbox: &Sandbox) {
 }
 
 /// Checks small Decimals use a participant-accepted wire format and round-trip through the SDK.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 #[ignore = "tracking issue: #40"]
 async fn small_decimal_is_accepted_by_participant_and_sdk(sandbox: &Sandbox) {

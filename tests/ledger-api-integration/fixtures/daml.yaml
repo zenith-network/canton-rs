@@ -6,4 +6,4 @@ dependencies:
   - daml-prim
   - daml-stdlib
 build-options:
-  - --target=2.3
+  - --target=${DAML_LF_TARGET}

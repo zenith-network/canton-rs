@@ -11,7 +11,7 @@ use pretty_assertions::assert_eq;
 use crate::support::*;
 
 /// Checks submit-and-wait identifiers and created template values against the resulting transaction.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 #[ignore = "tracking issue: #43"]
 async fn create_values_and_submit_and_wait_identifiers(sandbox: &Sandbox) {
@@ -52,7 +52,7 @@ async fn create_values_and_submit_and_wait_identifiers(sandbox: &Sandbox) {
 }
 
 /// Checks a non-consuming choice returns the typed payload, contract ID, and acting parties.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 #[ignore = "tracking issue: #43"]
 async fn nonconsuming_exercise_returns_typed_payload(sandbox: &Sandbox) {
@@ -102,7 +102,7 @@ async fn nonconsuming_exercise_returns_typed_payload(sandbox: &Sandbox) {
 }
 
 /// Checks replacement and archival events agree under ledger-effects and ACS-delta transaction shapes.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn consuming_exercise_matches_both_transaction_shapes(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -156,7 +156,7 @@ async fn consuming_exercise_matches_both_transaction_shapes(sandbox: &Sandbox) {
 }
 
 /// Checks create-and-exercise returns matching created values, contract IDs, and choice results.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn create_and_exercise_returns_created_contract_and_result(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -197,7 +197,7 @@ async fn create_and_exercise_returns_created_contract_and_result(sandbox: &Sandb
 }
 
 /// Checks exercise-by-key results and keyed contract events before and after archival.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn exercise_by_key_and_keyed_event_queries(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;

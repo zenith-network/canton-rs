@@ -9,6 +9,7 @@ publish = false
 canton = { workspace = true, features = ["derive", "ledger-api"] }
 
 [dev-dependencies]
+daml-lf.workspace = true
 ledger-api = { workspace = true, features = ["v2", "tracing"] }
 ledger-api-proto = { workspace = true, features = ["v2-testing"] }
 ledger-api-types = { workspace = true, features = ["v2"] }

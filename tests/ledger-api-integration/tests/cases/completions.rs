@@ -11,7 +11,7 @@ use tokio_stream::StreamExt;
 use crate::support::*;
 
 /// Checks successful submissions produce matching completion identifiers and ledger effects.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 async fn submission_and_successful_completion_match_raw_stream(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
@@ -149,7 +149,7 @@ fn assert_completion(parsed: &Completion, raw: &p::Completion) {
 }
 
 /// Checks rejected completions preserve the server rejection code, message, and structured details.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 #[ignore = "tracking issue: #39"]
 async fn rejected_completion_preserves_server_error_details(sandbox: &Sandbox) {

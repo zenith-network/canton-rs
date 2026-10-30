@@ -8,7 +8,7 @@ use pretty_assertions::assert_eq;
 use crate::support::*;
 
 /// Checks typed and untyped contract event queries match server events before and after archival.
-#[sandbox(shared, config = sandbox_config)]
+#[sandbox(canton_version = "^3.5.19", shared, config = sandbox_config)]
 #[tokio::test]
 #[ignore = "tracking issue: #43"]
 async fn typed_and_untyped_event_queries_before_and_after_archive(sandbox: &Sandbox) {

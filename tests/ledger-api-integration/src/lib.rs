@@ -2,6 +2,5 @@
 
 include!(concat!(env!("OUT_DIR"), "/main_package.rs"));
 
-pub const PACKAGE_ID: &str = env!("FIXTURE_PACKAGE_ID");
-pub const PACKAGE_PAYLOAD: &[u8] =
-    include_bytes!(concat!(env!("OUT_DIR"), "/main-package-payload.bin"));
+/// DAR used to generate the fixture bindings and preload the sandboxes.
+pub const DAR_BYTES: &[u8] = include_bytes!(env!("FIXTURE_DAR_PATH"));

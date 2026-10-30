@@ -207,6 +207,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "canton-base"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tonic-types",
+ "tower",
+]
+
+[[package]]
 name = "canton-paths"
 version = "0.1.0"
 dependencies = [

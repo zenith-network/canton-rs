@@ -4,19 +4,14 @@
 //! resolves explicit paths, and checks invariants. The pool resolves an omitted
 //! artifact directory using the test's Cargo directory or the system temporary directory.
 use std::{
-    ffi::OsString,
-    num::NonZeroUsize,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
-    time::Duration,
+    ffi::OsString, num::NonZeroUsize, path::PathBuf, str::FromStr, sync::Arc, time::Duration,
 };
 
 use crate::Error;
-use canton_version::semver::Version;
 
-/// Process capacity when neither the builder nor `SANDBOX_CAPACITY` overrides it.
+/// Default capacity of the sandboxes pool.
 pub const DEFAULT_CAPACITY: NonZeroUsize = NonZeroUsize::new(2).unwrap();
+
 /// Shared-instance retention when neither the builder nor the environment overrides it.
 pub const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(3);
 
@@ -27,7 +22,6 @@ pub const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(3);
 /// Building or cloning a config does not start Canton or create another pool.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SandboxConfig {
-    pub(crate) canton_version: String,
     pub(crate) dpm: OsString,
     pub(crate) dars: Vec<Arc<[u8]>>,
     pub(crate) artifacts: Option<PathBuf>,
@@ -45,16 +39,16 @@ pub struct SandboxConfig {
 impl SandboxConfig {
     /// Start configuring a sandbox harness with the standard defaults.
     ///
-    /// Environment defaults and relative paths are evaluated when
+    /// Environment variables and relative paths are evaluated when
     /// [`SandboxConfigBuilder::build`] is called.
     pub fn builder() -> SandboxConfigBuilder {
         SandboxConfigBuilder::default()
     }
 
     /// Resolve the artifact default once, before handing settings to the backend.
-    pub(crate) fn resolve_artifacts(&mut self, target_tmpdir: Option<&str>) -> Result<(), Error> {
+    pub(crate) fn resolve_artifacts(&mut self, tmpdir: Option<&str>) -> Result<(), Error> {
         if self.artifacts.is_none() {
-            let mut directory = target_tmpdir
+            let mut directory = tmpdir
                 .map_or_else(std::env::temp_dir, PathBuf::from)
                 .join("canton-rs-sandbox");
             if directory.is_relative() {
@@ -68,23 +62,13 @@ impl SandboxConfig {
     }
 }
 
-/// Builds a validated [`SandboxConfig`].
-///
-/// Environment defaults are read by [`Self::build`]. Explicit settings take
-/// precedence over `SANDBOX_CANTON_VERSION`, `DPM`, `SANDBOX_CAPACITY`, and
-/// `SANDBOX_IDLE_TIMEOUT_MS`. The default Canton release is pinned by the
-/// `canton-version` crate, independently of the fixture compiler's `DPM_SDK_VERSION`.
-///
-/// Defaults are two instances, three seconds of shared idle retention, a
-/// 120-second startup deadline, and a 15-second graceful shutdown period.
-/// Builder setters defer validation until [`Self::build`].
+/// Builder for [`SandboxConfig`].
 ///
 /// ```no_run
 /// use sandbox::SandboxConfig;
 /// use std::time::Duration;
 ///
 /// let config = SandboxConfig::builder()
-///     .canton_version("3.5.12")
 ///     .max_sandboxes(3)
 ///     .idle_timeout(Duration::from_secs(1))
 ///     .build()?;
@@ -92,7 +76,6 @@ impl SandboxConfig {
 /// ```
 #[derive(Clone, Debug)]
 pub struct SandboxConfigBuilder {
-    canton_version: Option<String>,
     dpm: Option<OsString>,
     dars: Vec<Arc<[u8]>>,
     artifacts: Option<PathBuf>,
@@ -105,7 +88,6 @@ pub struct SandboxConfigBuilder {
 impl Default for SandboxConfigBuilder {
     fn default() -> Self {
         Self {
-            canton_version: None,
             dpm: None,
             dars: Vec::new(),
             artifacts: None,
@@ -118,17 +100,7 @@ impl Default for SandboxConfigBuilder {
 }
 
 impl SandboxConfigBuilder {
-    /// Select an exact Canton release, rather than a version requirement.
-    ///
-    /// Overrides `SANDBOX_CANTON_VERSION` and the default from `canton-version`.
-    /// Component availability and installation follow DPM's configuration.
-    /// This does not select the Daml compiler used to build fixture DARs.
-    pub fn canton_version(mut self, canton_version: impl Into<String>) -> Self {
-        self.canton_version = Some(canton_version.into());
-        self
-    }
-
-    /// Supply already compiled DAR bytes. No Daml compiler runs during acquisition.
+    /// Provide DAR file bytes.
     ///
     /// Repeated calls add archives. Parsing and registration happen during
     /// startup, and readiness requires each archive's main package to be registered.
@@ -137,140 +109,107 @@ impl SandboxConfigBuilder {
         self
     }
 
-    /// Choose the DPM executable, overriding `DPM` or the fallback `dpm`.
+    /// Set path to DPM executable.
     ///
-    /// A bare executable name uses `PATH`. Relative paths such as `./tools/dpm`
-    /// are resolved against the working directory when [`Self::build`] runs.
+    /// Environment variable `DPM` takes precedence over this. If none of them set, defaults to
+    /// `dpm`.
     pub fn dpm_executable(mut self, executable: impl Into<OsString>) -> Self {
         self.dpm = Some(executable.into());
         self
     }
 
-    /// Choose the parent directory for sandbox logs and staged DARs.
+    /// Set parent directory for sandbox logs and staged DARs.
     ///
-    /// Overrides the default: `canton-rs-sandbox` under the integration test's
-    /// `CARGO_TARGET_TMPDIR`, or under the system temporary directory when unavailable.
-    /// Each instance and launch attempt gets its own subdirectory. Relative paths
-    /// are resolved by [`Self::build`], and shutdown leaves artifacts in place.
+    /// If not set, artifacts will be placed under `CARGO_TARGET_TMPDIR`. If it is unset, default
+    /// system temp directory (`/tmp`) will be used.
     pub fn artifacts_dir(mut self, directory: impl Into<PathBuf>) -> Self {
         self.artifacts = Some(directory.into());
         self
     }
 
-    /// Override `SANDBOX_CAPACITY` (otherwise defaults to two).
+    /// Set the capacity of the sandboxes pool.
     ///
-    /// Counts starting, ready, idle, and stopping instances across all groups and
-    /// fresh acquisitions in this process. Zero is rejected by [`Self::build`].
+    /// Environment variable `SANDBOX_CAPACITY` takes precedence over this. If none of them set,
+    /// defaults to [`DEFAULT_CAPACITY`].
+    ///
+    /// Must be non-zero.
     pub fn max_sandboxes(mut self, capacity: usize) -> Self {
         self.capacity = Some(capacity);
         self
     }
 
-    /// Override `SANDBOX_IDLE_TIMEOUT_MS` (otherwise defaults to three seconds).
-    /// Zero retires shared instances immediately after their last release.
+    /// Set the time to wait before destroying an idle sandbox.
     ///
-    /// Idle instances may retire sooner when another acquisition needs capacity.
-    /// The final lease's release waits for reuse or completed shutdown.
+    /// If during this time some other test of the same group will acquire the sandbox, destroy
+    /// will be discarded.
+    ///
+    /// Environment variable `SANDBOX_IDLE_TIMEOUT_MS` takes precedence over this. If none of them
+    /// set, defaults to [`DEFAULT_IDLE_TIMEOUT`].
+    ///
+    /// If set to zero, idle sandboxes will be destroyed immediately after test is completed. This
+    /// may be undesired, because launching a new sandbox is costly.
     pub fn idle_timeout(mut self, duration: Duration) -> Self {
         self.idle = Some(duration);
         self
     }
 
-    /// Set the startup deadline, which defaults to 120 seconds.
+    /// Set the startup deadline (defaults to 120 seconds).
     ///
-    /// The budget covers DAR preparation, launch retries, and Ledger API readiness.
-    /// It starts after a capacity slot is assigned. Failed startups still run
-    /// cleanup, whose shutdown budget is separate. Zero is invalid.
+    /// The startup time covers DAR preparation, launch retries, and Ledger API readiness. It starts
+    /// after a capacity slot is assigned. Failed startups still run cleanup, whose shutdown timeout
+    /// is separate.
+    ///
+    /// Must be non-zero.
     pub fn startup_timeout(mut self, duration: Duration) -> Self {
         self.startup = duration;
         self
     }
 
-    /// Set the graceful shutdown period, which defaults to 15 seconds.
+    /// Set the graceful shutdown period (defaults to 15 seconds).
     ///
-    /// Cleanup asks the process group to terminate, then force-kills survivors
-    /// after this period. Another five seconds is allowed to confirm termination
-    /// and reap the child. Zero requests immediate escalation.
+    /// Cleanup asks the process group to terminate, then force-kills survivors after this period.
+    /// Another five seconds is allowed to confirm termination and reap the child.
+    // TODO: describe what happens when set to zero.
     pub fn shutdown_timeout(mut self, duration: Duration) -> Self {
         self.shutdown = duration;
         self
     }
 
-    /// Read environment defaults, resolve relative paths, and check all settings.
-    /// No external processes are started. A successful result is ready for use.
+    /// Build sandbox config, returning error on invalid configuration.
     ///
-    /// Explicit setters override their corresponding environment defaults.
-    /// Capacity becomes a nonzero value, and relative filesystem paths become
-    /// absolute; bare executable names remain available for `PATH` lookup.
-    ///
-    /// Returns [`Error::Configuration`] for malformed environment values, empty
-    /// executable names, invalid Canton releases, zero capacity or startup timeout,
-    /// unsupported timeout ranges, or failure to resolve the current directory.
-    /// Component availability and DAR contents are checked later during startup.
+    /// Reads environment variables, which may override provided settings.
     pub fn build(self) -> Result<SandboxConfig, Error> {
-        let capacity = match self.capacity {
-            Some(capacity) => NonZeroUsize::new(capacity)
+        let capacity = match environment_value::<NonZeroUsize>("SANDBOX_CAPACITY")? {
+            Some(capacity) => capacity,
+            None => NonZeroUsize::new(self.capacity.unwrap_or(DEFAULT_CAPACITY.get()))
                 .ok_or_else(|| Error::Configuration("sandbox capacity must be positive".into()))?,
-            None => {
-                environment_value::<NonZeroUsize>("SANDBOX_CAPACITY")?.unwrap_or(DEFAULT_CAPACITY)
-            }
         };
-        let idle = match self.idle {
-            Some(idle) => idle,
-            None => environment_value::<u64>("SANDBOX_IDLE_TIMEOUT_MS")?
-                .map(Duration::from_millis)
-                .unwrap_or(DEFAULT_IDLE_TIMEOUT),
-        };
-        let mut dpm = self
-            .dpm
-            .unwrap_or_else(|| std::env::var_os("DPM").unwrap_or_else(|| "dpm".into()));
+
+        let idle = environment_value::<u64>("SANDBOX_IDLE_TIMEOUT_MS")?
+            .map(Duration::from_millis)
+            .or(self.idle)
+            .unwrap_or(DEFAULT_IDLE_TIMEOUT);
+
+        let dpm = std::env::var_os("DPM")
+            .or(self.dpm)
+            .unwrap_or_else(|| "dpm".into());
         if dpm.is_empty() {
             return Err(Error::Configuration(
                 "DPM executable must not be empty".into(),
             ));
         }
-        let canton_version = match self.canton_version {
-            Some(version) => Version::parse(&version).map_err(|error| {
-                Error::Configuration(format!("invalid Canton release {version:?}: {error}"))
-            })?,
-            None => environment_value::<Version>("SANDBOX_CANTON_VERSION")?
-                .unwrap_or_else(|| canton_version::canton_version().clone()),
-        };
+
         if self.startup.is_zero() {
             return Err(Error::Configuration(
                 "startup timeout must be positive".into(),
             ));
         }
-        let now = std::time::Instant::now();
-        let cleanup = self.shutdown.checked_add(Duration::from_secs(5));
-        if now.checked_add(self.startup).is_none()
-            || now.checked_add(idle).is_none()
-            || cleanup.is_none_or(|duration| now.checked_add(duration).is_none())
-        {
-            return Err(Error::Configuration(
-                "timeout exceeds the supported clock range".into(),
-            ));
-        }
-        let mut artifacts = self.artifacts;
-        let executable = Path::new(&dpm);
-        let relative_executable = executable.is_relative() && executable.components().count() > 1;
-        if artifacts.as_ref().is_some_and(|path| path.is_relative()) || relative_executable {
-            let directory =
-                std::env::current_dir().map_err(|error| Error::Configuration(error.to_string()))?;
-            if let Some(path) = artifacts.as_mut().filter(|path| path.is_relative()) {
-                *path = directory.join(&*path);
-            }
-            if relative_executable {
-                dpm = directory.join(executable).into_os_string();
-            }
-        }
         Ok(SandboxConfig {
-            canton_version: canton_version.to_string(),
             dpm,
-            dars: self.dars,
-            artifacts,
             capacity,
             idle,
+            dars: self.dars,
+            artifacts: self.artifacts,
             startup: self.startup,
             shutdown: self.shutdown,
         })
@@ -292,95 +231,53 @@ where
 }
 
 #[cfg(test)]
+pub(crate) fn test_config() -> SandboxConfig {
+    // Lifecycle tests need fixed settings, independent of the user's environment.
+    SandboxConfig {
+        dpm: "dpm".into(),
+        dars: Vec::new(),
+        artifacts: None,
+        capacity: DEFAULT_CAPACITY,
+        idle: Duration::ZERO,
+        startup: Duration::from_secs(120),
+        shutdown: Duration::from_secs(15),
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::process::Command;
 
-    fn builder() -> SandboxConfigBuilder {
+    fn explicit_builder() -> SandboxConfigBuilder {
         SandboxConfig::builder()
-            .dpm_executable("dpm")
-            .max_sandboxes(2)
-            .idle_timeout(DEFAULT_IDLE_TIMEOUT)
+            .dpm_executable("code-dpm")
+            .max_sandboxes(7)
+            .idle_timeout(Duration::from_millis(321))
     }
 
     #[test]
-    fn build_rejects_invalid_settings_without_starting_processes() {
-        for builder in [
-            builder().canton_version(""),
-            builder().canton_version(" "),
-            builder().canton_version("3.5"),
-            builder().canton_version("^3.5.12"),
-            builder().canton_version(">=3.5.12"),
-            builder().canton_version("3.5.*"),
-            builder().dpm_executable(""),
-            builder().max_sandboxes(0),
-            builder().startup_timeout(Duration::ZERO),
-            builder().startup_timeout(Duration::MAX),
-            builder().idle_timeout(Duration::MAX),
-            builder().shutdown_timeout(Duration::MAX),
-        ] {
-            assert!(matches!(builder.build(), Err(Error::Configuration(_))));
-        }
-        let release = "3.6.0-snapshot.20260817.14786.0.v35512442";
-        assert_eq!(
-            builder()
-                .canton_version(release)
-                .build()
-                .unwrap()
-                .canton_version,
-            release
-        );
+    fn builder_defaults_and_explicit_settings() {
+        check_environment("defaults", &[]);
+        check_environment("explicit", &[]);
     }
 
     #[test]
-    fn build_resolves_relative_paths_and_preserves_path_lookup() {
-        let directory = std::env::current_dir().unwrap();
-        let relative = builder()
-            .artifacts_dir("relative-artifacts")
-            .dpm_executable("./tools/dpm")
-            .build()
-            .unwrap();
-        assert_eq!(
-            relative.artifacts,
-            Some(directory.join("relative-artifacts"))
-        );
-        assert_eq!(relative.dpm, directory.join("./tools/dpm").into_os_string());
-        let absolute = builder()
-            .artifacts_dir(relative.artifacts.as_ref().unwrap())
-            .dpm_executable(&relative.dpm)
-            .build()
-            .unwrap();
-        assert_eq!(relative, absolute);
-        let default = builder().build().unwrap();
-        assert_eq!(default.dpm, "dpm");
-        assert!(default.artifacts.is_none());
+    fn builder_validates_settings_and_preserves_supplied_values() {
+        check_environment("settings", &[]);
     }
 
-    fn check_environment(
-        case: &str,
-        capacity: Option<&str>,
-        idle: Option<&str>,
-        canton: Option<&std::ffi::OsStr>,
-    ) {
-        // Give every case its own environment and process pool, without mutating
+    fn check_environment(case: &str, environment: &[(&str, &str)]) {
+        // Give every case its own environment, without mutating
         // environment variables underneath concurrent Rust tests.
         let mut command = Command::new(std::env::current_exe().unwrap());
         command
             .args(["--ignored", "--exact", "config::tests::environment_child"])
             .env("SANDBOX_ENV_TEST_CASE", case)
-            .env("DPM_SDK_VERSION", "not-a-canton-release")
+            .env_remove("DPM")
             .env_remove("SANDBOX_CAPACITY")
             .env_remove("SANDBOX_IDLE_TIMEOUT_MS")
-            .env_remove("SANDBOX_CANTON_VERSION");
-        if let Some(capacity) = capacity {
-            command.env("SANDBOX_CAPACITY", capacity);
-        }
-        if let Some(idle) = idle {
-            command.env("SANDBOX_IDLE_TIMEOUT_MS", idle);
-        }
-        if let Some(canton) = canton {
-            command.env("SANDBOX_CANTON_VERSION", canton);
-        }
+            .envs(environment.iter().copied());
         let output = command.output().unwrap();
         assert!(
             output.status.success(),
@@ -391,24 +288,18 @@ mod tests {
     }
 
     #[test]
-    fn environment_defaults_and_zero_idle_timeout() {
-        check_environment("defaults", None, None, None);
-        check_environment("environment", Some("4"), Some("1250"), None);
-        check_environment("zero_idle", Some("4"), Some("0"), None);
-        check_environment("canton_environment", None, None, Some("3.5.12".as_ref()));
-    }
-
-    #[test]
-    fn explicit_settings_override_environment_independently() {
-        check_environment(
-            "overrides",
-            Some("invalid"),
-            Some("invalid"),
-            Some("invalid".as_ref()),
-        );
-        check_environment("capacity_override", Some("0"), Some("1250"), None);
-        check_environment("idle_override", Some("4"), Some("-1"), None);
-        check_environment("canton_override", None, None, Some("invalid".as_ref()));
+    fn environment_overrides_builder_settings_independently() {
+        let environment = [
+            ("DPM", "env-dpm"),
+            ("SANDBOX_CAPACITY", "4"),
+            ("SANDBOX_IDLE_TIMEOUT_MS", "1250"),
+        ];
+        check_environment("overrides", &environment);
+        check_environment("invalid_builder", &environment);
+        check_environment("dpm_override", &[("DPM", "env-dpm")]);
+        check_environment("capacity_override", &[("SANDBOX_CAPACITY", "4")]);
+        check_environment("idle_override", &[("SANDBOX_IDLE_TIMEOUT_MS", "1250")]);
+        check_environment("zero_idle", &[("SANDBOX_IDLE_TIMEOUT_MS", "0")]);
     }
 
     #[test]
@@ -420,42 +311,54 @@ mod tests {
             "many",
             "340282366920938463463374607431768211455",
         ] {
-            check_environment("invalid_capacity", Some(value), None, None);
+            check_environment("invalid_capacity", &[("SANDBOX_CAPACITY", value)]);
         }
         for value in ["", "-1", "1.5", "1s", "18446744073709551616"] {
-            check_environment("invalid_idle", None, Some(value), None);
+            check_environment("invalid_idle", &[("SANDBOX_IDLE_TIMEOUT_MS", value)]);
         }
-        for value in ["", " ", "3.5", "^3.5.12", ">=3.5.12", "3.5.*", "latest"] {
-            check_environment("invalid_canton", None, None, Some(value.as_ref()));
-        }
-        #[cfg(unix)]
-        {
-            use std::os::unix::ffi::OsStringExt;
-            let value = OsString::from_vec(vec![0xff]);
-            check_environment("invalid_canton", None, None, Some(&value));
-            check_environment("canton_override", None, None, Some(&value));
-        }
+        check_environment("invalid_dpm", &[("DPM", "")]);
     }
 
     #[test]
     #[ignore = "environment-test helper; run through the parent tests"]
     fn environment_child() {
         let case = std::env::var("SANDBOX_ENV_TEST_CASE").expect("internal subprocess only");
-        let mut builder = SandboxConfig::builder();
-        if matches!(case.as_str(), "overrides" | "capacity_override") {
-            builder = builder.max_sandboxes(7);
+        if case == "settings" {
+            for builder in [
+                explicit_builder().dpm_executable(""),
+                explicit_builder().max_sandboxes(0),
+                explicit_builder().startup_timeout(Duration::ZERO),
+            ] {
+                assert!(matches!(builder.build(), Err(Error::Configuration(_))));
+            }
+            let config = explicit_builder()
+                .dpm_executable("./tools/dpm")
+                .artifacts_dir("relative-artifacts")
+                .startup_timeout(Duration::MAX)
+                .idle_timeout(Duration::MAX)
+                .shutdown_timeout(Duration::MAX)
+                .build()
+                .unwrap();
+            assert_eq!(config.dpm, "./tools/dpm");
+            assert_eq!(config.artifacts, Some(PathBuf::from("relative-artifacts")));
+            assert_eq!(config.startup, Duration::MAX);
+            assert_eq!(config.idle, Duration::MAX);
+            assert_eq!(config.shutdown, Duration::MAX);
+            return;
         }
-        if matches!(case.as_str(), "overrides" | "idle_override") {
-            builder = builder.idle_timeout(Duration::from_millis(321));
-        }
-        if matches!(case.as_str(), "overrides" | "canton_override") {
-            builder = builder.canton_version("3.5.12");
-        }
-        if case.starts_with("invalid_") {
+        let builder = match case.as_str() {
+            "defaults" => SandboxConfig::builder(),
+            "invalid_builder" => explicit_builder().dpm_executable("").max_sandboxes(0),
+            _ => explicit_builder(),
+        };
+        if matches!(
+            case.as_str(),
+            "invalid_capacity" | "invalid_idle" | "invalid_dpm"
+        ) {
             let name = match case.as_str() {
                 "invalid_capacity" => "SANDBOX_CAPACITY",
                 "invalid_idle" => "SANDBOX_IDLE_TIMEOUT_MS",
-                "invalid_canton" => "SANDBOX_CANTON_VERSION",
+                "invalid_dpm" => "DPM",
                 _ => unreachable!(),
             };
             assert!(matches!(
@@ -468,35 +371,23 @@ mod tests {
             ));
             return;
         }
-        let config = builder.clone().build().unwrap();
-        let (capacity, idle_ms) = match case.as_str() {
-            "defaults" | "canton_environment" | "canton_override" => (2, 3000),
-            "environment" => (4, 1250),
-            "zero_idle" => (4, 0),
-            "overrides" => (7, 321),
-            "capacity_override" => (7, 1250),
-            "idle_override" => (4, 321),
+        let config = builder.build().unwrap();
+        let (dpm, capacity, idle_ms) = match case.as_str() {
+            "defaults" => ("dpm", 2, 3000),
+            "explicit" => ("code-dpm", 7, 321),
+            "overrides" | "invalid_builder" => ("env-dpm", 4, 1250),
+            "dpm_override" => ("env-dpm", 7, 321),
+            "capacity_override" => ("code-dpm", 4, 321),
+            "idle_override" => ("code-dpm", 7, 1250),
+            "zero_idle" => ("code-dpm", 7, 0),
             _ => panic!("unknown environment test case: {case}"),
         };
+        assert_eq!(config.dpm, dpm);
         assert_eq!(config.capacity.get(), capacity);
         assert_eq!(config.idle, Duration::from_millis(idle_ms));
-        let canton = match case.as_str() {
-            "canton_environment" | "canton_override" | "overrides" => "3.5.12",
-            _ => canton_version::canton_version_str(),
-        };
-        assert_eq!(config.canton_version, canton);
-        let pool = crate::pool::global(Some(config.clone()), None).unwrap();
-        assert!(std::ptr::eq(pool, crate::pool::global(None, None).unwrap()));
-        // Equivalent explicit and environment settings must use the same pool.
-        let explicit = builder
-            .canton_version(canton)
-            .max_sandboxes(capacity)
-            .idle_timeout(Duration::from_millis(idle_ms))
-            .build()
-            .unwrap();
-        assert!(std::ptr::eq(
-            pool,
-            crate::pool::global(Some(explicit), None).unwrap()
-        ));
+        assert_eq!(config.startup, Duration::from_secs(120));
+        assert_eq!(config.shutdown, Duration::from_secs(15));
+        assert!(config.dars.is_empty());
+        assert!(config.artifacts.is_none());
     }
 }

@@ -130,13 +130,14 @@ impl Backend for Canton {
                     endpoints: ports.endpoints(),
                     artifacts: attempt_directory.clone(),
                 });
+                let canton_version = crate::SANDBOX_CANTON_VERSION.to_string();
                 let mut command = Command::new(&config.dpm);
                 command
                     .current_dir(&attempt_directory)
                     .env_remove("DAML_PACKAGE")
                     .env_remove("DAML_PROJECT")
                     .args(["component", "run", "canton-open-source"])
-                    .arg(&config.canton_version)
+                    .arg(&canton_version)
                     .arg("--")
                     .args(["sandbox", "--nuck", "--canton-port-file"])
                     .arg(&port_file)

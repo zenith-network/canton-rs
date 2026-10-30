@@ -1,10 +1,10 @@
-error: sandbox fixture requires an async function; place it above #[tokio::test]
+error: sandbox fixture requires an async function
  --> tests/fail/signatures.rs:2:1
   |
 2 | fn synchronous(_sandbox: &sandbox::Sandbox) {}
   | ^^
 
-error: sandbox test must receive exactly one &Sandbox argument
+error: sandbox test must receive exactly one argument
  --> tests/fail/signatures.rs:4:1
   |
 4 | #[sandbox::sandbox(fresh)]
@@ -12,20 +12,116 @@ error: sandbox test must receive exactly one &Sandbox argument
   |
   = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error: sandbox argument must be an immutable &Sandbox reference
- --> tests/fail/signatures.rs:8:19
-  |
-8 | async fn by_value(_sandbox: sandbox::Sandbox) {}
-  |                   ^^^^^^^^
-
-error: sandbox argument must be an immutable &Sandbox reference
-  --> tests/fail/signatures.rs:11:18
-   |
-11 | async fn mutable(_sandbox: &mut sandbox::Sandbox) {}
-   |                  ^^^^^^^^
-
 error: sandbox tests cannot be generic, unsafe, extern, or variadic
   --> tests/fail/signatures.rs:14:1
    |
 14 | async fn generic<T>(_sandbox: &sandbox::Sandbox) {}
    | ^^^^^
+
+error: sandbox test must receive exactly one argument
+  --> tests/fail/signatures.rs:17:25
+   |
+17 | async fn extra_argument(_sandbox: &sandbox::Sandbox, _extra: ()) {}
+   |                         ^^^^^^^^
+
+error[E0631]: type mismatch in function arguments
+ --> tests/fail/signatures.rs:7:1
+  |
+7 | #[sandbox::sandbox(fresh)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | |
+  | expected due to this
+  | found signature defined here
+  | required by a bound introduced by this call
+  |
+  = note: expected function signature `for<'a> fn(&'a Sandbox) -> _`
+             found function signature `fn(Sandbox) -> _`
+note: required by a bound in `sandbox::__private::run`
+ --> $WORKSPACE/tests/sandbox/src/__private.rs
+  |
+  | pub async fn run<T, F>(
+  |              --- required by a bound in this function
+...
+  |     F: for<'a> AsyncFnOnce(&'a Sandbox) -> T,
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `run`
+  = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider wrapping the function in a closure
+  |
+7 | |_sandbox: &'a Sandbox| #[sandbox::sandbox(fresh)](*_sandbox)
+  | +++++++++++++++++++++++                           +++++++++++
+help: consider adjusting the signature so it borrows its argument
+  |
+8 | async fn by_value(_sandbox: &sandbox::Sandbox) {}
+  |                             +
+
+error[E0631]: type mismatch in function arguments
+ --> tests/fail/signatures.rs:7:1
+  |
+7 | #[sandbox::sandbox(fresh)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | |
+  | expected due to this
+  | found signature defined here
+  |
+  = note: expected function signature `for<'a> fn(&'a Sandbox) -> _`
+             found function signature `fn(Sandbox) -> _`
+note: required by a bound in `sandbox::__private::run`
+ --> $WORKSPACE/tests/sandbox/src/__private.rs
+  |
+  | pub async fn run<T, F>(
+  |              --- required by a bound in this function
+...
+  |     F: for<'a> AsyncFnOnce(&'a Sandbox) -> T,
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `run`
+  = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider adjusting the signature so it borrows its argument
+  |
+8 | async fn by_value(_sandbox: &sandbox::Sandbox) {}
+  |                             +
+
+error[E0631]: type mismatch in function arguments
+  --> tests/fail/signatures.rs:10:1
+   |
+10 | #[sandbox::sandbox(fresh)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | |
+   | expected due to this
+   | found signature defined here
+   | required by a bound introduced by this call
+   |
+   = note: expected function signature `for<'a> fn(&'a Sandbox) -> _`
+              found function signature `fn(&mut Sandbox) -> _`
+note: required by a bound in `sandbox::__private::run`
+  --> $WORKSPACE/tests/sandbox/src/__private.rs
+   |
+   | pub async fn run<T, F>(
+   |              --- required by a bound in this function
+...
+   |     F: for<'a> AsyncFnOnce(&'a Sandbox) -> T,
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `run`
+   = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider wrapping the function in a closure
+   |
+10 | |_sandbox: &'a Sandbox| #[sandbox::sandbox(fresh)](&mut *_sandbox)
+   | +++++++++++++++++++++++                           ++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+  --> tests/fail/signatures.rs:10:1
+   |
+10 | #[sandbox::sandbox(fresh)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | |
+   | expected due to this
+   | found signature defined here
+   |
+   = note: expected function signature `for<'a> fn(&'a Sandbox) -> _`
+              found function signature `fn(&mut Sandbox) -> _`
+note: required by a bound in `sandbox::__private::run`
+  --> $WORKSPACE/tests/sandbox/src/__private.rs
+   |
+   | pub async fn run<T, F>(
+   |              --- required by a bound in this function
+...
+   |     F: for<'a> AsyncFnOnce(&'a Sandbox) -> T,
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `run`
+   = note: this error originates in the attribute macro `sandbox::sandbox` (in Nightly builds, run with -Z macro-backtrace for more info)

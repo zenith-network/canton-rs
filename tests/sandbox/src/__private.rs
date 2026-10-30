@@ -4,147 +4,170 @@
 //! acquisition, panic capture, and awaited release so early returns and `?` in
 //! the body still complete the same lifecycle.
 
-use crate::{
-    Sandbox, SandboxConfig,
-    pool::{self, Pool},
-};
-use futures_util::FutureExt;
 use std::{
     any::Any,
     fmt::Debug,
     panic::{AssertUnwindSafe, resume_unwind},
+    process::Termination,
+};
+
+use futures_util::FutureExt;
+
+use crate::{
+    Sandbox, SandboxConfig,
+    pool::{self, Pool},
 };
 
 /// Instance selection requested by a generated test wrapper.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
     /// Reuse the named group's ledger state while its instance survives.
     Shared(&'static str),
     /// Start an instance used exclusively by this acquisition.
     Fresh,
 }
-/// Panic expectation removed from the outer test and checked around its body.
-pub enum ExpectedPanic {
-    /// The body must return normally; its panics are resumed after release.
-    No,
-    /// The body must panic, optionally containing the specified message substring.
-    Yes(Option<&'static str>),
-}
 
-/// Supported test return values: unit or a result whose error implements `Debug`.
-pub trait TestOutput {
-    /// Describe a returned error when a cleanup failure also needs reporting.
-    fn failure(&self) -> Option<String>;
-    /// Produce the successful return value after an expected body panic.
-    fn success() -> Self;
-}
-
-impl TestOutput for () {
-    fn failure(&self) -> Option<String> {
-        None
-    }
-    fn success() -> Self {}
-}
-
-impl<E: Debug> TestOutput for Result<(), E> {
-    fn failure(&self) -> Option<String> {
-        self.as_ref().err().map(|error| format!("{error:?}"))
-    }
-    fn success() -> Self {
-        Ok(())
-    }
-}
-
-/// Execute the generated test against the process-wide pool.
+/// Calls config provider and gets a global sandboxes pool reference.
 ///
-/// Explicit config providers are called before acquisition and must agree with
-/// the installed settings. The macro supplies Cargo's compile-time temporary
-/// directory as the default artifact root when the pool is first initialized.
-/// Setup and cleanup failures cannot satisfy an expected
-/// body panic. Returned body errors retain priority over additional cleanup
-/// failures, which are reported to standard error.
+/// Panics if failed to get the pool.
+fn get_global_pool(
+    config: Option<fn() -> SandboxConfig>,
+    target_tmpdir: Option<&str>,
+    name: &str,
+) -> &'static Pool {
+    let config = config.map(|config_provider| config_provider());
+    let pool = pool::global(config, target_tmpdir)
+        .unwrap_or_else(|error| panic!("{name}: failed to get global sandboxes pool: {error}"));
+    pool
+}
+
+/// Run a test
+///
+/// This function returns the return value of the `body`, which must implement [`Termination`],
+/// because it is enforced by Rust. If this bound is not satisfied, Rust will report a compilation
+/// error when the original function will be passed to this function.
 pub async fn run<T, F>(
     config: Option<fn() -> SandboxConfig>,
     target_tmpdir: Option<&str>,
     mode: Mode,
     name: &str,
-    expected: ExpectedPanic,
     body: F,
 ) -> T
 where
-    T: TestOutput,
+    T: Termination,
     F: for<'a> AsyncFnOnce(&'a Sandbox) -> T,
 {
-    let pool = pool::global(config.map(|provider| provider()), target_tmpdir)
-        .unwrap_or_else(|error| panic!("{name}: setup failed: {error}"));
-    run_with_pool(pool, mode, name, expected, body).await
+    let pool = get_global_pool(config, target_tmpdir, name);
+    run_with_pool(pool, mode, name, body).await
 }
 
-/// Apply the body and release rules to a supplied pool, allowing deterministic
-/// lifecycle tests without installing a fake process-wide pool.
-pub(crate) async fn run_with_pool<T, F>(
+/// Run a test, which is expected to panic
+///
+/// This function returns `()` just like the underlying `body`, because for `#[should_panic]` tests
+/// if is enforced by Rust. Since we remove the upper-level `#[should_panic]` from the test, Rust
+/// won't catch that for us, but it will report compilation error when the original function will be
+/// passed to this function.
+pub async fn run_should_panic<F>(
+    config: Option<fn() -> SandboxConfig>,
+    target_tmpdir: Option<&str>,
+    mode: Mode,
+    name: &str,
+    expected: Option<&'static str>,
+    body: F,
+) where
+    F: for<'a> AsyncFnOnce(&'a Sandbox),
+{
+    let pool = get_global_pool(config, target_tmpdir, name);
+    run_with_pool_should_panic(pool, mode, name, expected, body).await
+}
+
+/// Run a test, which is expected to panic, against the pool
+pub(crate) async fn run_with_pool_should_panic<F>(
     pool: &Pool,
     mode: Mode,
     name: &str,
-    expected: ExpectedPanic,
+    expected: Option<&'static str>,
     body: F,
-) -> T
+) where
+    F: for<'a> AsyncFnOnce(&'a Sandbox),
+{
+    let outcome = run_inner(pool, mode, name, body).await;
+
+    // Message formats here are mirroring original Rust ones for convenience
+    match outcome {
+        Err(panic) => {
+            if let Some(expected) = expected {
+                if let Some(message) = panic_message(panic.as_ref()) {
+                    assert!(
+                        message.contains(expected),
+                        "{name}: panic did not contain expected string\n\
+                        panic message: {message:?}\n\
+                        expected substring: {expected:?}"
+                    );
+                } else {
+                    panic!(
+                        "{name}: panic did not contain expected string\n\
+                        found non-string value: `{:?}`\n\
+                        expected substring: {expected:?}",
+                        panic.as_ref().type_id()
+                    );
+                }
+            }
+        }
+        Ok(()) => {
+            panic!("{name}: test did not panic as expected")
+        }
+    }
+}
+
+/// Run a test against the pool
+pub(crate) async fn run_with_pool<T, F>(pool: &Pool, mode: Mode, name: &str, body: F) -> T
 where
-    T: TestOutput,
+    T: Termination,
+    F: for<'a> AsyncFnOnce(&'a Sandbox) -> T,
+{
+    let outcome = run_inner(pool, mode, name, body).await;
+    outcome.unwrap_or_else(|panic| resume_unwind(panic))
+}
+
+/// Acquire the sandbox and run the test body, catching the unwinding panics.
+///
+/// Panics on any error with sandbox acquisition or release.
+///
+/// Pool-related errors are taking precedence over actual test errors, shadowing them for user.
+/// The idea of this is simple: if anything went wrong with the harness itself, we abort all the
+/// tests, the user should not trust their results.
+pub(crate) async fn run_inner<F, T>(
+    pool: &Pool,
+    mode: Mode,
+    name: &str,
+    body: F,
+) -> Result<T, Box<dyn Any + Send>>
+where
     F: for<'a> AsyncFnOnce(&'a Sandbox) -> T,
 {
     let lease = match mode {
         Mode::Shared(group) => pool.shared_in_group(group).await,
         Mode::Fresh => pool.fresh().await,
     }
-    .unwrap_or_else(|error| panic!("{name}: setup failed: {error}"));
+    .unwrap_or_else(|error| panic!("{name}: failed to acquire requested sandbox: {error}"));
+
     let outcome = AssertUnwindSafe(async { body(lease.sandbox()).await })
         .catch_unwind()
         .await;
-    let cleanup = lease.release().await;
-    match outcome {
-        Err(panic) => {
-            if let Err(error) = cleanup {
-                eprintln!("{name}: cleanup failed after test panic: {error}");
-                if matches!(expected, ExpectedPanic::Yes(_)) {
-                    panic!("{name}: expected-panic body completed, but cleanup failed: {error}");
-                }
-            }
-            match expected {
-                ExpectedPanic::No => resume_unwind(panic),
-                ExpectedPanic::Yes(None) => T::success(),
-                ExpectedPanic::Yes(Some(expected)) => {
-                    let message = panic_message(panic.as_ref());
-                    assert!(
-                        message.contains(expected),
-                        "{name}: panic {message:?} did not contain {expected:?}"
-                    );
-                    T::success()
-                }
-            }
-        }
-        Ok(value) => {
-            if let Err(error) = cleanup {
-                if let Some(primary) = value.failure() {
-                    eprintln!(
-                        "{name}: original test failure: {primary}; additionally cleanup failed: {error}"
-                    );
-                    return value;
-                }
-                panic!("{name}: cleanup failed: {error}");
-            }
-            assert!(
-                matches!(expected, ExpectedPanic::No),
-                "{name}: test did not panic as expected"
-            );
-            value
-        }
-    }
+
+    lease
+        .release()
+        .await
+        .unwrap_or_else(|error| panic!("{name}: failed to release acquired sandbox: {error}"));
+
+    outcome
 }
 
-fn panic_message(panic: &(dyn Any + Send)) -> &str {
+/// Try to get panic message in string-like format
+fn panic_message(panic: &(dyn Any + Send)) -> Option<&str> {
     panic
         .downcast_ref::<String>()
         .map(String::as_str)
         .or_else(|| panic.downcast_ref::<&str>().copied())
-        .unwrap_or("<non-string panic>")
 }

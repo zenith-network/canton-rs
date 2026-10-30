@@ -12,7 +12,14 @@ async fn expected_panic(_sandbox: &Sandbox) {
     panic!("body panic");
 }
 
+#[sandbox(fresh)]
+#[should_panic = "body panic"]
+async fn name_value_panic(_sandbox: &Sandbox) -> () {
+    panic!("body panic");
+}
+
 fn main() {
     drop(any_panic());
     drop(expected_panic());
+    drop(name_value_panic());
 }

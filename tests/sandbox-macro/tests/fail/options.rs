@@ -22,4 +22,13 @@ async fn repeated_config(_sandbox: &sandbox::Sandbox) {}
 #[sandbox::sandbox(unknown)]
 async fn unknown_option(_sandbox: &sandbox::Sandbox) {}
 
+#[sandbox::sandbox(fresh, canton_version = "latest")]
+async fn invalid_version(_sandbox: &sandbox::Sandbox) {}
+
+#[sandbox::sandbox(fresh, canton_version = "^3", canton_version = "^4")]
+async fn repeated_version(_sandbox: &sandbox::Sandbox) {}
+
+#[sandbox::sandbox(fresh, canton_version = 42)]
+async fn non_string_version(_sandbox: &sandbox::Sandbox) {}
+
 fn main() {}

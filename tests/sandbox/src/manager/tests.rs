@@ -1,8 +1,8 @@
 use super::*;
 use crate::{
-    __private::{self, ExpectedPanic, Mode},
     Endpoints,
     backend::{Running, Work},
+    config::test_config,
     pool::Pool,
 };
 use std::{
@@ -149,12 +149,10 @@ impl Running for FakeRunning {
 
 fn pool(fake: &Arc<Fake>, capacity: usize) -> Arc<Pool> {
     Arc::new(Pool::with_backend(
-        SandboxConfig::builder()
-            .canton_version("0.0.0")
-            .max_sandboxes(capacity)
-            .idle_timeout(Duration::ZERO)
-            .build()
-            .unwrap(),
+        SandboxConfig {
+            capacity: capacity.try_into().unwrap(),
+            ..test_config()
+        },
         Arc::new(fake.clone()),
     ))
 }
@@ -242,11 +240,11 @@ async fn idle_delay_reacquisition_and_capacity_eviction() {
     let (send, receive) = mpsc::unbounded_channel();
     let task = tokio::spawn(
         Manager::new(
-            SandboxConfig::builder()
-                .canton_version("0.0.0")
-                .max_sandboxes(1)
-                .build()
-                .unwrap(),
+            SandboxConfig {
+                capacity: 1.try_into().unwrap(),
+                idle: Duration::from_secs(3),
+                ..test_config()
+            },
             Arc::new(fake.clone()),
             receive,
         )
@@ -312,11 +310,10 @@ async fn cancelling_startup_release_and_dropped_leases_leaves_no_claims() {
     assert_eq!(fake.live.load(Ordering::SeqCst), 0);
 
     let pool = Arc::new(Pool::with_backend(
-        SandboxConfig::builder()
-            .canton_version("0.0.0")
-            .idle_timeout(Duration::from_secs(60))
-            .build()
-            .unwrap(),
+        SandboxConfig {
+            idle: Duration::from_secs(60),
+            ..test_config()
+        },
         Arc::new(fake.clone()),
     ));
     let lease = pool.shared().await.unwrap();
@@ -401,37 +398,12 @@ fn first_callers_runtime_can_end_while_another_lease_remains() {
 }
 
 #[tokio::test]
-async fn original_returned_error_survives_cleanup_failure() {
-    let fake = Fake::new();
-    fake.fail_stop.store(true, Ordering::SeqCst);
-    let pool = pool(&fake, 1);
-    let result = __private::run_with_pool(
-        &pool,
-        Mode::Fresh,
-        "double failure",
-        ExpectedPanic::No,
-        async |_sandbox: &Sandbox| Err::<(), _>("primary failure"),
-    )
-    .await;
-    assert_eq!(result.unwrap_err(), "primary failure");
-}
-
-#[tokio::test]
 async fn cancellation_after_lost_grant_and_during_pool_close_waits_for_cleanup() {
     for close in [false, true] {
         let fake = Fake::gated(0, 0);
         let (send, receive) = mpsc::unbounded_channel();
-        let manager = tokio::spawn(
-            Manager::new(
-                SandboxConfig::builder()
-                    .canton_version("0.0.0")
-                    .build()
-                    .unwrap(),
-                Arc::new(fake.clone()),
-                receive,
-            )
-            .run(),
-        );
+        let manager =
+            tokio::spawn(Manager::new(test_config(), Arc::new(fake.clone()), receive).run());
         let (reply, receive) = oneshot::channel();
         send.send(Command::Acquire {
             id: 1,
@@ -475,18 +447,7 @@ async fn cancellation_after_lost_grant_and_during_pool_close_waits_for_cleanup()
 async fn dropping_one_coalesced_request_does_not_stop_other_users() {
     let fake = Fake::gated(0, 10000);
     let (send, receive) = mpsc::unbounded_channel();
-    let manager = tokio::spawn(
-        Manager::new(
-            SandboxConfig::builder()
-                .canton_version("0.0.0")
-                .idle_timeout(Duration::ZERO)
-                .build()
-                .unwrap(),
-            Arc::new(fake.clone()),
-            receive,
-        )
-        .run(),
-    );
+    let manager = tokio::spawn(Manager::new(test_config(), Arc::new(fake.clone()), receive).run());
     let (reply, abandoned) = oneshot::channel();
     send.send(Command::Acquire {
         id: 1,
@@ -545,3 +506,4 @@ async fn process_task_panic_closes_pool_instead_of_stranding_requests() {
 }
 
 mod process;
+mod runner;

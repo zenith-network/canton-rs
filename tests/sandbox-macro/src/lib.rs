@@ -14,7 +14,7 @@ mod options;
 
 use options::Options;
 
-/// Version of Canton which was this sandbox built for.
+/// Version of Canton which this sandbox was built for.
 static SANDBOX_CANTON_VERSION: LazyLock<Version> =
     LazyLock::new(|| match Version::parse(env!("SANDBOX_CANTON_VERSION")) {
         Ok(version) => version,

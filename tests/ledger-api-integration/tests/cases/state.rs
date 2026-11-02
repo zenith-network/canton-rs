@@ -13,7 +13,7 @@ async fn snapshot(
     offset: i64,
     format: EventFormat,
 ) -> Vec<ledger_api::grpc::v2::services::ActiveContractResponse> {
-    let mut service = ctx.client.state();
+    let service = ctx.client.state();
     let stream = ok(service.get_active_contracts(offset, format, None)).await;
     tokio::pin!(stream);
     within(async {

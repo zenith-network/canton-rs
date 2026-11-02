@@ -1,3 +1,4 @@
+use canton_base::retry::{RetryConfig, RetryHandler};
 use ledger_api_proto::com::daml::ledger::api::v2::{
     GetActiveContractsRequest, GetActiveContractsResponse, GetLedgerEndRequest,
     state_service_client as svc_proto,
@@ -11,11 +12,7 @@ use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 use tokio_stream::{Stream, StreamExt as _};
 use tonic::Status;
 
-use crate::grpc::v2::{
-    client::InterceptedService,
-    error::CantonError,
-    retry::{RetryConfig, RetryHandler},
-};
+use crate::grpc::v2::{client::InterceptedService, error::CantonError};
 
 /// Wrapped for [`svc_proto::StateServiceClient`]
 #[derive(Clone, Debug)]
@@ -44,7 +41,7 @@ impl StateServiceClient {
     /// Get the current ledger end.
     ///
     /// Subscriptions started with the returned offset will serve events after this RPC was called.
-    pub async fn get_ledger_end(&mut self) -> Result<i64, CantonError> {
+    pub async fn get_ledger_end(&self) -> Result<i64, CantonError> {
         let request = GetLedgerEndRequest {
             // This client method returns only ledger end, so we set synchronizer_id to empty
             synchronizer_id: Vec::new(),
@@ -52,7 +49,9 @@ impl StateServiceClient {
         let response = self
             .retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.get_ledger_end(req).await
+                svc.get_ledger_end(req)
+                    .await
+                    .map_err(CantonError::from_status)
             })
             .await?;
         Ok(response.offset)
@@ -66,7 +65,7 @@ impl StateServiceClient {
     /// request. Clients SHOULD NOT assume that the set of active contracts they receive reflects
     /// the state at the ledger end.
     pub async fn get_active_contracts(
-        &mut self,
+        &self,
         active_at_offset: i64,
         event_format: EventFormat,
         stream_continuation_token: Option<Vec<u8>>,
@@ -80,7 +79,9 @@ impl StateServiceClient {
         let streaming = self
             .retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.get_active_contracts(req).await
+                svc.get_active_contracts(req)
+                    .await
+                    .map_err(CantonError::from_status)
             })
             .await?;
 

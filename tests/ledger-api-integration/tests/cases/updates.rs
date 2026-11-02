@@ -44,7 +44,7 @@ async fn updates_by_id_offset_and_bounded_stream_are_consistent(sandbox: &Sandbo
         assert_transaction(&by_id, &raw);
         assert_transaction(&by_offset, &raw);
     }
-    let mut service = ctx.client.update();
+    let service = ctx.client.update();
     let stream = ok(service.get_updates(begin, Some(expected[1].offset), ctx.updates())).await;
     tokio::pin!(stream);
     let received = within(async {

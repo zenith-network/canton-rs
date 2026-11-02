@@ -1,7 +1,10 @@
 //! Structured RPC, Daml, and streaming failures.
 
 use canton::types::PackageId;
-use ledger_api::grpc::v2::error::{CantonError, CategoryId, ErrorCodeId};
+use ledger_api::{
+    canton_base::error::{CategoryId, ErrorCodeId},
+    grpc::v2::error::{CantonError, LedgerErrorExt as _},
+};
 use ledger_api_integration::integration::{Finish, Read, Reject};
 use ledger_api_proto::com::daml::ledger::api::v2 as p;
 use ledger_api_types::v2::*;
@@ -188,9 +191,9 @@ async fn structured_daml_failure(sandbox: &Sandbox, state_dependent: bool) {
         .get_details_error_info()
         .expect("DAML_FAILURE ErrorInfo");
     assert_eq!(info.reason, "DAML_FAILURE");
-    assert_eq!(error.code(), raw.code());
+    assert_eq!(error.canton_error().code(), raw.code());
     assert_eq!(
-        error.category_id(),
+        error.canton_error().category_id(),
         if state_dependent {
             CategoryId::InvalidGivenCurrentSystemStateOther
         } else {
@@ -198,20 +201,33 @@ async fn structured_daml_failure(sandbox: &Sandbox, state_dependent: bool) {
         }
     );
     assert_eq!(
-        i32::from(error.category_id()),
+        i32::from(error.canton_error().category_id()),
         info.metadata["category"].parse::<i32>().unwrap()
     );
     assert_eq!(error.error_id(), Some("integration.canton-rs/rejected"));
     assert_eq!(
-        error.metadata().get("fixture").map(String::as_str),
+        error
+            .canton_error()
+            .metadata()
+            .get("fixture")
+            .map(String::as_str),
         Some("Sample")
     );
     assert_eq!(
-        error.metadata().get("detail").map(String::as_str),
+        error
+            .canton_error()
+            .metadata()
+            .get("detail")
+            .map(String::as_str),
         Some("controlled")
     );
     assert_eq!(info.metadata["error_id"], error.error_id().unwrap());
-    assert!(error.full_message().starts_with("DAML_FAILURE"));
+    assert!(
+        error
+            .canton_error()
+            .full_message()
+            .starts_with("DAML_FAILURE")
+    );
     assert_eq!(
         error.failure_message(),
         Some("Controlled rejection: payload is unacceptable"),
@@ -263,7 +279,7 @@ async fn streaming_error_is_decoded_when_the_stream_is_consumed(sandbox: &Sandbo
             .await
             .expect_err("expected streaming error"),
     };
-    let mut service = ctx.client.update();
+    let service = ctx.client.update();
     let error = match within(service.get_updates(offset, Some(offset + 1), ctx.updates())).await {
         Err(error) => error,
         Ok(stream) => {

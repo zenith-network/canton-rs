@@ -212,7 +212,7 @@ async fn exercise_by_key_and_keyed_event_queries(sandbox: &Sandbox) {
         _1: ctx.owner.clone(),
         _2: value.label.clone(),
     };
-    let mut query = ctx.event_query();
+    let query = ctx.event_query();
     let before = ok(query.get_events_by_contract_id_keyed(cid.clone(), ctx.events(true))).await;
     let event = before.created.expect("keyed create");
     assert_eq!(event.create_arguments, value);

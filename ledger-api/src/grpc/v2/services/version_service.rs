@@ -1,3 +1,4 @@
+use canton_base::retry::{RetryConfig, RetryHandler};
 use canton_version::semver::Version;
 use ledger_api_proto::com::daml::ledger::api::v2::{
     GetLedgerApiVersionRequest, GetLedgerApiVersionResponse, version_service_client as svc_proto,
@@ -8,11 +9,7 @@ use ledger_api_types::{
 };
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
-use crate::grpc::v2::{
-    client::InterceptedService,
-    error::CantonError,
-    retry::{RetryConfig, RetryHandler},
-};
+use crate::grpc::v2::{client::InterceptedService, error::CantonError};
 
 /// Wrapped for [`svc_proto::VersionServiceClient`]
 #[derive(Clone, Debug)]
@@ -39,12 +36,13 @@ impl VersionServiceClient {
     }
 
     /// Read the Ledger API version
-    pub async fn get_ledger_api_version(&mut self) -> Result<ApiVersion, CantonError> {
+    pub async fn get_ledger_api_version(&self) -> Result<ApiVersion, CantonError> {
         let response = self
             .retry_handler
             .call(&self.service, &(), |mut svc, _| async move {
                 svc.get_ledger_api_version(GetLedgerApiVersionRequest {})
                     .await
+                    .map_err(CantonError::from_status)
             })
             .await?;
 
@@ -56,12 +54,13 @@ impl VersionServiceClient {
     /// Comparing to [`get_ledger_api_version`][VersionServiceClient::get_ledger_api_version()],
     /// this one doesn't decode the feature descriptor. This allows to check the version without
     /// failing on descriptor decoding.
-    pub async fn get_server_version(&mut self) -> Result<Version, CantonError> {
+    pub async fn get_server_version(&self) -> Result<Version, CantonError> {
         let response = self
             .retry_handler
             .call(&self.service, &(), |mut svc, _| async move {
                 svc.get_ledger_api_version(GetLedgerApiVersionRequest {})
                     .await
+                    .map_err(CantonError::from_status)
             })
             .await?;
         Version::parse(&response.version)

@@ -20,7 +20,7 @@ async fn packages_match_fixture_dar(sandbox: &Sandbox) {
         .main_dalf()
         .expect("read main fixture DALF");
     assert_eq!(main_dalf.hash().to_package_id(), package);
-    let mut service = ctx.client.package();
+    let service = ctx.client.package();
     let packages = ok(service.list_packages()).await;
     let raw = ok(
         p::package_service_client::PackageServiceClient::new(ctx.channel.clone())

@@ -17,7 +17,7 @@ async fn submission_and_successful_completion_match_raw_stream(sandbox: &Sandbox
     let ctx = Context::new(sandbox).await;
     let begin = ok(ctx.client.state().get_ledger_end()).await;
     let cmds = ctx.commands(ctx.sample().create().erase());
-    let mut completion = ctx.completion();
+    let completion = ctx.completion();
     let mut raw_service = p::command_completion_service_client::CommandCompletionServiceClient::new(
         ctx.channel.clone(),
     );
@@ -160,7 +160,7 @@ async fn rejected_completion_preserves_server_error_details(sandbox: &Sandbox) {
     let begin = ok(ctx.client.state().get_ledger_end()).await;
     let mut duplicate = cmds.clone();
     duplicate.with_random_submission_id();
-    let mut completion = ctx.completion();
+    let completion = ctx.completion();
     let mut raw_service = p::command_completion_service_client::CommandCompletionServiceClient::new(
         ctx.channel.clone(),
     );

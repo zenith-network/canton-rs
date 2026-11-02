@@ -1,3 +1,4 @@
+use canton_base::retry::{RetryConfig, RetryHandler};
 use ledger_api_proto::com::daml::ledger::api::v2::{
     self as proto, CompletionStreamRequest, CompletionStreamResponse,
     command_completion_service_client as svc_proto,
@@ -11,11 +12,7 @@ use protobuf_utils::RequiredProtoField as _;
 use tokio_stream::{Stream, StreamExt as _};
 use tonic::Status;
 
-use crate::grpc::v2::{
-    client::InterceptedService,
-    error::CantonError,
-    retry::{RetryConfig, RetryHandler},
-};
+use crate::grpc::v2::{client::InterceptedService, error::CantonError};
 
 /// Wrapped for [`svc_proto::CommandCompletionServiceClient`]
 ///
@@ -73,7 +70,7 @@ impl CommandCompletionServiceClient {
     ///   (positive integer) or zero (ledger begin offset). If the ledger has been pruned, this
     ///   parameter must be specified and greater than the pruning offset.
     pub async fn completion_stream(
-        &mut self,
+        &self,
         user_id: Option<UserId>,
         parties: NonEmpty<PartyId>,
         begin_exclusive: i64,
@@ -87,7 +84,9 @@ impl CommandCompletionServiceClient {
         let streaming = self
             .retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.completion_stream(req).await
+                svc.completion_stream(req)
+                    .await
+                    .map_err(CantonError::from_status)
             })
             .await?;
 

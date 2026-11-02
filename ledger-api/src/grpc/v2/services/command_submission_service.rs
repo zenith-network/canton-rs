@@ -1,13 +1,10 @@
+use canton_base::retry::{RetryConfig, RetryHandler};
 use ledger_api_proto::com::daml::ledger::api::v2::{
     SubmitRequest, command_submission_service_client as svc_proto,
 };
 use ledger_api_types::v2::Commands;
 
-use crate::grpc::v2::{
-    client::InterceptedService,
-    error::CantonError,
-    retry::{RetryConfig, RetryHandler},
-};
+use crate::grpc::v2::{client::InterceptedService, error::CantonError};
 
 /// Wrapped for [`svc_proto::CommandSubmissionServiceClient`]
 ///
@@ -51,14 +48,14 @@ impl CommandSubmissionServiceClient {
     }
 
     /// Submit a single composite command
-    pub async fn submit(&mut self, commands: Commands) -> Result<(), CantonError> {
+    pub async fn submit(&self, commands: Commands) -> Result<(), CantonError> {
         let request = SubmitRequest {
             commands: Some(commands.into()),
         };
 
         self.retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.submit(req).await
+                svc.submit(req).await.map_err(CantonError::from_status)
             })
             .await?;
 

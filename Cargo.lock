@@ -995,13 +995,14 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 name = "ledger-api"
 version = "0.1.0"
 dependencies = [
+ "canton-base",
  "canton-version",
  "http",
  "ledger-api-proto",
  "ledger-api-types",
- "prost",
- "prost-types",
+ "pretty_assertions",
  "protobuf-utils",
+ "rstest",
  "thiserror",
  "tokio",
  "tokio-stream",

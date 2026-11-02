@@ -2,7 +2,10 @@
 
 use std::collections::HashMap;
 
-use ledger_api::grpc::v2::error::{CantonError, DecodedCantonError};
+use ledger_api::{
+    canton_base::error::{CantonError as BaseCantonError, DecodedCantonError},
+    grpc::v2::error::CantonError,
+};
 use pretty_assertions::assert_eq;
 use tonic_types::StatusExt;
 
@@ -11,7 +14,7 @@ use super::strings;
 /// Require a structured Canton error, retaining other variants in failure diagnostics.
 pub fn expect_decoded(error: CantonError) -> DecodedCantonError {
     match error {
-        CantonError::Decoded(error) => error,
+        CantonError::CantonError(BaseCantonError::Decoded(error)) => error,
         other => panic!("expected enriched error, got {other:#?}"),
     }
 }

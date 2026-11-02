@@ -14,7 +14,7 @@ use crate::support::*;
 async fn typed_and_untyped_event_queries_before_and_after_archive(sandbox: &Sandbox) {
     let ctx = Context::new(sandbox).await;
     let (sample, create, cid) = ctx.create().await;
-    let mut query = ctx.event_query();
+    let query = ctx.event_query();
     let before = ok(query.get_events_by_contract_id(cid.clone(), ctx.events(true))).await;
     assert_eq!(before.created.unwrap().create_arguments, sample);
     assert!(before.archived.is_none());

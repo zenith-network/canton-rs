@@ -1,5 +1,6 @@
 use std::num::NonZeroU32;
 
+use canton_base::retry::{RetryConfig, RetryHandler};
 use ledger_api_proto::com::daml::ledger::api::v2::admin::{
     self as proto, party_management_service_client as svc_proto,
 };
@@ -13,11 +14,7 @@ use ledger_api_types::{
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 use uuid::Uuid;
 
-use crate::grpc::v2::{
-    client::InterceptedService,
-    error::CantonError,
-    retry::{RetryConfig, RetryHandler},
-};
+use crate::grpc::v2::{client::InterceptedService, error::CantonError};
 
 /// Wrapped for [`svc_proto::PartyManagementServiceClient`]
 ///
@@ -84,13 +81,15 @@ impl PartyManagementServiceClient {
     /// If the user is providing the hint, the party won't be allocated for the second time, but
     /// the error may still be returned (`INVALID_ARGUMENT`, `"Party already exists: ..."`).
     pub async fn allocate_party(
-        &mut self,
+        &self,
         request: AllocatePartyRequest,
     ) -> Result<PartyDetails, CantonError> {
         let request = proto::AllocatePartyRequest::from(request);
         self.retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.allocate_party(req).await
+                svc.allocate_party(req)
+                    .await
+                    .map_err(CantonError::from_status)
             })
             .await?
             .party_details
@@ -105,11 +104,12 @@ impl PartyManagementServiceClient {
     /// Return the identifier of the participant.
     ///
     /// All horizontally scaled replicas should return the same ID.
-    pub async fn get_participant_id(&mut self) -> Result<ParticipantId, CantonError> {
+    pub async fn get_participant_id(&self) -> Result<ParticipantId, CantonError> {
         self.retry_handler
             .call(&self.service, &(), |mut svc, _| async move {
                 svc.get_participant_id(proto::GetParticipantIdRequest {})
                     .await
+                    .map_err(CantonError::from_status)
             })
             .await?
             .participant_id
@@ -128,7 +128,7 @@ impl PartyManagementServiceClient {
     ///   not set, assume the party is managed by the default identity provider or party is not
     ///   hosted by the participant.
     pub async fn get_parties(
-        &mut self,
+        &self,
         parties: Vec<PartyId>,
         identity_provider_id: Option<LedgerString>,
     ) -> Result<Vec<PartyDetails>, CantonError> {
@@ -139,7 +139,7 @@ impl PartyManagementServiceClient {
 
         self.retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.get_parties(req).await
+                svc.get_parties(req).await.map_err(CantonError::from_status)
             })
             .await?
             .party_details
@@ -181,7 +181,7 @@ impl PartyManagementServiceClient {
     ///   node starting with the given prefix. This can either be just a string or extend up to the
     ///   full identifier.
     pub async fn list_known_parties(
-        &mut self,
+        &self,
         page_token: Option<PageStringToken>,
         page_size: Option<NonZeroU32>,
         identity_provider_id: Option<LedgerString>,
@@ -204,7 +204,9 @@ impl PartyManagementServiceClient {
         let response = self
             .retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.list_known_parties(req).await
+                svc.list_known_parties(req)
+                    .await
+                    .map_err(CantonError::from_status)
             })
             .await?;
 

@@ -1,3 +1,4 @@
+use canton_base::retry::{RetryConfig, RetryHandler};
 use ledger_api_proto::com::daml::ledger::api::v2::{
     SubmitAndWaitForTransactionRequest, SubmitAndWaitForTransactionResponse, SubmitAndWaitRequest,
     SubmitAndWaitResponse, command_service_client as svc_proto,
@@ -9,11 +10,7 @@ use ledger_api_types::{
 };
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
-use crate::grpc::v2::{
-    client::InterceptedService,
-    error::CantonError,
-    retry::{RetryConfig, RetryHandler},
-};
+use crate::grpc::v2::{client::InterceptedService, error::CantonError};
 
 /// Convenient wrapper for [`svc_proto::CommandServiceClient`]
 #[derive(Clone, Debug)]
@@ -42,7 +39,7 @@ impl CommandServiceClient {
     /// Submits a single composite command and waits for its result. Propagates the gRPC error of
     /// failed submissions including Daml interpretation errors.
     pub async fn submit_and_wait(
-        &mut self,
+        &self,
         commands: Commands,
     ) -> Result<UpdateIdAndOffset, CantonError> {
         let response = self
@@ -74,7 +71,9 @@ impl CommandServiceClient {
                     // DUPLICATE_COMMAND errors. From that error directly we can only recover
                     // completion offset, but not update ID. So this probably means we need to
                     // change the output type of this function and handle this case properly.
-                    svc.submit_and_wait(request).await
+                    svc.submit_and_wait(request)
+                        .await
+                        .map_err(CantonError::from_status)
                 },
             )
             .await?;
@@ -91,7 +90,7 @@ impl CommandServiceClient {
     /// Submits a single composite command, waits for its result, and returns the transaction.
     /// Propagates the gRPC error of failed submissions including Daml interpretation errors.
     pub async fn submit_and_wait_for_transaction<S: TxShape>(
-        &mut self,
+        &self,
         commands: Commands,
         format: Option<TransactionFormat<S>>,
     ) -> Result<Transaction<S::Event>, CantonError> {
@@ -119,7 +118,9 @@ impl CommandServiceClient {
                         commands: Some(cmds.into()),
                         transaction_format: txformat,
                     };
-                    svc.submit_and_wait_for_transaction(request).await
+                    svc.submit_and_wait_for_transaction(request)
+                        .await
+                        .map_err(CantonError::from_status)
                 },
             )
             .await?;

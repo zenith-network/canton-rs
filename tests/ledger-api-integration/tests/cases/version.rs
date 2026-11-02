@@ -1,6 +1,6 @@
 //! Connections and version metadata.
 
-use ledger_api::grpc::v2::{client::CantonClient, retry::RetryConfig};
+use ledger_api::{canton_base::retry::RetryConfig, grpc::v2::client::CantonClient};
 use ledger_api_proto::com::daml::ledger::api::v2 as p;
 use pretty_assertions::assert_eq;
 

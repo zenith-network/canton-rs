@@ -1,15 +1,16 @@
 //! Participant connections, isolated identities, and fixture commands.
 
 use canton::types::{ContractId, LedgerString, NonEmpty, PartyId, UserId};
-use ledger_api::grpc::v2::{
-    auth::AuthInterceptor,
-    client::CantonClient,
-    retry::RetryConfig,
-    services::{
-        AllocatePartyRequest, CommandCompletionServiceClient, CommandSubmissionServiceClient,
-        EventQueryServiceClient,
+use ledger_api::{
+    canton_base::{auth::interceptor::AuthInterceptor, retry::RetryConfig},
+    grpc::v2::{
+        client::CantonClient,
+        services::{
+            AllocatePartyRequest, CommandCompletionServiceClient, CommandSubmissionServiceClient,
+            EventQueryServiceClient,
+        },
+        tracing_layer::GrpcTracing,
     },
-    tracing_layer::GrpcTracing,
 };
 use ledger_api_integration::integration::{Keyed, Sample};
 use ledger_api_proto::com::daml::ledger::api::v2 as p;

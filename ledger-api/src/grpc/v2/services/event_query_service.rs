@@ -1,3 +1,4 @@
+use canton_base::retry::{RetryConfig, RetryHandler};
 use ledger_api_proto::com::daml::ledger::api::v2::{
     self as proto, GetEventsByContractIdRequest, event_query_service_client as svc_proto,
 };
@@ -11,11 +12,7 @@ use ledger_api_types::{
 };
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
-use crate::grpc::v2::{
-    client::InterceptedService,
-    error::CantonError,
-    retry::{RetryConfig, RetryHandler},
-};
+use crate::grpc::v2::{client::InterceptedService, error::CantonError};
 
 /// Wrapped for [`svc_proto::EventQueryServiceClient`]
 ///
@@ -50,7 +47,7 @@ impl EventQueryServiceClient {
     /// request, or all the contract-events are filtered, a `CONTRACT_EVENTS_NOT_FOUND` error will
     /// be raised.
     pub async fn get_events_by_contract_id<T: TemplateValue>(
-        &mut self,
+        &self,
         contract_id: ContractId<T>,
         event_format: EventFormat,
     ) -> Result<CreatedAndArchived<Created<T>, Archived<T>>, CantonError> {
@@ -79,7 +76,7 @@ impl EventQueryServiceClient {
     ///
     /// This method is the same but additionally handles keyed templates
     pub async fn get_events_by_contract_id_keyed<T: TemplateValueWithKey>(
-        &mut self,
+        &self,
         contract_id: ContractId<T>,
         event_format: EventFormat,
     ) -> Result<CreatedAndArchived<CreatedWithKey<T>, Archived<T>>, CantonError> {
@@ -108,7 +105,7 @@ impl EventQueryServiceClient {
     ///
     /// This method is the same, but returns non-casted event types
     pub async fn get_events_by_contract_id_any(
-        &mut self,
+        &self,
         contract_id: ContractId,
         event_format: EventFormat,
     ) -> Result<CreatedAndArchived<CreatedEvent, ArchivedEvent>, CantonError> {
@@ -120,7 +117,9 @@ impl EventQueryServiceClient {
         let response = self
             .retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.get_events_by_contract_id(req).await
+                svc.get_events_by_contract_id(req)
+                    .await
+                    .map_err(CantonError::from_status)
             })
             .await?;
 

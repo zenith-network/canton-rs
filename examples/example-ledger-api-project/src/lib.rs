@@ -1,9 +1,7 @@
 use canton::{
     ledger_api::{
-        grpc::v2::{
-            client::CantonClient,
-            retry::{CantonRetryPolicy, RetryConfig},
-        },
+        canton_base::retry::{CantonRetryPolicy, RetryConfig},
+        grpc::v2::client::CantonClient,
         types::{
             v2::{
                 AcsDelta, ArchivedEvent, ChoiceValue, Commands, CreatedEvent, Event, EventFormat,

@@ -3,6 +3,7 @@ pub mod grpc;
 pub use ledger_api_types as types;
 
 // Re-export
+pub use canton_base;
 pub use canton_version;
 pub use tonic;
 pub use tower;

@@ -1,5 +1,9 @@
 use std::{mem, sync::Arc, time::Duration};
 
+use canton_base::{
+    auth::interceptor::AuthInterceptor,
+    retry::{RetryConfig, RetryHandler},
+};
 use canton_version::semver::Version;
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_types::value::v2::errors::IntoValueError as _;
@@ -8,9 +12,7 @@ use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 
 use crate::grpc::v2::{
-    auth::AuthInterceptor,
     error::{CantonError, ClientBuildError, UnsupportedServerVersion},
-    retry::{RetryConfig, RetryHandler},
     services::{
         ApiVersion, CommandServiceClient, PackageServiceClient, PartyManagementServiceClient,
         StateServiceClient, UpdateServiceClient, VersionServiceClient,
@@ -238,12 +240,13 @@ impl CantonClient {
                 self.interceptor.clone(),
             )
             .max_decoding_message_size(self.max_decoding_message_size);
-        let mut retry_handler = self.retry_handler.clone();
 
-        let response = retry_handler
+        let response = self
+            .retry_handler
             .call(&version_service, &(), |mut svc, _| async move {
                 svc.get_ledger_api_version(proto::GetLedgerApiVersionRequest {})
                     .await
+                    .map_err(CantonError::from_status)
             })
             .await?;
 

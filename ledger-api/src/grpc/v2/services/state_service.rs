@@ -12,7 +12,7 @@ use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 use tokio_stream::{Stream, StreamExt as _};
 use tonic::Status;
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{client::InterceptedService, error::LedgerApiError};
 
 /// Wrapped for [`svc_proto::StateServiceClient`]
 #[derive(Clone, Debug)]
@@ -41,7 +41,7 @@ impl StateServiceClient {
     /// Get the current ledger end.
     ///
     /// Subscriptions started with the returned offset will serve events after this RPC was called.
-    pub async fn get_ledger_end(&self) -> Result<i64, CantonError> {
+    pub async fn get_ledger_end(&self) -> Result<i64, LedgerApiError> {
         let request = GetLedgerEndRequest {
             // This client method returns only ledger end, so we set synchronizer_id to empty
             synchronizer_id: Vec::new(),
@@ -51,7 +51,7 @@ impl StateServiceClient {
             .call(&self.service, &request, |mut svc, req| async move {
                 svc.get_ledger_end(req)
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
         Ok(response.offset)
@@ -69,7 +69,8 @@ impl StateServiceClient {
         active_at_offset: i64,
         event_format: EventFormat,
         stream_continuation_token: Option<Vec<u8>>,
-    ) -> Result<impl Stream<Item = Result<ActiveContractResponse, CantonError>>, CantonError> {
+    ) -> Result<impl Stream<Item = Result<ActiveContractResponse, LedgerApiError>>, LedgerApiError>
+    {
         let request = GetActiveContractsRequest {
             active_at_offset,
             event_format: Some(event_format.into()),
@@ -81,15 +82,15 @@ impl StateServiceClient {
             .call(&self.service, &request, |mut svc, req| async move {
                 svc.get_active_contracts(req)
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
 
         let converter = |result: Result<GetActiveContractsResponse, Status>| {
             result
-                .map_err(CantonError::from)?
+                .map_err(LedgerApiError::from)?
                 .try_into()
-                .map_err(CantonError::value_error)
+                .map_err(LedgerApiError::value_error)
         };
 
         Ok(streaming.map(converter))

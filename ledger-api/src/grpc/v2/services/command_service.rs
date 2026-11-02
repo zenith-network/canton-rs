@@ -10,7 +10,7 @@ use ledger_api_types::{
 };
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{client::InterceptedService, error::LedgerApiError};
 
 /// Convenient wrapper for [`svc_proto::CommandServiceClient`]
 #[derive(Clone, Debug)]
@@ -41,7 +41,7 @@ impl CommandServiceClient {
     pub async fn submit_and_wait(
         &self,
         commands: Commands,
-    ) -> Result<UpdateIdAndOffset, CantonError> {
+    ) -> Result<UpdateIdAndOffset, LedgerApiError> {
         let response = self
             .retry_handler
             .call_with_attempt(
@@ -73,7 +73,7 @@ impl CommandServiceClient {
                     // change the output type of this function and handle this case properly.
                     svc.submit_and_wait(request)
                         .await
-                        .map_err(CantonError::from_status)
+                        .map_err(LedgerApiError::from_status)
                 },
             )
             .await?;
@@ -82,7 +82,7 @@ impl CommandServiceClient {
             update_id: LedgerString::new(response.update_id)
                 .validated_of::<SubmitAndWaitResponse>("update_id")
                 .no_msg()
-                .map_err(CantonError::value_error)?,
+                .map_err(LedgerApiError::value_error)?,
             completion_offset: response.completion_offset,
         })
     }
@@ -93,7 +93,7 @@ impl CommandServiceClient {
         &self,
         commands: Commands,
         format: Option<TransactionFormat<S>>,
-    ) -> Result<Transaction<S::Event>, CantonError> {
+    ) -> Result<Transaction<S::Event>, LedgerApiError> {
         let transaction_format = format.map(Into::into);
 
         let response = self
@@ -120,7 +120,7 @@ impl CommandServiceClient {
                     };
                     svc.submit_and_wait_for_transaction(request)
                         .await
-                        .map_err(CantonError::from_status)
+                        .map_err(LedgerApiError::from_status)
                 },
             )
             .await?;
@@ -129,7 +129,7 @@ impl CommandServiceClient {
             .transaction
             .required_of::<SubmitAndWaitForTransactionResponse>("transaction")
             .no_msg()
-            .map_err(CantonError::value_error)?
+            .map_err(LedgerApiError::value_error)?
             .try_into()
             .map_err(Into::into)
     }

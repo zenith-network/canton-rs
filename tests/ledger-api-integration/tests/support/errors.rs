@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use ledger_api::{
     canton_base::error::{CantonError as BaseCantonError, DecodedCantonError},
-    grpc::v2::error::CantonError,
+    grpc::v2::error::LedgerApiError,
 };
 use pretty_assertions::assert_eq;
 use tonic_types::StatusExt;
@@ -12,9 +12,9 @@ use tonic_types::StatusExt;
 use super::strings;
 
 /// Require a structured Canton error, retaining other variants in failure diagnostics.
-pub fn expect_decoded(error: CantonError) -> DecodedCantonError {
+pub fn expect_decoded(error: LedgerApiError) -> DecodedCantonError {
     match error {
-        CantonError::CantonError(BaseCantonError::Decoded(error)) => error,
+        LedgerApiError::CantonError(BaseCantonError::Decoded(error)) => error,
         other => panic!("expected enriched error, got {other:#?}"),
     }
 }

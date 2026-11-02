@@ -4,7 +4,7 @@ use ledger_api_proto::com::daml::ledger::api::v2::{
 };
 use ledger_api_types::v2::Commands;
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{client::InterceptedService, error::LedgerApiError};
 
 /// Wrapped for [`svc_proto::CommandSubmissionServiceClient`]
 ///
@@ -48,14 +48,14 @@ impl CommandSubmissionServiceClient {
     }
 
     /// Submit a single composite command
-    pub async fn submit(&self, commands: Commands) -> Result<(), CantonError> {
+    pub async fn submit(&self, commands: Commands) -> Result<(), LedgerApiError> {
         let request = SubmitRequest {
             commands: Some(commands.into()),
         };
 
         self.retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.submit(req).await.map_err(CantonError::from_status)
+                svc.submit(req).await.map_err(LedgerApiError::from_status)
             })
             .await?;
 

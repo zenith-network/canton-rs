@@ -194,10 +194,9 @@ impl fmt::Display for DamlFailure {
     }
 }
 
-// TODO: rename this type to `LedgerApiError`
 /// Error during interaction with Ledger API
 #[derive(Debug, Error)]
-pub enum CantonError {
+pub enum LedgerApiError {
     /// Base Canton error
     #[error(transparent)]
     CantonError(#[from] BaseCantonError),
@@ -219,7 +218,7 @@ pub enum CantonError {
     UnsupportedServerVersion(#[from] UnsupportedServerVersion),
 }
 
-impl CantonError {
+impl LedgerApiError {
     pub fn from_status(status: Status) -> Self {
         let base_error = BaseCantonError::from_status(status);
         if let BaseCantonError::Decoded(decoded) = base_error {
@@ -241,13 +240,13 @@ impl CantonError {
     }
 }
 
-impl From<Status> for CantonError {
+impl From<Status> for LedgerApiError {
     fn from(status: Status) -> Self {
         Self::from_status(status)
     }
 }
 
-impl RetryableError for CantonError {
+impl RetryableError for LedgerApiError {
     fn retry_after(&self, config: &mut RetryConfig, ctx: &RetryCtx) -> Option<Sleep> {
         match self {
             Self::CantonError(canton_error) => canton_error.retry_after(config, ctx),

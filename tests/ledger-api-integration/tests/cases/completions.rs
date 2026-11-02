@@ -1,7 +1,7 @@
 //! Asynchronous submissions and completion responses.
 
 use canton::types::NonEmpty;
-use ledger_api::grpc::v2::{error::CantonError, services::CompletionResponse};
+use ledger_api::grpc::v2::{error::LedgerApiError, services::CompletionResponse};
 use ledger_api_integration::integration::Sample;
 use ledger_api_proto::com::daml::ledger::api::v2 as p;
 use ledger_api_types::v2::*;
@@ -100,7 +100,7 @@ async fn matching_raw_completion(
 
 async fn matching_sdk_completion<S>(stream: &mut S, command: &str) -> Completion
 where
-    S: tokio_stream::Stream<Item = Result<CompletionResponse, CantonError>> + Unpin,
+    S: tokio_stream::Stream<Item = Result<CompletionResponse, LedgerApiError>> + Unpin,
 {
     within(async {
         loop {

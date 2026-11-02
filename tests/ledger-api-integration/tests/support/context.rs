@@ -4,7 +4,7 @@ use canton::types::{ContractId, LedgerString, NonEmpty, PartyId, UserId};
 use ledger_api::{
     canton_base::{auth::interceptor::AuthInterceptor, retry::RetryConfig},
     grpc::v2::{
-        client::CantonClient,
+        client::LedgerApiClient,
         services::{
             AllocatePartyRequest, CommandCompletionServiceClient, CommandSubmissionServiceClient,
             EventQueryServiceClient,
@@ -26,7 +26,7 @@ use super::{Sandbox, created, endpoint, id, ok, payload};
 /// to check visibility filters. Parties are allocated through the SDK; the
 /// generated user-management client grants the owner's command rights.
 pub struct Context {
-    pub client: CantonClient,
+    pub client: LedgerApiClient,
     pub channel: Channel,
     pub owner: PartyId,
     pub observer: PartyId,
@@ -41,7 +41,7 @@ impl Context {
             .unwrap()
             .connect())
         .await;
-        let client = ok(CantonClient::builder(endpoint(sandbox))
+        let client = ok(LedgerApiClient::builder(endpoint(sandbox))
             .with_retry_config(RetryConfig::no_retry())
             .connect())
         .await;
@@ -190,7 +190,7 @@ impl Context {
 }
 
 /// Allocate each setup party through the public SDK client with a unique hint.
-async fn allocate_party(client: &CantonClient, prefix: &str) -> PartyId {
+async fn allocate_party(client: &LedgerApiClient, prefix: &str) -> PartyId {
     let hint = PartyId::new(id(prefix).to_string()).unwrap();
     ok(client
         .party_management()

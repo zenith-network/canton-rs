@@ -12,7 +12,7 @@ use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 
 use crate::grpc::v2::{
-    error::{CantonError, ClientBuildError, UnsupportedServerVersion},
+    error::{ClientBuildError, LedgerApiError, UnsupportedServerVersion},
     services::{
         ApiVersion, CommandServiceClient, PackageServiceClient, PartyManagementServiceClient,
         StateServiceClient, UpdateServiceClient, VersionServiceClient,
@@ -30,21 +30,21 @@ type InnerChannel = crate::grpc::v2::tracing_layer::GrpcTracing<Channel>;
 pub(crate) type InterceptedService =
     tonic::service::interceptor::InterceptedService<InnerChannel, AuthInterceptor>;
 
-/// Builder for constructing a [`CantonClient`] with TLS and authentication.
+/// Builder for constructing a [`LedgerApiClient`] with TLS and authentication.
 ///
 /// # Example
 ///
 /// ```rust,no_run
 /// # async fn example() {
-/// # use ledger_api::grpc::v2::client::CantonClientBuilder;
-/// let client = CantonClientBuilder::new("https://localhost:5001")
+/// # use ledger_api::grpc::v2::client::LedgerApiClientBuilder;
+/// let client = LedgerApiClientBuilder::new("https://localhost:5001")
 ///     .with_token("my-jwt-token")
 ///     .connect()
 ///     .await
 ///     .unwrap();
 /// # }
 /// ```
-pub struct CantonClientBuilder {
+pub struct LedgerApiClientBuilder {
     endpoint: String,
     #[cfg(feature = "_tls-any")]
     tls_config: Option<ClientTlsConfig>,
@@ -55,7 +55,7 @@ pub struct CantonClientBuilder {
     keep_alive_timeout: Duration,
 }
 
-impl CantonClientBuilder {
+impl LedgerApiClientBuilder {
     pub fn new(endpoint: impl Into<String>) -> Self {
         Self {
             endpoint: endpoint.into(),
@@ -64,8 +64,8 @@ impl CantonClientBuilder {
             token: None,
             max_decoding_message_size: None,
             retry_config: RetryConfig::default(),
-            http2_keep_alive_interval: CantonClient::DEFAULT_HTTP2_KEEP_ALIVE_INTERVAL,
-            keep_alive_timeout: CantonClient::DEFAULT_KEEP_ALIVE_TIMEOUT,
+            http2_keep_alive_interval: LedgerApiClient::DEFAULT_HTTP2_KEEP_ALIVE_INTERVAL,
+            keep_alive_timeout: LedgerApiClient::DEFAULT_KEEP_ALIVE_TIMEOUT,
         }
     }
 
@@ -82,7 +82,7 @@ impl CantonClientBuilder {
 
     /// Max decoding message size will be set for all services returned by the client
     ///
-    /// If not set, defaults to [`CantonClient::DEFAULT_MAX_RECV_MESSAGE_SIZE`].
+    /// If not set, defaults to [`LedgerApiClient::DEFAULT_MAX_RECV_MESSAGE_SIZE`].
     pub fn with_max_decoding_message_size(mut self, size: usize) -> Self {
         self.max_decoding_message_size = Some(size);
         self
@@ -105,7 +105,7 @@ impl CantonClientBuilder {
     }
 
     /// Build the client, connected to the API
-    pub async fn connect(mut self) -> Result<CantonClient, ClientBuildError> {
+    pub async fn connect(mut self) -> Result<LedgerApiClient, ClientBuildError> {
         let endpoint = self.build_endpoint()?;
         let channel = endpoint.connect().await?;
 
@@ -120,8 +120,8 @@ impl CantonClientBuilder {
     /// This method uses lazy connection. The actual connection will be established on the first
     /// call to some RPC method.
     ///
-    /// If you want to establish connection immediately, use [`CantonClientBuilder::connect`].
-    pub fn connect_lazy(mut self) -> Result<CantonClient, ClientBuildError> {
+    /// If you want to establish connection immediately, use [`LedgerApiClientBuilder::connect`].
+    pub fn connect_lazy(mut self) -> Result<LedgerApiClient, ClientBuildError> {
         let endpoint = self.build_endpoint()?;
         let channel = endpoint.connect_lazy();
         Ok(self.build_client_with_channel(channel))
@@ -149,7 +149,7 @@ impl CantonClientBuilder {
         Ok(endpoint)
     }
 
-    fn build_client_with_channel(self, channel: Channel) -> CantonClient {
+    fn build_client_with_channel(self, channel: Channel) -> LedgerApiClient {
         #[cfg(feature = "tracing")]
         let channel = crate::grpc::v2::tracing_layer::GrpcTracing::new(channel);
 
@@ -157,9 +157,9 @@ impl CantonClientBuilder {
 
         let max_decoding_message_size = self
             .max_decoding_message_size
-            .unwrap_or(CantonClient::DEFAULT_MAX_RECV_MESSAGE_SIZE);
+            .unwrap_or(LedgerApiClient::DEFAULT_MAX_RECV_MESSAGE_SIZE);
 
-        CantonClient {
+        LedgerApiClient {
             channel,
             interceptor,
             max_decoding_message_size,
@@ -171,7 +171,7 @@ impl CantonClientBuilder {
 
 /// A connected Canton Ledger API client.
 #[derive(Clone)]
-pub struct CantonClient {
+pub struct LedgerApiClient {
     channel: InnerChannel,
     interceptor: AuthInterceptor,
     max_decoding_message_size: usize,
@@ -179,7 +179,7 @@ pub struct CantonClient {
     server_caps: Arc<RwLock<Option<ApiVersion>>>,
 }
 
-impl CantonClient {
+impl LedgerApiClient {
     /// 128 MiB (default for Canton client, used in original Scala client code)
     pub const DEFAULT_MAX_RECV_MESSAGE_SIZE: usize = 0x8000000;
 
@@ -191,8 +191,8 @@ impl CantonClient {
     pub const DEFAULT_HTTP2_KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(20);
     pub const DEFAULT_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
 
-    pub fn builder(endpoint: impl Into<String>) -> CantonClientBuilder {
-        CantonClientBuilder::new(endpoint)
+    pub fn builder(endpoint: impl Into<String>) -> LedgerApiClientBuilder {
+        LedgerApiClientBuilder::new(endpoint)
     }
 
     /// Set a new retry configuration for the client
@@ -231,7 +231,7 @@ impl CantonClient {
     /// because the underlying channel could be silently re-created. Given that, in your application
     /// it might be a good idea to run this resolution periodically, thus making error messages more
     /// precise.
-    pub async fn resolve_server_capabilities(&self) -> Result<(), CantonError> {
+    pub async fn resolve_server_capabilities(&self) -> Result<(), LedgerApiError> {
         // We use a raw service without a wrapper to decode the features descriptor based on the
         // supported version. VersionServiceClient wrapper doesn't allow that.
         let version_service =
@@ -246,7 +246,7 @@ impl CantonClient {
             .call(&version_service, &(), |mut svc, _| async move {
                 svc.get_ledger_api_version(proto::GetLedgerApiVersionRequest {})
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
 

@@ -16,7 +16,7 @@ use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 use tokio_stream::{Stream, StreamExt as _};
 use tonic::Status;
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{client::InterceptedService, error::LedgerApiError};
 
 // FIXME: add topology tx type
 /// Update type of [`UpdateServiceClient::get_updates()`]
@@ -70,7 +70,8 @@ impl UpdateServiceClient {
         begin_exclusive: i64,
         end_inclusive: Option<i64>,
         update_format: UpdateFormat<S>,
-    ) -> Result<impl Stream<Item = Result<StreamingUpdate<S>, CantonError>>, CantonError> {
+    ) -> Result<impl Stream<Item = Result<StreamingUpdate<S>, LedgerApiError>>, LedgerApiError>
+    {
         let request = GetUpdatesRequest {
             begin_exclusive,
             end_inclusive,
@@ -81,7 +82,9 @@ impl UpdateServiceClient {
         let streaming = self
             .retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.get_updates(req).await.map_err(CantonError::from_status)
+                svc.get_updates(req)
+                    .await
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
         // we only retry on the initial request
@@ -89,16 +92,16 @@ impl UpdateServiceClient {
 
         let converter = |result: Result<GetUpdatesResponse, Status>| -> Result<
             StreamingUpdate<S>,
-            CantonError,
+            LedgerApiError,
         > {
             result
-                .map_err(CantonError::from)?
+                .map_err(LedgerApiError::from)?
                 .update
                 .required_of::<GetUpdatesResponse>("update")
                 .with_msg("updates stream yielded bad item")
-                .map_err(CantonError::value_error)?
+                .map_err(LedgerApiError::value_error)?
                 .try_into()
-                .map_err(CantonError::value_error)
+                .map_err(LedgerApiError::value_error)
         };
 
         Ok(streaming.map(converter))
@@ -112,7 +115,7 @@ impl UpdateServiceClient {
         &self,
         update_id: LedgerString,
         update_format: UpdateFormat<S>,
-    ) -> Result<SingleUpdate<S>, CantonError> {
+    ) -> Result<SingleUpdate<S>, LedgerApiError> {
         let request = GetUpdateByIdRequest {
             update_id: update_id.into(),
             update_format: Some(update_format.into()),
@@ -123,7 +126,7 @@ impl UpdateServiceClient {
             .call(&self.service, &request, |mut svc, req| async move {
                 svc.get_update_by_id(req)
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
 
@@ -131,10 +134,10 @@ impl UpdateServiceClient {
             .update
             .required_of::<GetUpdateResponse>("update")
             .no_msg()
-            .map_err(CantonError::value_error)?
+            .map_err(LedgerApiError::value_error)?
             .try_into()
             .no_msg()
-            .map_err(CantonError::value_error)
+            .map_err(LedgerApiError::value_error)
     }
 
     /// Lookup an update by its offset.
@@ -145,7 +148,7 @@ impl UpdateServiceClient {
         &self,
         offset: i64,
         update_format: UpdateFormat<S>,
-    ) -> Result<SingleUpdate<S>, CantonError> {
+    ) -> Result<SingleUpdate<S>, LedgerApiError> {
         let request = GetUpdateByOffsetRequest {
             offset,
             update_format: Some(update_format.into()),
@@ -156,7 +159,7 @@ impl UpdateServiceClient {
             .call(&self.service, &request, |mut svc, req| async move {
                 svc.get_update_by_offset(req)
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
 
@@ -164,9 +167,9 @@ impl UpdateServiceClient {
             .update
             .required_of::<GetUpdateResponse>("update")
             .no_msg()
-            .map_err(CantonError::value_error)?
+            .map_err(LedgerApiError::value_error)?
             .try_into()
-            .map_err(CantonError::value_error)
+            .map_err(LedgerApiError::value_error)
     }
 
     /// Read a page of ledger's filtered updates.
@@ -184,7 +187,7 @@ impl UpdateServiceClient {
         max_page_size: Option<i32>,
         update_format: UpdateFormat<S>,
         page_token: Option<PageBytesToken>,
-    ) -> Result<UpdatesPage<S>, CantonError> {
+    ) -> Result<UpdatesPage<S>, LedgerApiError> {
         let request = GetUpdatesPageRequest {
             begin_offset_exclusive: begin_exclusive,
             end_offset_inclusive: end_inclusive,
@@ -199,7 +202,7 @@ impl UpdateServiceClient {
             .call(&self.service, &request, |mut svc, req| async move {
                 svc.get_updates_page(req)
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
 
@@ -212,9 +215,9 @@ impl UpdateServiceClient {
                         .update
                         .required_of::<GetUpdateResponse>("update")
                         .no_msg()
-                        .map_err(CantonError::value_error)?
+                        .map_err(LedgerApiError::value_error)?
                         .try_into()
-                        .map_err(CantonError::value_error)
+                        .map_err(LedgerApiError::value_error)
                 })
                 .collect::<Result<_, _>>()?,
             next_page_token: PageBytesToken::try_from_proto(response.next_page_token)

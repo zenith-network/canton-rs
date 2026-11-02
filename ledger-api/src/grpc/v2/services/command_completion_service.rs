@@ -12,7 +12,7 @@ use protobuf_utils::RequiredProtoField as _;
 use tokio_stream::{Stream, StreamExt as _};
 use tonic::Status;
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{client::InterceptedService, error::LedgerApiError};
 
 /// Wrapped for [`svc_proto::CommandCompletionServiceClient`]
 ///
@@ -74,7 +74,8 @@ impl CommandCompletionServiceClient {
         user_id: Option<UserId>,
         parties: NonEmpty<PartyId>,
         begin_exclusive: i64,
-    ) -> Result<impl Stream<Item = Result<CompletionResponse, CantonError>>, CantonError> {
+    ) -> Result<impl Stream<Item = Result<CompletionResponse, LedgerApiError>>, LedgerApiError>
+    {
         let request = CompletionStreamRequest {
             user_id: user_id.map(Into::into).unwrap_or_default(),
             parties: parties.into_iter().map(Into::into).collect(),
@@ -86,21 +87,21 @@ impl CommandCompletionServiceClient {
             .call(&self.service, &request, |mut svc, req| async move {
                 svc.completion_stream(req)
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
 
         // we don't retry on item errors, user is supposed to re-create the stream in that case
         let convertor =
-            |response: Result<CompletionStreamResponse, Status>| -> Result<CompletionResponse, CantonError> {
+            |response: Result<CompletionStreamResponse, Status>| -> Result<CompletionResponse, LedgerApiError> {
                 response
-                    .map_err(CantonError::from)?
+                    .map_err(LedgerApiError::from)?
                     .completion_response
                     .required_of::<CompletionStreamResponse>("completion_response")
                     .with_msg("completion stream yielded bad item")
-                    .map_err(CantonError::value_error)?
+                    .map_err(LedgerApiError::value_error)?
                     .try_into()
-                    .map_err(CantonError::value_error)
+                    .map_err(LedgerApiError::value_error)
             };
 
         Ok(streaming.map(convertor))

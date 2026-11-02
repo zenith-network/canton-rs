@@ -12,7 +12,7 @@ use ledger_api_types::{
 };
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{client::InterceptedService, error::LedgerApiError};
 
 /// Wrapped for [`svc_proto::EventQueryServiceClient`]
 ///
@@ -50,7 +50,7 @@ impl EventQueryServiceClient {
         &self,
         contract_id: ContractId<T>,
         event_format: EventFormat,
-    ) -> Result<CreatedAndArchived<Created<T>, Archived<T>>, CantonError> {
+    ) -> Result<CreatedAndArchived<Created<T>, Archived<T>>, LedgerApiError> {
         let event = self
             .get_events_by_contract_id_any(contract_id.into_any(), event_format)
             .await?;
@@ -60,14 +60,14 @@ impl EventQueryServiceClient {
             .map(CreatedEvent::cast)
             .transpose()
             .map_err(|err| ValueError::raw_message_owned(format!("{err}"))) // FIXME: this is hacky
-            .map_err(CantonError::value_error)?;
+            .map_err(LedgerApiError::value_error)?;
 
         let archived = event
             .archived
             .map(ArchivedEvent::cast)
             .transpose()
             .map_err(|err| ValueError::raw_message_owned(format!("{err}"))) // FIXME: this is hacky
-            .map_err(CantonError::value_error)?;
+            .map_err(LedgerApiError::value_error)?;
 
         Ok(CreatedAndArchived { created, archived })
     }
@@ -79,7 +79,7 @@ impl EventQueryServiceClient {
         &self,
         contract_id: ContractId<T>,
         event_format: EventFormat,
-    ) -> Result<CreatedAndArchived<CreatedWithKey<T>, Archived<T>>, CantonError> {
+    ) -> Result<CreatedAndArchived<CreatedWithKey<T>, Archived<T>>, LedgerApiError> {
         let event = self
             .get_events_by_contract_id_any(contract_id.into_any(), event_format)
             .await?;
@@ -89,14 +89,14 @@ impl EventQueryServiceClient {
             .map(CreatedEvent::cast_keyed)
             .transpose()
             .map_err(|err| ValueError::raw_message_owned(format!("{err}"))) // FIXME: this is hacky
-            .map_err(CantonError::value_error)?;
+            .map_err(LedgerApiError::value_error)?;
 
         let archived = event
             .archived
             .map(ArchivedEvent::cast)
             .transpose()
             .map_err(|err| ValueError::raw_message_owned(format!("{err}"))) // FIXME: this is hacky
-            .map_err(CantonError::value_error)?;
+            .map_err(LedgerApiError::value_error)?;
 
         Ok(CreatedAndArchived { created, archived })
     }
@@ -108,7 +108,7 @@ impl EventQueryServiceClient {
         &self,
         contract_id: ContractId,
         event_format: EventFormat,
-    ) -> Result<CreatedAndArchived<CreatedEvent, ArchivedEvent>, CantonError> {
+    ) -> Result<CreatedAndArchived<CreatedEvent, ArchivedEvent>, LedgerApiError> {
         let request = GetEventsByContractIdRequest {
             contract_id: contract_id.into(),
             event_format: Some(event_format.into()),
@@ -119,7 +119,7 @@ impl EventQueryServiceClient {
             .call(&self.service, &request, |mut svc, req| async move {
                 svc.get_events_by_contract_id(req)
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
 
@@ -130,11 +130,11 @@ impl EventQueryServiceClient {
                     .created_event
                     .required_of::<proto::Created>("created_event")
                     .no_msg()
-                    .map_err(CantonError::value_error)?
+                    .map_err(LedgerApiError::value_error)?
                     .try_into()
                     .validated_of::<proto::Created>("created_event")
                     .no_msg()
-                    .map_err(CantonError::value_error)
+                    .map_err(LedgerApiError::value_error)
             })
             .transpose()?;
 
@@ -145,11 +145,11 @@ impl EventQueryServiceClient {
                     .archived_event
                     .required_of::<proto::Archived>("archived_event")
                     .no_msg()
-                    .map_err(CantonError::value_error)?
+                    .map_err(LedgerApiError::value_error)?
                     .try_into()
                     .validated_of::<proto::Archived>("archived_event")
                     .no_msg()
-                    .map_err(CantonError::value_error)
+                    .map_err(LedgerApiError::value_error)
             })
             .transpose()?;
 

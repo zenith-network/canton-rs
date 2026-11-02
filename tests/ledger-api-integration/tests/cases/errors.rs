@@ -3,7 +3,7 @@
 use canton::types::PackageId;
 use ledger_api::{
     canton_base::error::{CategoryId, ErrorCodeId},
-    grpc::v2::error::{CantonError, LedgerErrorExt as _},
+    grpc::v2::error::{LedgerApiError, LedgerErrorExt as _},
 };
 use ledger_api_integration::integration::{Finish, Read, Reject};
 use ledger_api_proto::com::daml::ledger::api::v2 as p;
@@ -184,7 +184,7 @@ async fn structured_daml_failure(sandbox: &Sandbox, state_dependent: bool) {
     let error = within(ctx.client.command().submit_and_wait(command()))
         .await
         .unwrap_err();
-    let CantonError::Daml(error) = error else {
+    let LedgerApiError::Daml(error) = error else {
         panic!("expected Daml failure: {error:#?}")
     };
     let info = raw

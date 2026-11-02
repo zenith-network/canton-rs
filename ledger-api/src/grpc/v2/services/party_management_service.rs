@@ -14,7 +14,7 @@ use ledger_api_types::{
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 use uuid::Uuid;
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{client::InterceptedService, error::LedgerApiError};
 
 /// Wrapped for [`svc_proto::PartyManagementServiceClient`]
 ///
@@ -83,13 +83,13 @@ impl PartyManagementServiceClient {
     pub async fn allocate_party(
         &self,
         request: AllocatePartyRequest,
-    ) -> Result<PartyDetails, CantonError> {
+    ) -> Result<PartyDetails, LedgerApiError> {
         let request = proto::AllocatePartyRequest::from(request);
         self.retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
                 svc.allocate_party(req)
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?
             .party_details
@@ -98,25 +98,25 @@ impl PartyManagementServiceClient {
             .try_into()
             .validated_of::<proto::AllocatePartyResponse>("party_details")
             .no_msg()
-            .map_err(CantonError::value_error)
+            .map_err(LedgerApiError::value_error)
     }
 
     /// Return the identifier of the participant.
     ///
     /// All horizontally scaled replicas should return the same ID.
-    pub async fn get_participant_id(&self) -> Result<ParticipantId, CantonError> {
+    pub async fn get_participant_id(&self) -> Result<ParticipantId, LedgerApiError> {
         self.retry_handler
             .call(&self.service, &(), |mut svc, _| async move {
                 svc.get_participant_id(proto::GetParticipantIdRequest {})
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?
             .participant_id
             .try_into()
             .validated_of::<proto::GetParticipantIdResponse>("participant_id")
             .no_msg()
-            .map_err(CantonError::value_error)
+            .map_err(LedgerApiError::value_error)
     }
 
     /// Get the party details of the given parties. Only known parties will be returned in the list.
@@ -131,7 +131,7 @@ impl PartyManagementServiceClient {
         &self,
         parties: Vec<PartyId>,
         identity_provider_id: Option<LedgerString>,
-    ) -> Result<Vec<PartyDetails>, CantonError> {
+    ) -> Result<Vec<PartyDetails>, LedgerApiError> {
         let request = proto::GetPartiesRequest {
             parties: parties.into_iter().map(Into::into).collect(),
             identity_provider_id: identity_provider_id.map(Into::into).unwrap_or_default(),
@@ -139,7 +139,9 @@ impl PartyManagementServiceClient {
 
         self.retry_handler
             .call(&self.service, &request, |mut svc, req| async move {
-                svc.get_parties(req).await.map_err(CantonError::from_status)
+                svc.get_parties(req)
+                    .await
+                    .map_err(LedgerApiError::from_status)
             })
             .await?
             .party_details
@@ -149,7 +151,7 @@ impl PartyManagementServiceClient {
                 PartyDetails::try_from(pd)
                     .validated_of::<proto::GetPartiesResponse>("party_details")
                     .with_msg_owned(format!("failed to convert party_details[{idx}]"))
-                    .map_err(CantonError::value_error)
+                    .map_err(LedgerApiError::value_error)
             })
             .collect()
     }
@@ -186,7 +188,7 @@ impl PartyManagementServiceClient {
         page_size: Option<NonZeroU32>,
         identity_provider_id: Option<LedgerString>,
         filter_party: Option<String>,
-    ) -> Result<Page<PageStringToken, PartyDetails>, CantonError> {
+    ) -> Result<Page<PageStringToken, PartyDetails>, LedgerApiError> {
         let page_size = page_size
             // Instead of returning error, if users value is too big, I think it's better to just
             // cap to i32::MAX. This will anyway probably result in an error from the server,
@@ -206,7 +208,7 @@ impl PartyManagementServiceClient {
             .call(&self.service, &request, |mut svc, req| async move {
                 svc.list_known_parties(req)
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
 

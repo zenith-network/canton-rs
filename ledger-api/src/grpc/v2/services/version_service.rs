@@ -9,7 +9,7 @@ use ledger_api_types::{
 };
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
-use crate::grpc::v2::{client::InterceptedService, error::CantonError};
+use crate::grpc::v2::{client::InterceptedService, error::LedgerApiError};
 
 /// Wrapped for [`svc_proto::VersionServiceClient`]
 #[derive(Clone, Debug)]
@@ -36,17 +36,17 @@ impl VersionServiceClient {
     }
 
     /// Read the Ledger API version
-    pub async fn get_ledger_api_version(&self) -> Result<ApiVersion, CantonError> {
+    pub async fn get_ledger_api_version(&self) -> Result<ApiVersion, LedgerApiError> {
         let response = self
             .retry_handler
             .call(&self.service, &(), |mut svc, _| async move {
                 svc.get_ledger_api_version(GetLedgerApiVersionRequest {})
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
 
-        response.try_into().map_err(CantonError::value_error)
+        response.try_into().map_err(LedgerApiError::value_error)
     }
 
     /// Get the server version
@@ -54,13 +54,13 @@ impl VersionServiceClient {
     /// Comparing to [`get_ledger_api_version`][VersionServiceClient::get_ledger_api_version()],
     /// this one doesn't decode the feature descriptor. This allows to check the version without
     /// failing on descriptor decoding.
-    pub async fn get_server_version(&self) -> Result<Version, CantonError> {
+    pub async fn get_server_version(&self) -> Result<Version, LedgerApiError> {
         let response = self
             .retry_handler
             .call(&self.service, &(), |mut svc, _| async move {
                 svc.get_ledger_api_version(GetLedgerApiVersionRequest {})
                     .await
-                    .map_err(CantonError::from_status)
+                    .map_err(LedgerApiError::from_status)
             })
             .await?;
         Version::parse(&response.version)

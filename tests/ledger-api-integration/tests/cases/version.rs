@@ -1,6 +1,6 @@
 //! Connections and version metadata.
 
-use ledger_api::{canton_base::retry::RetryConfig, grpc::v2::client::CantonClient};
+use ledger_api::{canton_base::retry::RetryConfig, grpc::v2::client::LedgerApiClient};
 use ledger_api_proto::com::daml::ledger::api::v2 as p;
 use pretty_assertions::assert_eq;
 
@@ -17,7 +17,7 @@ async fn connection_and_version_match_real_participant(sandbox: &Sandbox) {
     )
     .await
     .into_inner();
-    let lazy = CantonClient::builder(endpoint(sandbox))
+    let lazy = LedgerApiClient::builder(endpoint(sandbox))
         .with_retry_config(RetryConfig::no_retry())
         .connect_lazy()
         .unwrap();

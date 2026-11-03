@@ -9,6 +9,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 
 [[package]]
+name = "admin-api"
+version = "0.1.0"
+dependencies = [
+ "admin-api-types",
+ "canton-base",
+ "canton-proto",
+ "canton-types",
+ "canton-version",
+ "chrono",
+ "http",
+ "protobuf-utils",
+ "thiserror",
+ "tonic",
+ "tracing",
+]
+
+[[package]]
+name = "admin-api-integration"
+version = "0.1.0"
+dependencies = [
+ "admin-api",
+ "admin-api-types",
+ "canton-base",
+ "pretty_assertions",
+ "sandbox",
+ "tokio",
+]
+
+[[package]]
 name = "admin-api-proto"
 version = "0.1.0"
 dependencies = [

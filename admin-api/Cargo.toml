@@ -1,0 +1,43 @@
+[package]
+name = "admin-api"
+version = "0.1.0"
+description = "Admin API client implementation"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["v30"]
+
+# Enables tracing
+tracing = ["dep:tracing", "canton-base/tracing"]
+
+# Enabling TLS cryptography provider
+tls-ring = ["tonic/tls-ring", "_tls-any"]
+tls-aws-lc = ["tonic/tls-aws-lc", "_tls-any"]
+
+# Enabling TLS certificate root sources support
+tls-webpki-roots = ["tonic/tls-webpki-roots", "_tls-any"]
+tls-native-roots = ["tonic/tls-native-roots", "_tls-any"]
+
+# Internal feature, don't use it
+_tls-any = []
+
+v30 = ["admin-api-types/v30"]
+
+[dependencies]
+admin-api-types = { workspace = true, features = ["v30"] }
+canton-base.workspace = true
+canton-proto = { workspace = true, features = [
+  "std",
+  "client",
+  "transport",
+  "prost-types-chrono",
+] }
+canton-types.workspace = true
+canton-version.workspace = true
+chrono.workspace = true
+http.workspace = true
+protobuf-utils.workspace = true
+thiserror.workspace = true
+tonic.workspace = true
+tracing = { workspace = true, optional = true }

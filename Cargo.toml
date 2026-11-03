@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "admin-api",
   "admin-api/proto",
   "admin-api/types",
   "canton",
@@ -21,6 +22,7 @@ members = [
   "ledger-api/value/derive",
   "ledger-api/value/proto",
   "protobuf-utils",
+  "tests/admin-api-integration",
   "tests/ledger-api-integration",
   "tests/sandbox",
   "tests/sandbox-macro",
@@ -28,6 +30,7 @@ members = [
 
 # Exclude dev crates
 default-members = [
+  "admin-api",
   "admin-api/proto",
   "admin-api/types",
   "canton",
@@ -120,6 +123,7 @@ canton-types-derive = { path = "canton/types/derive", default-features = false }
 canton-version = { path = "canton/version", default-features = false }
 
 # Admin API crates
+admin-api = { path = "admin-api", default-features = false }
 admin-api-proto = { path = "admin-api/proto", default-features = false }
 admin-api-types = { path = "admin-api/types", default-features = false }
 

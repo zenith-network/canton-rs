@@ -105,3 +105,49 @@ jobs:
           DPM_AUTO_INSTALL: "true"
         run: |
           cargo test --package ledger-api-integration --verbose --test ledger_api_integration
+
+  admin-api:
+    strategy:
+      fail-fast: false
+      matrix:
+        canton-version: ["3.5.19", "3.6.2"]
+    name: Admin API (Canton ${{ matrix.canton-version }})
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4.4.0
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: "1.99.0"
+          default: true
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install dpm and Daml SDK
+        uses: zenith-network/setup-daml@v1.0.0
+        with:
+          dpm-version: "1.0.22"
+          # We currently don't need an SDK for tests
+          # Specific Canton version is fetched automatically with DPM_AUTO_INSTALL=true
+          # Avoid API rate limit
+          github-token: ${{ github.token }}
+      - name: Install Java Runtime Environment
+        uses: actions/setup-java@v6.1.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          java-package: "jre"
+      - name: Use Rust cache
+        uses: Swatinem/rust-cache@v2.9.2
+        with:
+          key: canton-admin-api-${{ matrix.canton-version }}
+      - name: Run tests
+        env:
+          SANDBOX_CAPACITY: "2"
+          SANDBOX_IDLE_TIMEOUT_MS: "3000"
+          SANDBOX_BUILD_CANTON_VERSION: ${{ matrix.canton-version }}
+          DPM_AUTO_INSTALL: "true"
+        run: |
+          cargo test --package admin-api-integration --verbose --test admin_api_integration

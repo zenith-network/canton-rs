@@ -35,15 +35,17 @@ impl CantonError {
     /// Create base Canton error from `tonic` gRPC status
     pub fn from_status(status: Status) -> Self {
         if let Some(error) = DecodedCantonError::from_status(&status) {
-            Self::Decoded(error)
-        } else if let Some(error) = RedactedCantonError::from_status(&status) {
-            // If the error cannot be decoded, it may be a redacted error - they don't have
-            // error info
-            Self::Redacted(error)
-        } else {
-            // Fallback to raw gRPC status
-            Self::Raw(status)
+            return Self::Decoded(error);
         }
+
+        // If the error cannot be decoded, it may be a redacted error - they don't have
+        // error info
+        if let Some(error) = RedactedCantonError::from_status(&status) {
+            return Self::Redacted(error);
+        }
+
+        // Fallback to raw gRPC status
+        Self::Raw(status)
     }
 }
 

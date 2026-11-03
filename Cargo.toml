@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "admin-api/proto",
+  "admin-api/types",
   "canton",
   "canton/base",
   "canton/proto",
@@ -28,6 +29,7 @@ members = [
 # Exclude dev crates
 default-members = [
   "admin-api/proto",
+  "admin-api/types",
   "canton",
   "canton/base",
   "canton/proto",
@@ -119,6 +121,7 @@ canton-version = { path = "canton/version", default-features = false }
 
 # Admin API crates
 admin-api-proto = { path = "admin-api/proto", default-features = false }
+admin-api-types = { path = "admin-api/types", default-features = false }
 
 # Ledger API crates
 ledger-api = { path = "ledger-api", default-features = false }

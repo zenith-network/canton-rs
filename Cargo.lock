@@ -21,6 +21,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "admin-api-types"
+version = "0.1.0"
+dependencies = [
+ "protobuf-utils",
+ "thiserror",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

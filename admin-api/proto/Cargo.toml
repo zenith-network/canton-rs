@@ -23,6 +23,8 @@ transport = ["client", "tonic/channel"]
 # Enables std support
 std = ["prost/std", "prost-types/std"]
 
+prost-types-chrono = ["prost-types/chrono"]
+
 [dependencies]
 prost = { workspace = true, features = ["derive"] }
 prost-types.workspace = true

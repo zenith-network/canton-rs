@@ -18,6 +18,11 @@ transport = ["client", "tonic/channel", "admin-api-proto/transport"]
 # Enables std support
 std = ["prost/std", "prost-types/std", "admin-api-proto/std"]
 
+prost-types-chrono = [
+  "prost-types/chrono",
+  "admin-api-proto/prost-types-chrono",
+]
+
 [dependencies]
 admin-api-proto = { workspace = true }
 prost = { workspace = true, features = ["derive"] }

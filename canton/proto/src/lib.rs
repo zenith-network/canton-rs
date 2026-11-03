@@ -11,6 +11,9 @@
 pub mod com {
     pub mod digitalasset {
         pub mod canton {
+            // Re-export here for convenience
+            pub use admin_api_proto::com::digitalasset::canton::admin;
+
             pub mod connection {
                 pub mod v30 {
                     include!(concat!(

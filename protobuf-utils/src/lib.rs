@@ -151,3 +151,21 @@ impl<T, E: Error + 'static + Send + Sync> InvalidProtoField for Result<T, E> {
         self.map_err(|err| InvalidProtoFieldValue::new(pkg_name, msg_name, field_name, err))
     }
 }
+
+/// This error may be returned when enum value is `XXX_UNSPECIFIED`.
+///
+/// This case is not always an error, however it follows the Protobuf recommendations
+/// (see ["Do Include an Unspecified Value in an Enum"]). It's up to user to decide for each
+/// individual case whether to return an error, or do something else. This type just provides a
+/// reusable error type for such cases.
+///
+/// ["Do Include an Unspecified Value in an Enum"]: https://protobuf.dev/best-practices/dos-donts/#unspecified-enum
+#[derive(Debug, Default, thiserror::Error)]
+#[error("unspecified enum value")]
+pub struct UnspecifiedEnumValue {}
+
+impl UnspecifiedEnumValue {
+    pub fn new() -> Self {
+        Self {}
+    }
+}

@@ -93,3 +93,9 @@ pub mod com {
         }
     }
 }
+
+// Re-export crates which appear in public API
+pub use prost;
+pub use prost_types;
+#[cfg(any(feature = "client", feature = "server"))]
+pub use tonic;

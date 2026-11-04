@@ -123,5 +123,9 @@ pub mod google {
     }
 }
 
-// Re-export
+// Re-export crates which appear in public API
 pub use admin_api_proto;
+pub use prost;
+pub use prost_types;
+#[cfg(any(feature = "client", feature = "server"))]
+pub use tonic;

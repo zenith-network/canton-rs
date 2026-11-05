@@ -25,7 +25,7 @@ SANDBOX_BUILD_CANTON_VERSION=3.5.19 cargo test -p admin-api-integration --test a
 
 ## Coverage notes
 
-What is not covered by these tests (at least right now):
+What is **not** covered by these tests (at least right now):
 
 - authentication
 - TLS

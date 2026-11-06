@@ -65,7 +65,8 @@ jobs:
       matrix:
         canton-version: ["3.5.19", "3.6.2"]
     name: Ledger API (Canton ${{ matrix.canton-version }})
-    runs-on: ubuntu-24.04
+    # Dedicated larger runner
+    runs-on: ubuntu-latest-m
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4.4.0

@@ -3,5 +3,6 @@ pub mod grpc;
 pub use ledger_api_types as types;
 
 // Re-export
+pub use ledger_api_proto as proto;
 pub use tonic;
 pub use tower;

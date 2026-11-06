@@ -7,7 +7,7 @@ use canton_proto::com::digitalasset::canton as proto;
 use protobuf_utils::InvalidProtoField as _;
 use tonic::transport::{Channel, Endpoint};
 
-use crate::v30::error::AdminApiError;
+use crate::v30::{error::AdminApiError, services::ParticipantStatusClient};
 
 use super::error::ClientBuildError;
 
@@ -162,5 +162,17 @@ impl AdminApiClient {
         ApiName::parse(&response.name)
             .validated_of::<GetApiInfoResponse>("name")
             .map_err(AdminApiError::value_error)
+    }
+
+    /// Get a client of the participant status service.
+    pub fn participant_status(&self) -> ParticipantStatusClient {
+        use proto::admin::participant::v30::participant_status_service_client as svc_proto;
+
+        let service = svc_proto::ParticipantStatusServiceClient::with_interceptor(
+            self.channel.clone(),
+            self.interceptor.clone(),
+        );
+
+        ParticipantStatusClient::new(service, self.retry_handler.clone())
     }
 }

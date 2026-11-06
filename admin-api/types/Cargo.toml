@@ -9,5 +9,9 @@ default = ["v30"]
 v30 = []
 
 [dependencies]
+canton-proto = { workspace = true, features = ["prost-types-chrono"] }
+canton-types.workspace = true
+canton-version.workspace = true
+chrono.workspace = true
 protobuf-utils.workspace = true
 thiserror.workspace = true

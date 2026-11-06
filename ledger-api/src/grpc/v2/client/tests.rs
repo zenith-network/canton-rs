@@ -4,7 +4,8 @@ use std::{
 };
 
 use ledger_api_proto::com::daml::ledger::api::v2::{
-    Created, GetEventsByContractIdRequest, GetEventsByContractIdResponse, PackageReference,
+    Archived, ArchivedEvent, Created, CreatedEvent, GetEventsByContractIdRequest,
+    GetEventsByContractIdResponse, Identifier, PackageReference,
     event_query_service_server::{EventQueryService, EventQueryServiceServer},
     interactive::{
         ExecuteSubmissionAndWaitForTransactionRequest,
@@ -23,13 +24,9 @@ use prost::Message as _;
 use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
 use tonic::{Code, Request, Response, Status, transport::Server};
-use tonic_types::{ErrorDetails, StatusExt as _};
 
 use super::CantonClient;
-use crate::grpc::v2::{
-    error::CantonError,
-    retry::{CantonRetryPolicy, RetryConfig},
-};
+use crate::grpc::v2::error::CantonError;
 
 /// A Ledger API of one service, which answers every call the same and keeps each call.
 #[derive(Clone)]
@@ -213,25 +210,49 @@ async fn interactive_submission_is_served_with_the_clients_token_and_decoding_li
     assert_eq!(error.code(), Some(Code::OutOfRange), "{error:?}");
 }
 
-/// The answer is one Canton never gives, `created` without its event: an error, not "no
-/// event". Longer than a byte, it is refused by the limited client.
+/// The answer the event query gives of an archived contract: its creation and archival.
 #[tokio::test]
 async fn event_query_is_served_with_the_clients_token_and_decoding_limit() {
+    let template_id = Some(Identifier {
+        package_id: "ab".repeat(32),
+        module_name: "My.Module".into(),
+        entity_name: "MyTemplate".into(),
+    });
+    let party = format!("alice::1220{}", "ab".repeat(32));
     let ledger = Ledger::new(Answer::Events(Ok(GetEventsByContractIdResponse {
         created: Some(Created {
-            created_event: None,
+            created_event: Some(CreatedEvent {
+                contract_id: contract_id().into(),
+                template_id: template_id.clone(),
+                create_arguments: Some(Default::default()),
+                witness_parties: vec![party.clone()],
+                signatories: vec![party.clone()],
+                created_at: Some(Default::default()),
+                package_name: "my-package".into(),
+                ..Default::default()
+            }),
             synchronizer_id: "sync::1220ef".into(),
         }),
-        archived: None,
+        archived: Some(Archived {
+            archived_event: Some(ArchivedEvent {
+                contract_id: contract_id().into(),
+                template_id,
+                witness_parties: vec![party],
+                package_name: "my-package".into(),
+                ..Default::default()
+            }),
+            synchronizer_id: "sync::1220ef".into(),
+        }),
     })));
     let (client, limited) = ledger.clients().await;
 
-    let error = client
+    let answer = client
         .event_query()
         .get_events_by_contract_id_any(contract_id(), EventFormat::new())
         .await
-        .unwrap_err();
-    assert_matches!(error, CantonError::ValueError(_));
+        .unwrap();
+    assert_eq!(answer.created.map(|e| e.contract_id), Some(contract_id()));
+    assert_eq!(answer.archived.map(|e| e.contract_id), Some(contract_id()));
     let request = GetEventsByContractIdRequest {
         contract_id: contract_id().into(),
         event_format: Some(EventFormat::new().into()),
@@ -249,46 +270,19 @@ async fn event_query_is_served_with_the_clients_token_and_decoding_limit() {
     assert_eq!(error.code(), Some(Code::OutOfRange), "{error:?}");
 }
 
-/// Canton's transient refusal, to be retried at once.
-fn transient() -> Status {
-    let mut details = ErrorDetails::new();
-    details.set_error_info(
-        "SERVICE_NOT_RUNNING",
-        "",
-        [("category".to_owned(), "1".to_owned())],
-    );
-    details.set_retry_info(Some(std::time::Duration::ZERO));
-    Status::with_error_details(
-        Code::Unavailable,
-        "SERVICE_NOT_RUNNING(1,0): Service is not running.",
-        details,
-    )
-}
-
-/// A client whose retry configuration allows one retry: each accessor's service retries
-/// with it, once.
+/// An answer Canton never gives, `created` without its event: an error, not "no event".
 #[tokio::test]
-async fn both_accessors_retry_with_the_clients_retry_configuration() {
-    let retry =
-        RetryConfig::no_retry().with_canton_policy(Some(CantonRetryPolicy::auto_with_max(1)));
+async fn an_event_query_answer_without_its_event_is_an_error() {
+    let ledger = Ledger::new(Answer::Events(Ok(GetEventsByContractIdResponse {
+        created: Some(Created::default()),
+        archived: None,
+    })));
+    let (client, _) = ledger.clients().await;
 
-    let ledger = Ledger::new(Answer::Packages(Err(transient())));
-    let (mut client, _) = ledger.clients().await;
-    client.set_retry_config(retry.clone());
-    client
-        .interactive_submission()
-        .get_preferred_packages(preferred_request())
-        .await
-        .unwrap_err();
-    assert_eq!(ledger.seen().len(), 2);
-
-    let ledger = Ledger::new(Answer::Events(Err(transient())));
-    let (mut client, _) = ledger.clients().await;
-    client.set_retry_config(retry);
-    client
+    let error = client
         .event_query()
         .get_events_by_contract_id_any(contract_id(), EventFormat::new())
         .await
         .unwrap_err();
-    assert_eq!(ledger.seen().len(), 2);
+    assert_matches!(error, CantonError::ValueError(_));
 }

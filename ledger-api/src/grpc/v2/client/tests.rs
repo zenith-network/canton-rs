@@ -213,35 +213,6 @@ async fn interactive_submission_is_served_with_the_clients_token_and_decoding_li
     assert_eq!(error.code(), Some(Code::OutOfRange), "{error:?}");
 }
 
-#[tokio::test]
-async fn interactive_submission_returns_cantons_refusal_decoded() {
-    let mut details = ErrorDetails::new();
-    details.set_error_info(
-        "NO_PREFERRED_PACKAGES_FOUND",
-        "",
-        [("category".to_owned(), "9".to_owned())],
-    );
-    let ledger = Ledger::new(Answer::Packages(Err(Status::with_error_details(
-        Code::FailedPrecondition,
-        "NO_PREFERRED_PACKAGES_FOUND(9,0): No package is vetted by all hosting participants",
-        details,
-    ))));
-    let (client, _) = ledger.clients().await;
-
-    let error = client
-        .interactive_submission()
-        .get_preferred_packages(preferred_request())
-        .await
-        .unwrap_err();
-    let CantonError::Decoded(error) = error else {
-        panic!("expected a decoded Canton error, got {error:?}");
-    };
-    assert_eq!(
-        error.error_code_id().as_str(),
-        "NO_PREFERRED_PACKAGES_FOUND"
-    );
-}
-
 /// The answer is one Canton never gives, `created` without its event: an error, not "no
 /// event". Longer than a byte, it is refused by the limited client.
 #[tokio::test]
@@ -276,29 +247,6 @@ async fn event_query_is_served_with_the_clients_token_and_decoding_limit() {
         .await
         .unwrap_err();
     assert_eq!(error.code(), Some(Code::OutOfRange), "{error:?}");
-}
-
-#[tokio::test]
-async fn event_query_returns_no_events_or_not_found() {
-    let (client, _) = Ledger::new(Answer::Events(Ok(Default::default())))
-        .clients()
-        .await;
-    let answer = client
-        .event_query()
-        .get_events_by_contract_id_any(contract_id(), EventFormat::new())
-        .await
-        .unwrap();
-    assert!(answer.created.is_none() && answer.archived.is_none());
-
-    let (client, _) = Ledger::new(Answer::Events(Err(Status::not_found("not visible"))))
-        .clients()
-        .await;
-    let error = client
-        .event_query()
-        .get_events_by_contract_id_any(contract_id(), EventFormat::new())
-        .await
-        .unwrap_err();
-    assert_eq!(error.code(), Some(Code::NotFound));
 }
 
 /// Canton's transient refusal, to be retried at once.

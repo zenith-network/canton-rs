@@ -24,9 +24,13 @@ use prost::Message as _;
 use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
 use tonic::{Code, Request, Response, Status, transport::Server};
+use tonic_types::{ErrorDetails, StatusExt as _};
 
 use super::CantonClient;
-use crate::grpc::v2::error::CantonError;
+use crate::grpc::v2::{
+    error::CantonError,
+    retry::{CantonRetryPolicy, RetryConfig},
+};
 
 /// A Ledger API of one service, which answers every call the same and keeps each call.
 #[derive(Clone)]
@@ -285,4 +289,48 @@ async fn an_event_query_answer_without_its_event_is_an_error() {
         .await
         .unwrap_err();
     assert_matches!(error, CantonError::ValueError(_));
+}
+
+/// Canton's transient refusal, to be retried at once.
+fn transient() -> Status {
+    let mut details = ErrorDetails::new();
+    details.set_error_info(
+        "SERVICE_NOT_RUNNING",
+        "",
+        [("category".to_owned(), "1".to_owned())],
+    );
+    details.set_retry_info(Some(std::time::Duration::ZERO));
+    Status::with_error_details(
+        Code::Unavailable,
+        "SERVICE_NOT_RUNNING(1,0): Service is not running.",
+        details,
+    )
+}
+
+/// A client whose retry configuration allows one retry: each accessor's service retries
+/// with it, once.
+#[tokio::test]
+async fn both_accessors_retry_with_the_clients_retry_configuration() {
+    let retry =
+        RetryConfig::no_retry().with_canton_policy(Some(CantonRetryPolicy::auto_with_max(1)));
+
+    let ledger = Ledger::new(Answer::Packages(Err(transient())));
+    let (mut client, _) = ledger.clients().await;
+    client.set_retry_config(retry.clone());
+    client
+        .interactive_submission()
+        .get_preferred_packages(preferred_request())
+        .await
+        .unwrap_err();
+    assert_eq!(ledger.seen().len(), 2);
+
+    let ledger = Ledger::new(Answer::Events(Err(transient())));
+    let (mut client, _) = ledger.clients().await;
+    client.set_retry_config(retry);
+    client
+        .event_query()
+        .get_events_by_contract_id_any(contract_id(), EventFormat::new())
+        .await
+        .unwrap_err();
+    assert_eq!(ledger.seen().len(), 2);
 }

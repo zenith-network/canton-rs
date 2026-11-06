@@ -39,8 +39,10 @@ impl InteractiveSubmissionServiceClient {
     ///
     /// A preferred package is the highest-versioned package of a package name that is vetted
     /// by all the participants hosting the requirement's parties. If no selection satisfies
-    /// the requirements, a `FAILED_PRECONDITION` error is returned (Canton reports
-    /// `NO_PREFERRED_PACKAGES_FOUND`).
+    /// the requirements, a `FAILED_PRECONDITION` error is returned, with the error code id
+    /// `NO_PREFERRED_PACKAGES_FOUND`. Match that id to tell this answer apart:
+    /// `FAILED_PRECONDITION` alone also covers others, such as `PACKAGE_SELECTION_FAILED`
+    /// and `NOT_CONNECTED_TO_ANY_SYNCHRONIZER`.
     ///
     /// The endpoint is experimental in Canton: it is not guaranteed to stay backwards
     /// compatible.

@@ -67,7 +67,11 @@ impl CantonError {
         Self::ValueError(error.into())
     }
 
-    /// The gRPC code the Ledger API answered with, whatever variant the answer was parsed into
+    /// The gRPC code of the failed call, whatever variant the error was parsed into
+    ///
+    /// Usually the code the Ledger API answered with. [`Self::Raw`] also carries the statuses
+    /// tonic makes on the client side, such as `UNAVAILABLE` for a refused connection or
+    /// `OUT_OF_RANGE` for an answer over the decoding limit.
     ///
     /// `None` for [`Self::ValueError`]: the response was received, so there is no error code.
     pub fn code(&self) -> Option<Code> {

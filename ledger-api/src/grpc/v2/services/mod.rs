@@ -2,6 +2,7 @@ mod command_completion_service;
 mod command_service;
 mod command_submission_service;
 mod event_query_service;
+mod interactive_submission_service;
 mod package_service;
 mod party_management_service;
 mod state_service;
@@ -12,6 +13,7 @@ pub use command_completion_service::{CommandCompletionServiceClient, CompletionR
 pub use command_service::{CommandServiceClient, UpdateIdAndOffset};
 pub use command_submission_service::CommandSubmissionServiceClient;
 pub use event_query_service::{CreatedAndArchived, EventQueryServiceClient};
+pub use interactive_submission_service::InteractiveSubmissionServiceClient;
 pub use package_service::PackageServiceClient;
 pub use party_management_service::{KnownParty, PartyManagementServiceClient};
 pub use state_service::{ActiveContractResponse, StateServiceClient};

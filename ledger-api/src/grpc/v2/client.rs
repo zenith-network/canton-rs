@@ -8,8 +8,9 @@ use crate::grpc::v2::{
     error::ClientBuildError,
     retry::{RetryConfig, RetryHandler},
     services::{
-        CommandServiceClient, PackageServiceClient, PartyManagementServiceClient,
-        StateServiceClient, UpdateServiceClient, VersionServiceClient,
+        CommandServiceClient, EventQueryServiceClient, InteractiveSubmissionServiceClient,
+        PackageServiceClient, PartyManagementServiceClient, StateServiceClient,
+        UpdateServiceClient, VersionServiceClient,
     },
 };
 
@@ -210,6 +211,17 @@ impl CantonClient {
         )
     }
 
+    pub fn event_query(&self) -> EventQueryServiceClient {
+        EventQueryServiceClient::new(
+            proto::event_query_service_client::EventQueryServiceClient::with_interceptor(
+                self.channel.clone(),
+                self.interceptor.clone(),
+            )
+            .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
+        )
+    }
+
     pub fn state(&self) -> StateServiceClient {
         StateServiceClient::new(
             proto::state_service_client::StateServiceClient::with_interceptor(
@@ -224,6 +236,17 @@ impl CantonClient {
     pub fn package(&self) -> PackageServiceClient {
         PackageServiceClient::new(
             proto::package_service_client::PackageServiceClient::with_interceptor(
+                self.channel.clone(),
+                self.interceptor.clone(),
+            )
+            .max_decoding_message_size(self.max_decoding_message_size),
+            self.retry_handler.clone(),
+        )
+    }
+
+    pub fn interactive_submission(&self) -> InteractiveSubmissionServiceClient {
+        InteractiveSubmissionServiceClient::new(
+            proto::interactive::interactive_submission_service_client::InteractiveSubmissionServiceClient::with_interceptor(
                 self.channel.clone(),
                 self.interceptor.clone(),
             )
@@ -254,3 +277,6 @@ impl CantonClient {
         )
     }
 }
+
+#[cfg(test)]
+mod tests;

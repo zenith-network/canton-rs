@@ -66,6 +66,23 @@ impl CantonError {
     pub fn value_error(error: impl Into<ValueError>) -> Self {
         Self::ValueError(error.into())
     }
+
+    /// The gRPC code of the failed call, whatever variant the error was parsed into
+    ///
+    /// Usually the code the Ledger API answered with. [`Self::Raw`] also carries the statuses
+    /// tonic makes on the client side, such as `UNAVAILABLE` for a refused connection or
+    /// `OUT_OF_RANGE` for an answer over the decoding limit.
+    ///
+    /// `None` for [`Self::ValueError`]: the response was received, so there is no error code.
+    pub fn code(&self) -> Option<Code> {
+        match self {
+            Self::Decoded(error) => Some(error.code()),
+            Self::Daml(error) => Some(error.code()),
+            Self::Redacted(error) => Some(error.code()),
+            Self::Raw(status) => Some(status.code()),
+            Self::ValueError(_) => None,
+        }
+    }
 }
 
 impl From<Status> for CantonError {
@@ -671,6 +688,58 @@ mod tests {
         assert_eq!(error.code(), expected_code);
         assert_eq!(error.message(), expected_message);
         assert_eq!(error.request_id(), expected_request_id);
+    }
+
+    #[test]
+    fn code_is_the_answered_grpc_code_of_every_parsed_variant() {
+        use std::assert_matches;
+
+        // Each answered code differs from the one its category maps to, so the test tells
+        // them apart.
+        let decoded = CantonError::from(ledger_status(
+            Code::Aborted,
+            "CONTRACT_EVENTS_NOT_FOUND(11,cor-id-1): Contract events not found, or not visible.",
+            vec![
+                err(
+                    "CONTRACT_EVENTS_NOT_FOUND",
+                    &[("category", "11"), ("definite_answer", "false")],
+                ),
+                req(REQ_ID),
+            ],
+        ));
+        assert_matches!(decoded, CantonError::Decoded(..));
+        assert_eq!(decoded.code(), Some(Code::Aborted));
+
+        let daml = CantonError::from(ledger_status(
+            Code::InvalidArgument,
+            "DAML_FAILURE(9,cor-id-1): User failure: my.app/balance-err (error category 9): Balance too low",
+            vec![
+                err(
+                    "DAML_FAILURE",
+                    &[("category", "9"), ("error_id", "my.app/balance-err")],
+                ),
+                req(REQ_ID),
+            ],
+        ));
+        assert_matches!(daml, CantonError::Daml(..));
+        assert_eq!(daml.code(), Some(Code::InvalidArgument));
+
+        let redacted = CantonError::from(ledger_status(
+            Code::PermissionDenied,
+            REDACTED_WITH_REQ,
+            vec![req(REQ_ID)],
+        ));
+        assert_matches!(redacted, CantonError::Redacted(..));
+        assert_eq!(redacted.code(), Some(Code::PermissionDenied));
+
+        let raw = CantonError::from(Status::not_found("no such contract"));
+        assert_matches!(raw, CantonError::Raw(..));
+        assert_eq!(raw.code(), Some(Code::NotFound));
+
+        let value = CantonError::value_error(
+            ledger_api_types::value::v2::errors::ValueError::raw_message("bad field"),
+        );
+        assert_eq!(value.code(), None);
     }
 
     #[test]

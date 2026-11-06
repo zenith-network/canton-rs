@@ -690,8 +690,10 @@ mod tests {
     fn code_is_the_answered_grpc_code_of_every_parsed_variant() {
         use std::assert_matches;
 
+        // Each answered code differs from the one its category maps to, so the test tells
+        // them apart.
         let decoded = CantonError::from(ledger_status(
-            Code::NotFound,
+            Code::Aborted,
             "CONTRACT_EVENTS_NOT_FOUND(11,cor-id-1): Contract events not found, or not visible.",
             vec![
                 err(
@@ -702,10 +704,10 @@ mod tests {
             ],
         ));
         assert_matches!(decoded, CantonError::Decoded(..));
-        assert_eq!(decoded.code(), Some(Code::NotFound));
+        assert_eq!(decoded.code(), Some(Code::Aborted));
 
         let daml = CantonError::from(ledger_status(
-            Code::FailedPrecondition,
+            Code::InvalidArgument,
             "DAML_FAILURE(9,cor-id-1): User failure: my.app/balance-err (error category 9): Balance too low",
             vec![
                 err(
@@ -716,7 +718,7 @@ mod tests {
             ],
         ));
         assert_matches!(daml, CantonError::Daml(..));
-        assert_eq!(daml.code(), Some(Code::FailedPrecondition));
+        assert_eq!(daml.code(), Some(Code::InvalidArgument));
 
         let redacted = CantonError::from(ledger_status(
             Code::PermissionDenied,

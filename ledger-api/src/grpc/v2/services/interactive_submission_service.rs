@@ -10,6 +10,8 @@ use crate::grpc::v2::{
 };
 
 /// Wrapped for [`svc_proto::InteractiveSubmissionServiceClient`]
+///
+/// Only `GetPreferredPackages` is wrapped, and it takes and returns the proto messages.
 #[derive(Clone, Debug)]
 pub struct InteractiveSubmissionServiceClient {
     service: svc_proto::InteractiveSubmissionServiceClient<InterceptedService>,
@@ -37,8 +39,8 @@ impl InteractiveSubmissionServiceClient {
     ///
     /// A preferred package is the highest-versioned package of a package name that is vetted
     /// by all the participants hosting the requirement's parties. If no selection satisfies
-    /// the requirements, a `FAILED_PRECONDITION` error (`NO_PREFERRED_PACKAGES_FOUND`) is
-    /// returned.
+    /// the requirements, a `FAILED_PRECONDITION` error is returned (Canton reports
+    /// `NO_PREFERRED_PACKAGES_FOUND`).
     ///
     /// The endpoint is experimental in Canton: it is not guaranteed to stay backwards
     /// compatible.

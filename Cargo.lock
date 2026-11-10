@@ -53,6 +53,10 @@ dependencies = [
 name = "admin-api-types"
 version = "0.1.0"
 dependencies = [
+ "canton-proto",
+ "canton-types",
+ "canton-version",
+ "chrono",
  "protobuf-utils",
  "thiserror",
 ]

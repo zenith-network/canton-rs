@@ -7,8 +7,11 @@ publish = false
 
 [dev-dependencies]
 admin-api = { workspace = true, features = ["v30", "tracing"] }
+admin-api-proto = { workspace = true, features = ["transport"] }
 admin-api-types = { workspace = true, features = ["v30"] }
 canton-base.workspace = true
+canton-types.workspace = true
 pretty_assertions.workspace = true
 sandbox.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }
+tonic = { workspace = true, features = ["transport"] }

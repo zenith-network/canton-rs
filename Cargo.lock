@@ -30,11 +30,14 @@ name = "admin-api-integration"
 version = "0.1.0"
 dependencies = [
  "admin-api",
+ "admin-api-proto",
  "admin-api-types",
  "canton-base",
+ "canton-types",
  "pretty_assertions",
  "sandbox",
  "tokio",
+ "tonic",
 ]
 
 [[package]]

@@ -16,6 +16,7 @@ mod party_id;
 mod synchronizer_id;
 mod text_map;
 mod traits;
+mod u31;
 mod user_id;
 
 pub mod topology;
@@ -41,6 +42,7 @@ pub use text_map::TextMap;
 pub use traits::{
     Choice, Implements, Interface, Requires, Template, TemplateOrInterface, TemplateWithKey,
 };
+pub use u31::U31;
 pub use user_id::UserId;
 
 /// Error types

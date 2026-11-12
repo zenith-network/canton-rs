@@ -4,6 +4,7 @@
 mod api_name;
 
 pub mod error;
+pub mod protocol;
 pub mod topology;
 
 #[cfg(feature = "v30")]

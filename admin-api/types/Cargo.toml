@@ -9,9 +9,13 @@ default = ["v30"]
 v30 = []
 
 [dependencies]
+canton-crypto.workspace = true
 canton-proto = { workspace = true, features = ["prost-types-chrono"] }
 canton-types.workspace = true
 canton-version.workspace = true
 chrono.workspace = true
+hex = { workspace = true, features = ["alloc"] }
+multihash = { workspace = true, features = ["alloc"] }
+multihash-codetable = { workspace = true, features = ["sha2"] }
 protobuf-utils.workspace = true
 thiserror.workspace = true

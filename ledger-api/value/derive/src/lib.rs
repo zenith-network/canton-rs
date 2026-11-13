@@ -96,7 +96,7 @@ fn collect_err_chain<E: std::error::Error + ?Sized>(error: &E) -> Vec<String> {
 
 enum Attr<T> {
     Fixed { attr: T, span: Span },
-    Expr(Expr),
+    Expr(Box<Expr>),
 }
 
 impl<T> Attr<T> {
@@ -105,7 +105,7 @@ impl<T> Attr<T> {
     }
 
     pub fn expr(expr: Expr) -> Self {
-        Self::Expr(expr)
+        Self::Expr(Box::new(expr))
     }
 }
 

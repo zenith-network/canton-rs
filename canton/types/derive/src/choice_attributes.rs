@@ -10,7 +10,7 @@ use crate::collect_err_chain;
 
 pub enum NameAttr {
     Fixed(Name),
-    Expr(Expr),
+    Expr(Box<Expr>),
 }
 
 impl NameAttr {
@@ -24,7 +24,7 @@ impl NameAttr {
 
             Ok(Self::Fixed(name))
         } else {
-            Ok(Self::Expr(expr))
+            Ok(Self::Expr(Box::new(expr)))
         }
     }
 

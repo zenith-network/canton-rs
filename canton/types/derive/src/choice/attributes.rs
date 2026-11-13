@@ -8,7 +8,7 @@ use crate::collect_err_chain;
 #[derive(Clone)]
 pub enum NameAttr {
     Fixed(Name),
-    Expr(Expr),
+    Expr(Box<Expr>),
 }
 
 #[derive(Clone)]
@@ -113,7 +113,7 @@ impl ChoiceAttributes {
                 .map_err(|err| Error::new(expr.span(), collect_err_chain(&err).join(": ")))?;
             Ok(NameAttr::Fixed(name))
         } else {
-            Ok(NameAttr::Expr(expr))
+            Ok(NameAttr::Expr(Box::new(expr)))
         }
     }
 }

@@ -1,0 +1,19 @@
+[package]
+name = "canton-proto-types"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["v30"]
+v30 = ["canton-crypto/v30"]
+
+[dependencies]
+canton-crypto.workspace = true
+canton-proto = { workspace = true, features = ["std", "prost-types-chrono"] }
+canton-types.workspace = true
+hex = { workspace = true, features = ["alloc"] }
+multihash = { workspace = true, features = ["alloc"] }
+multihash-codetable = { workspace = true, features = ["sha2"] }
+protobuf-utils.workspace = true
+thiserror.workspace = true

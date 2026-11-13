@@ -310,6 +310,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "canton-proto-types"
+version = "0.1.0"
+dependencies = [
+ "canton-crypto",
+ "canton-proto",
+ "canton-types",
+ "hex",
+ "multihash",
+ "multihash-codetable",
+ "protobuf-utils",
+ "thiserror",
+]
+
+[[package]]
 name = "canton-types"
 version = "0.1.0"
 dependencies = [

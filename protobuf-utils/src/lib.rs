@@ -100,6 +100,13 @@ impl InvalidProtoFieldValue {
             source: Box::new(source),
         }
     }
+
+    pub fn new_of<T: prost::Name>(
+        field_name: impl Into<String>,
+        source: impl Error + 'static + Send + Sync,
+    ) -> Self {
+        Self::new(T::PACKAGE, T::NAME, field_name, source)
+    }
 }
 
 /// Helper trait to deal with validating protobuf fields

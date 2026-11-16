@@ -12,7 +12,7 @@ pub enum SigningKeysWithThresholdError {
     ZeroThreshold,
 
     #[error("multiple keys with the same fingerprint are not allowed")]
-    DuplicatingKeys,
+    DuplicateFingerprints,
 
     #[error(transparent)]
     SigningPublicKeyError(#[from] SigningPublicKeyError),
@@ -37,7 +37,7 @@ impl SigningKeysWithThreshold {
         for key in keys.iter() {
             let fingerprint = key.as_decoded()?.fingerprint()?;
             if !fingerprints.insert(fingerprint) {
-                return Err(SigningKeysWithThresholdError::DuplicatingKeys);
+                return Err(SigningKeysWithThresholdError::DuplicateFingerprints);
             }
         }
 
@@ -91,7 +91,7 @@ impl TryFrom<proto::SigningKeysWithThreshold> for SigningKeysWithThreshold {
                 let field_name = match error {
                     SigningKeysWithThresholdError::ZeroThreshold => "threshold",
                     SigningKeysWithThresholdError::SigningPublicKeyError(_)
-                    | SigningKeysWithThresholdError::DuplicatingKeys => "keys",
+                    | SigningKeysWithThresholdError::DuplicateFingerprints => "keys",
                 };
                 InvalidProtoFieldValue::new_of::<proto::SigningKeysWithThreshold>(field_name, error)
             })

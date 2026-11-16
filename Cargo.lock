@@ -15,6 +15,7 @@ dependencies = [
  "admin-api-types",
  "canton-base",
  "canton-proto",
+ "canton-protocol",
  "canton-types",
  "canton-version",
  "chrono",
@@ -33,11 +34,17 @@ dependencies = [
  "admin-api-proto",
  "admin-api-types",
  "canton-base",
+ "canton-proto",
+ "canton-protocol",
  "canton-types",
+ "chrono",
+ "hex",
  "pretty_assertions",
+ "prost",
  "sandbox",
  "tokio",
  "tonic",
+ "tonic-types",
 ]
 
 [[package]]
@@ -56,10 +63,15 @@ dependencies = [
 name = "admin-api-types"
 version = "0.1.0"
 dependencies = [
+ "canton-crypto",
  "canton-proto",
+ "canton-protocol",
  "canton-types",
  "canton-version",
  "chrono",
+ "hex",
+ "multihash",
+ "multihash-codetable",
  "protobuf-utils",
  "thiserror",
 ]

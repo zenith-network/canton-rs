@@ -1,4 +1,5 @@
 use canton_proto::prost::UnknownEnumValue;
+use canton_protocol::error::ProtoDecodeError;
 use protobuf_utils::{InvalidProtoFieldValue, MissingProtoField, UnspecifiedEnumValue};
 
 /// Error which is returned on failed conversion from protobuf types.
@@ -21,6 +22,9 @@ enum ValueErrorInner {
 
     #[error(transparent)]
     UnknownEnumValue(#[from] UnknownEnumValue),
+
+    #[error(transparent)]
+    ProtocolDecodeError(#[from] ProtoDecodeError),
 }
 
 impl From<MissingProtoField> for ValueError {
@@ -51,6 +55,14 @@ impl From<UnknownEnumValue> for ValueError {
     fn from(value: UnknownEnumValue) -> Self {
         Self {
             inner: ValueErrorInner::UnknownEnumValue(value),
+        }
+    }
+}
+
+impl From<ProtoDecodeError> for ValueError {
+    fn from(value: ProtoDecodeError) -> Self {
+        Self {
+            inner: value.into(),
         }
     }
 }

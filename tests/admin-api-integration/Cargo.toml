@@ -10,8 +10,14 @@ admin-api = { workspace = true, features = ["v30", "tracing"] }
 admin-api-proto = { workspace = true, features = ["transport"] }
 admin-api-types = { workspace = true, features = ["v30"] }
 canton-base.workspace = true
+canton-proto = { workspace = true, features = ["transport"] }
+canton-protocol.workspace = true
 canton-types.workspace = true
+chrono.workspace = true
+hex.workspace = true
 pretty_assertions.workspace = true
+prost.workspace = true
 sandbox.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }
 tonic = { workspace = true, features = ["transport"] }
+tonic-types.workspace = true

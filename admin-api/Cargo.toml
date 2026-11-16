@@ -33,6 +33,7 @@ canton-proto = { workspace = true, features = [
   "transport",
   "prost-types-chrono",
 ] }
+canton-protocol.workspace = true
 canton-types.workspace = true
 canton-version.workspace = true
 chrono.workspace = true

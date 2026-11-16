@@ -5,6 +5,7 @@ members = [
   "admin-api/types",
   "canton",
   "canton/base",
+  "canton/crypto",
   "canton/proto",
   "canton/types",
   "canton/types/derive",
@@ -35,6 +36,7 @@ default-members = [
   "admin-api/types",
   "canton",
   "canton/base",
+  "canton/crypto",
   "canton/proto",
   "canton/types",
   "canton/types/derive",
@@ -74,6 +76,8 @@ heck = "0.5.0"
 hex = { version = "0.4.3", default-features = false }
 http = { version = "1.5.0", default-features = false }
 libc = { version = "0.2", default-features = false }
+multihash = { version = "0.19.5", default-features = false }
+multihash-codetable = { version = "0.2.2", default-features = false }
 nonempty = { version = "0.12.0", default-features = false }
 pretty_assertions = "1.4.1"
 prettyplease = { version = "0.3.0", default-features = false }
@@ -89,6 +93,7 @@ semver = { version = "1.0.28", default-features = false }
 serde = { version = "1.0.228", default-features = false }
 serde_json = { version = "1.0.150", default-features = false }
 sha2 = { version = "0.11.0", default-features = false }
+spki = { version = "0.8.1", default-features = false }
 syn = { version = "3.0.6", default-features = false }
 tempfile = { version = "3.27.0", default-features = false }
 thiserror = { version = "2.0.18", default-features = false }
@@ -116,6 +121,7 @@ zip = { version = "9.0.5", default-features = false }
 # Common Canton crates
 canton = { path = "canton", default-features = false }
 canton-base = { path = "canton/base", default-features = false }
+canton-crypto = { path = "canton/crypto", default-features = false }
 canton-paths = { path = "canton-paths" }
 canton-proto = { path = "canton/proto", default-features = false }
 canton-types = { path = "canton/types", default-features = false }

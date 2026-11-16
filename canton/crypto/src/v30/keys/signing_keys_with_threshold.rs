@@ -11,7 +11,7 @@ pub enum SigningKeysWithThresholdError {
     #[error("threshold is zero")]
     ZeroThreshold,
 
-    #[error("keys with duplicating fingerprints are not allowed")]
+    #[error("multiple keys with the same fingerprint are not allowed")]
     DuplicatingKeys,
 
     #[error(transparent)]

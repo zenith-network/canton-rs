@@ -38,6 +38,7 @@ dependencies = [
  "canton-protocol",
  "canton-types",
  "chrono",
+ "daml-lf",
  "hex",
  "pretty_assertions",
  "prost",

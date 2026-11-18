@@ -1,3 +1,5 @@
+use core::error::Error;
+
 use admin_api_types::error::ValueError;
 use canton_base::{
     error::CantonError,
@@ -29,6 +31,11 @@ pub enum AdminApiError {
     /// the client
     #[error("failed to parse response from Admin API")]
     ValueError(#[from] ValueError),
+
+    /// This error occurs when the failure happened before the request was even sent. Typically this
+    /// means that the input failed to get converted into Protobuf messages.
+    #[error("input error")]
+    InputError(#[source] Box<dyn Error + Send + Sync>),
 }
 
 impl AdminApiError {
@@ -40,6 +47,11 @@ impl AdminApiError {
     /// Create new value error
     pub fn value_error(error: impl Into<ValueError>) -> Self {
         Self::ValueError(error.into())
+    }
+
+    /// Create new input error
+    pub fn input_error(error: impl Into<Box<dyn Error + Send + Sync>>) -> Self {
+        Self::InputError(error.into())
     }
 }
 
@@ -55,14 +67,14 @@ impl RetryableError for AdminApiError {
             AdminApiError::CantonError(canton_error) => canton_error.retry_after(config, ctx),
 
             // Always non-retryable
-            AdminApiError::ValueError(_) => None,
+            AdminApiError::ValueError(_) | AdminApiError::InputError(_) => None,
         }
     }
 
     fn set_ctx(&mut self, ctx: &RetryCtx) {
         match self {
             AdminApiError::CantonError(canton_error) => canton_error.set_ctx(ctx),
-            AdminApiError::ValueError(_) => {}
+            AdminApiError::ValueError(_) | AdminApiError::InputError(_) => {}
         }
     }
 }

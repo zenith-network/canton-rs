@@ -44,7 +44,7 @@ impl DecentralizedNamespaceDefinition {
     ///
     /// Duplicate owners are silently ignored.
     ///
-    /// Error is returned if `threshold` is greater than the number of distinct owners or is a
+    /// Error is returned if `threshold` is greater than the number of distinct owners or if a
     /// total number of owners cannot be represented as [`NonZeroU31`].
     ///
     /// Note that this function doesn't check that DND fingerprint matches the owners in any way.

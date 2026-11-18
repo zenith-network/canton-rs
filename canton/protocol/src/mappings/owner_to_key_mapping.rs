@@ -43,7 +43,7 @@ impl OwnerToKeyMapping {
         for key in public_keys.iter() {
             let fingerprint = key.fingerprint()?;
             if !fingerprints.insert(fingerprint) {
-                return Err(OtkError::DuplicatingKeys);
+                return Err(OtkError::DuplicateFingerprints);
             }
         }
 
@@ -109,7 +109,7 @@ impl TopologyMapping for OwnerToKeyMapping {
         Self::new(member, public_keys)
             .map_err(|error| {
                 let field_name = match error {
-                    OtkError::DuplicatingKeys | OtkError::SigningPublicKeyError(_) => "public_keys",
+                    OtkError::DuplicateFingerprints | OtkError::SigningPublicKeyError(_) => "public_keys",
                 };
                 InvalidProtoFieldValue::new_of::<Proto>(field_name, error)
             })
@@ -128,8 +128,8 @@ impl TopologyMapping for OwnerToKeyMapping {
 /// Owner to key mapping error
 #[derive(Debug, thiserror::Error)]
 pub enum OtkError {
-    #[error("keys with duplicating fingerprints are not allowed")]
-    DuplicatingKeys,
+    #[error("multiple keys with the same fingerprint are not allowed")]
+    DuplicateFingerprints,
 
     #[error(transparent)]
     SigningPublicKeyError(#[from] SigningPublicKeyError),

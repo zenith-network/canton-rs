@@ -109,7 +109,9 @@ impl TopologyMapping for OwnerToKeyMapping {
         Self::new(member, public_keys)
             .map_err(|error| {
                 let field_name = match error {
-                    OtkError::DuplicateFingerprints | OtkError::SigningPublicKeyError(_) => "public_keys",
+                    OtkError::DuplicateFingerprints | OtkError::SigningPublicKeyError(_) => {
+                        "public_keys"
+                    }
                 };
                 InvalidProtoFieldValue::new_of::<Proto>(field_name, error)
             })

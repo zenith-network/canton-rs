@@ -44,6 +44,11 @@ macro_rules! define_hash_purpose {
 }
 
 define_hash_purpose! {
+    /// Topology transaction signature hash purpose
+    TopologyTransactionSignature, 11, "TopologyTransactionSignature"
+}
+
+define_hash_purpose! {
     /// Public key fingerprint hash purpose
     PublicKeyFingerprint, 12, "PublicKeyFingerprint"
 }

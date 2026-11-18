@@ -30,7 +30,7 @@ use crate::{
 /// The required authorization of the mapping is a union of the authorization for individual changes
 ///
 /// - threshold change: party namespace
-/// - adding a signing key: party namespace + all the new signing key
+/// - adding a signing key: party namespace + all the new signing keys
 /// - removing a signing key: party namespace
 /// - changing the signing key threshold: party namespace
 /// - upgrading a participant permission or adding a new participant: namespaces from party and the

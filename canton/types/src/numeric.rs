@@ -7,7 +7,6 @@ const MAX_SCALE: i64 = 37;
 
 // FIXME: This implementation needs a strong rework. Known issues:
 //         - scale is truncated by bigdecimal
-//         - display it falling back to 1E-7 notation
 
 /// A Numeric, that is a decimal value with precision 38 (at most 38 significant digits) and a scale
 /// between 0 and 37 (significant digits on the right of the decimal point). The field has to match
@@ -65,9 +64,11 @@ impl From<u64> for Numeric {
     }
 }
 
+/// Plain decimal notation, as the Ledger API requires (`[+-]?\d{1,38}(.\d{0,37})?`): never
+/// the exponent notation `BigDecimal` falls back to for small and large values.
 impl fmt::Display for Numeric {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.big.fmt(f)
+        f.write_str(&self.big.to_plain_string())
     }
 }
 
@@ -188,5 +189,18 @@ mod tests {
             err.kind,
             ErrorKind::PrecisionOutOfBounds { precision: 39 }
         ));
+    }
+
+    #[rstest]
+    #[case("0.0000000001", "0.0000000001")]
+    #[case("0.0000005", "0.0000005")]
+    #[case("12.5", "12.5")]
+    #[case("100000000000000000000", "100000000000000000000")]
+    #[case("-0.00000001", "-0.00000001")]
+    #[case("7", "7")]
+    fn display_is_plain_and_round_trips(#[case] input: &str, #[case] shown: &str) {
+        let n = Numeric::parse(input).unwrap();
+        assert_eq!(n.to_string(), shown);
+        assert_eq!(Numeric::parse(n.to_string()).unwrap(), n);
     }
 }

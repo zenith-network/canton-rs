@@ -16,7 +16,7 @@ use crate::v30::{client::InterceptedService, error::AdminApiError};
 
 /// Wrapper for [`TopologyManagerWriteServiceClient`][svc_proto::TopologyManagerWriteServiceClient].
 ///
-/// Note: Topology writes currently don't have any anti-duplication mechanism. That means that it's
+/// Note: Topology writes currently don't have any de-duplication mechanism. That means that it's
 /// probably a good idea (at least now) to disable retry for this client completely, because there
 /// is no stable way of detecting duplicates. Instead user should handle retries manually.
 #[derive(Clone, Debug)]

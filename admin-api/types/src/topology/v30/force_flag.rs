@@ -3,7 +3,7 @@ use canton_proto::com::digitalasset::canton::topology::admin::v30 as proto;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum ForceFlag {
-    /// Required when authorizing adding a topology transaction on behalf of another node.
+    /// Required when authorizing the addition of a topology transaction on behalf of another node.
     AlienMember,
 
     #[deprecated(

@@ -271,6 +271,6 @@ enum ErrorInner {
     EmptyTransaction,
     #[error("signed topology transaction has no signatures")]
     NoSignatures,
-    #[error("multi transaction signatures does not contain the hash of the transaction")]
+    #[error("multi-transaction signatures do not contain the hash of the transaction")]
     BadMultiTxSignatures,
 }

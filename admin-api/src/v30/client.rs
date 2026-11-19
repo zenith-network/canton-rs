@@ -11,7 +11,7 @@ use crate::v30::{
     error::AdminApiError,
     services::{
         IdentityInitializationClient, PackageClient, ParticipantStatusClient,
-        TopologyManagerReadClient, TopologyManagerWriteClient,
+        PartyManagementClient, TopologyManagerReadClient, TopologyManagerWriteClient,
     },
 };
 
@@ -204,6 +204,18 @@ impl AdminApiClient {
         );
 
         ParticipantStatusClient::new(service, self.retry_handler.clone())
+    }
+
+    /// Get a client of the party management service.
+    pub fn party_management(&self) -> PartyManagementClient {
+        use proto::admin::participant::v30::party_management_service_client as svc_proto;
+
+        let service = svc_proto::PartyManagementServiceClient::with_interceptor(
+            self.channel.clone(),
+            self.interceptor.clone(),
+        );
+
+        PartyManagementClient::new(service, self.retry_handler.clone())
     }
 
     /// Get a client of the topology manager read service.

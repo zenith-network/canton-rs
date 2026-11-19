@@ -33,3 +33,6 @@ pub fn supported_versions() -> Vec<VersionReq> {
 pub fn is_supported_version(version: &Version) -> bool {
     supported_versions().iter().any(|req| req.matches(version))
 }
+
+// Re-exports
+pub use chrono;

@@ -3,11 +3,13 @@
 pub mod identity_initialization;
 pub mod package;
 pub mod participant_status;
+pub mod party_management;
 pub mod topology_read;
 pub mod topology_write;
 
 pub use identity_initialization::IdentityInitializationClient;
 pub use package::PackageClient;
 pub use participant_status::ParticipantStatusClient;
+pub use party_management::PartyManagementClient;
 pub use topology_read::TopologyManagerReadClient;
 pub use topology_write::TopologyManagerWriteClient;

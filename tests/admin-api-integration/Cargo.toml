@@ -16,9 +16,11 @@ canton-types.workspace = true
 chrono.workspace = true
 daml-lf.workspace = true
 hex.workspace = true
+ledger-api-proto = { workspace = true, features = ["transport", "v2"] }
 pretty_assertions.workspace = true
 prost.workspace = true
 sandbox.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }
+tokio-stream.workspace = true
 tonic = { workspace = true, features = ["transport"] }
 tonic-types.workspace = true

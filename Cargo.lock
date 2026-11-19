@@ -22,6 +22,7 @@ dependencies = [
  "http",
  "protobuf-utils",
  "thiserror",
+ "tokio-stream",
  "tonic",
  "tracing",
 ]
@@ -40,10 +41,12 @@ dependencies = [
  "chrono",
  "daml-lf",
  "hex",
+ "ledger-api-proto",
  "pretty_assertions",
  "prost",
  "sandbox",
  "tokio",
+ "tokio-stream",
  "tonic",
  "tonic-types",
 ]

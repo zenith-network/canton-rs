@@ -40,5 +40,6 @@ chrono.workspace = true
 http.workspace = true
 protobuf-utils.workspace = true
 thiserror.workspace = true
+tokio-stream.workspace = true
 tonic.workspace = true
 tracing = { workspace = true, optional = true }

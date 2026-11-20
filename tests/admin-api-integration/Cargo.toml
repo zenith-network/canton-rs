@@ -14,6 +14,7 @@ canton-proto = { workspace = true, features = ["transport"] }
 canton-protocol.workspace = true
 canton-types.workspace = true
 chrono.workspace = true
+daml-lf.workspace = true
 hex.workspace = true
 pretty_assertions.workspace = true
 prost.workspace = true

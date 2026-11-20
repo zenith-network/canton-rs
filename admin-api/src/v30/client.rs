@@ -10,8 +10,8 @@ use tonic::transport::{Channel, Endpoint};
 use crate::v30::{
     error::AdminApiError,
     services::{
-        IdentityInitializationClient, ParticipantStatusClient, TopologyManagerReadClient,
-        TopologyManagerWriteClient,
+        IdentityInitializationClient, PackageClient, ParticipantStatusClient,
+        TopologyManagerReadClient, TopologyManagerWriteClient,
     },
 };
 
@@ -180,6 +180,18 @@ impl AdminApiClient {
         );
 
         IdentityInitializationClient::new(service, self.retry_handler.clone())
+    }
+
+    /// Get a client of the package service.
+    pub fn package(&self) -> PackageClient {
+        use proto::admin::participant::v30::package_service_client as svc_proto;
+
+        let service = svc_proto::PackageServiceClient::with_interceptor(
+            self.channel.clone(),
+            self.interceptor.clone(),
+        );
+
+        PackageClient::new(service, self.retry_handler.clone())
     }
 
     /// Get a client of the participant status service.

@@ -9,7 +9,10 @@ use tonic::transport::{Channel, Endpoint};
 
 use crate::v30::{
     error::AdminApiError,
-    services::{IdentityInitializationClient, ParticipantStatusClient},
+    services::{
+        IdentityInitializationClient, ParticipantStatusClient, TopologyManagerReadClient,
+        TopologyManagerWriteClient,
+    },
 };
 
 use super::error::ClientBuildError;
@@ -189,5 +192,29 @@ impl AdminApiClient {
         );
 
         ParticipantStatusClient::new(service, self.retry_handler.clone())
+    }
+
+    /// Get a client of the topology manager read service.
+    pub fn topology_manager_read(&self) -> TopologyManagerReadClient {
+        use proto::topology::admin::v30::topology_manager_read_service_client as svc_proto;
+
+        let service = svc_proto::TopologyManagerReadServiceClient::with_interceptor(
+            self.channel.clone(),
+            self.interceptor.clone(),
+        );
+
+        TopologyManagerReadClient::new(service, self.retry_handler.clone())
+    }
+
+    /// Get a client of the topology manager write service.
+    pub fn topology_manager_write(&self) -> TopologyManagerWriteClient {
+        use proto::topology::admin::v30::topology_manager_write_service_client as svc_proto;
+
+        let service = svc_proto::TopologyManagerWriteServiceClient::with_interceptor(
+            self.channel.clone(),
+            self.interceptor.clone(),
+        );
+
+        TopologyManagerWriteClient::new(service, self.retry_handler.clone())
     }
 }

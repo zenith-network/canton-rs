@@ -10,7 +10,7 @@ use ledger_api_value::v2::{
 use nonempty::NonEmpty;
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
-use crate::v2::{ChoiceValue, Empty, TemplateValue, TemplateValueWithKey};
+use crate::v2::{ChoiceValue, Empty, HasOffset, TemplateValue, TemplateValueWithKey};
 
 /// Generic event type
 #[derive(Clone, Debug)]
@@ -26,6 +26,16 @@ pub type AcsDeltaEvent<C, A> = Event<C, A, Empty>;
 
 /// Ledger effects event type
 pub type LedgerEffectEvent<C, E> = Event<C, Empty, E>;
+
+impl<C: HasOffset, A: HasOffset, E: HasOffset> HasOffset for Event<C, A, E> {
+    fn offset(&self) -> i64 {
+        match self {
+            Self::Created(event) => event.offset(),
+            Self::Archived(event) => event.offset(),
+            Self::Exercised(event) => event.offset(),
+        }
+    }
+}
 
 impl<C, A, E> TryFrom<proto::Event> for Event<C, A, E>
 where
@@ -68,6 +78,15 @@ pub struct Created<T: TemplateValue> {
     pub acs_delta: bool,
 }
 
+impl<T> HasOffset for Created<T>
+where
+    T: TemplateValue,
+{
+    fn offset(&self) -> i64 {
+        self.offset
+    }
+}
+
 /// `Created` event for a template with key
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -84,6 +103,15 @@ pub struct CreatedWithKey<T: TemplateValueWithKey> {
     pub observers: Vec<PartyId>,
     pub created_at: SystemTime,
     pub acs_delta: bool,
+}
+
+impl<T> HasOffset for CreatedWithKey<T>
+where
+    T: TemplateValueWithKey,
+{
+    fn offset(&self) -> i64 {
+        self.offset
+    }
 }
 
 /// `Created` event
@@ -175,6 +203,12 @@ impl CreatedEvent {
             created_at: self.created_at,
             acs_delta: self.acs_delta,
         })
+    }
+}
+
+impl HasOffset for CreatedEvent {
+    fn offset(&self) -> i64 {
+        self.offset
     }
 }
 
@@ -290,6 +324,15 @@ pub struct Archived<T: TemplateValue> {
     // TODO: pub implemented_interfaces: ...
 }
 
+impl<T> HasOffset for Archived<T>
+where
+    T: TemplateValue,
+{
+    fn offset(&self) -> i64 {
+        self.offset
+    }
+}
+
 /// Archived event
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -323,6 +366,12 @@ impl ArchivedEvent {
             contract_id,
             witness_parties: self.witness_parties,
         })
+    }
+}
+
+impl HasOffset for ArchivedEvent {
+    fn offset(&self) -> i64 {
+        self.offset
     }
 }
 
@@ -390,6 +439,16 @@ pub struct Exercised<T: TemplateValue, C: ChoiceValue<T>> {
     // TODO: pub implemented_interfaces: ...
 }
 
+impl<T, C> HasOffset for Exercised<T, C>
+where
+    T: TemplateValue,
+    C: ChoiceValue<T>,
+{
+    fn offset(&self) -> i64 {
+        self.offset
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct ExercisedEvent {
@@ -442,6 +501,12 @@ impl ExercisedEvent {
             exercise_result,
             acs_delta: self.acs_delta,
         })
+    }
+}
+
+impl HasOffset for ExercisedEvent {
+    fn offset(&self) -> i64 {
+        self.offset
     }
 }
 

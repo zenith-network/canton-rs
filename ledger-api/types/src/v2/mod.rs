@@ -49,3 +49,11 @@ pub use version::{
     ExperimentalFeatures, FeaturesDescriptor, OffsetCheckpointFeature, PackageFeature,
     PartyManagementFeature, UserManagementFeature,
 };
+
+/// Value of this type has a Ledger offset associated with it.
+///
+/// Typically this is some sort of Ledger update or event.
+pub trait HasOffset {
+    /// Get ledger offset
+    fn offset(&self) -> i64;
+}

@@ -6,6 +6,8 @@ use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use nonempty::NonEmpty;
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
+use crate::v2::HasOffset;
+
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct Reassignment {
@@ -19,6 +21,12 @@ pub struct Reassignment {
     // pub synchronizer_id: SynchronizerId,
     pub paid_traffic_cost: Option<i64>,
     // TODO: impl missing fields
+}
+
+impl HasOffset for Reassignment {
+    fn offset(&self) -> i64 {
+        self.offset
+    }
 }
 
 impl TryFrom<proto::Reassignment> for Reassignment {
@@ -119,9 +127,21 @@ impl TryFrom<proto::UnassignedEvent> for UnassignedEvent {
     }
 }
 
+impl HasOffset for UnassignedEvent {
+    fn offset(&self) -> i64 {
+        todo!()
+    }
+}
+
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct AssignedEvent {}
+
+impl HasOffset for AssignedEvent {
+    fn offset(&self) -> i64 {
+        todo!()
+    }
+}
 
 impl TryFrom<proto::AssignedEvent> for AssignedEvent {
     type Error = ValueError;

@@ -1,9 +1,18 @@
 use ledger_api_proto::{com::daml::ledger::api::v2 as proto, prost::Name as _};
 use ledger_api_value::v2::errors::ValueError;
 
+use crate::v2::HasOffset;
+
 /// Type which has no value.
 #[derive(Debug)]
 pub enum Empty {}
+
+impl HasOffset for Empty {
+    /// Unreachable because Empty has no values
+    fn offset(&self) -> i64 {
+        match *self {}
+    }
+}
 
 macro_rules! impl_unexpected_variant {
     ($source:path) => {

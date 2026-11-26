@@ -4,7 +4,7 @@ use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
-use crate::v2::CreatedEvent;
+use crate::v2::{CreatedEvent, HasOffset};
 
 #[derive(Clone, Debug)]
 // TODO: Since last two variants are not yet implemented, there is no point to check this at the
@@ -40,6 +40,18 @@ impl TryFrom<proto::get_active_contracts_response::ContractEntry> for ContractEn
     }
 }
 
+impl HasOffset for ContractEntry {
+    fn offset(&self) -> i64 {
+        match self {
+            ContractEntry::ActiveContract(active_contract) => active_contract.offset(),
+            ContractEntry::IncompleteUnassigned(incomplete_unassigned) => {
+                incomplete_unassigned.offset()
+            }
+            ContractEntry::IncompleteAssigned(incomplete_assigned) => incomplete_assigned.offset(),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct ActiveContract {
@@ -68,14 +80,32 @@ impl TryFrom<proto::ActiveContract> for ActiveContract {
     }
 }
 
+impl HasOffset for ActiveContract {
+    fn offset(&self) -> i64 {
+        self.created_event.offset()
+    }
+}
+
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct IncompleteUnassigned {
     // TODO: implement
 }
 
+impl HasOffset for IncompleteUnassigned {
+    fn offset(&self) -> i64 {
+        todo!()
+    }
+}
+
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct IncompleteAssigned {
     // TODO: implement
+}
+
+impl HasOffset for IncompleteAssigned {
+    fn offset(&self) -> i64 {
+        todo!()
+    }
 }

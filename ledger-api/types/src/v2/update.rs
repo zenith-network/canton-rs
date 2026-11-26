@@ -1,7 +1,7 @@
 use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::errors::ValueError;
 
-use crate::v2::Empty;
+use crate::v2::{Empty, HasOffset};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
@@ -10,6 +10,17 @@ pub enum Update<T = Empty, R = Empty, C = Empty, P = Empty> {
     Reassignment(R),
     OffsetCheckpoint(C),
     TopologyTransaction(P),
+}
+
+impl<T: HasOffset, R: HasOffset, C: HasOffset, P: HasOffset> HasOffset for Update<T, R, C, P> {
+    fn offset(&self) -> i64 {
+        match self {
+            Update::Transaction(tx) => tx.offset(),
+            Update::Reassignment(re) => re.offset(),
+            Update::OffsetCheckpoint(cp) => cp.offset(),
+            Update::TopologyTransaction(ttx) => ttx.offset(),
+        }
+    }
 }
 
 impl<T, R, C, P> TryFrom<proto::get_updates_response::Update> for Update<T, R, C, P>

@@ -5,11 +5,19 @@ use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
+use crate::v2::HasOffset;
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub struct OffsetCheckpoint {
     pub offset: i64,
     pub synchronizer_times: Vec<SynchronizerTime>,
+}
+
+impl HasOffset for OffsetCheckpoint {
+    fn offset(&self) -> i64 {
+        self.offset
+    }
 }
 
 impl TryFrom<proto::OffsetCheckpoint> for OffsetCheckpoint {

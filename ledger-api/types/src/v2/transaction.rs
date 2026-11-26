@@ -5,6 +5,8 @@ use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use protobuf_utils::{InvalidProtoField as _, RequiredProtoField as _};
 
+use crate::v2::HasOffset;
+
 /// Ledger transaction
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -21,6 +23,12 @@ pub struct Transaction<E> {
     // pub external_transaction_hash: Option<TxHash>,
     pub paid_traffic_cost: Option<i64>,
     // TODO: implement missing fields
+}
+
+impl<E> HasOffset for Transaction<E> {
+    fn offset(&self) -> i64 {
+        self.offset
+    }
 }
 
 impl<E> TryFrom<proto::Transaction> for Transaction<E>

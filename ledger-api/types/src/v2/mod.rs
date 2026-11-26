@@ -10,7 +10,9 @@ mod offset_checkpoint;
 mod pagination;
 mod reassignment;
 mod template;
+mod topology_events;
 mod topology_format;
+mod topology_transaction;
 mod transaction;
 mod transaction_format;
 mod transaction_shape;
@@ -39,7 +41,13 @@ pub use template::{
     ChoiceByKeyValue, ChoiceValue, Implements, Interface, TemplateOrInterface, TemplateValue,
     TemplateValueWithKey,
 };
+pub use topology_events::{
+    ParticipantAuthorizationAdded, ParticipantAuthorizationChanged,
+    ParticipantAuthorizationOnboarding, ParticipantAuthorizationRevoked, ParticipantPermission,
+    TopologyEvent,
+};
 pub use topology_format::{ParticipantAuthorizationTopologyFormat, TopologyFormat};
+pub use topology_transaction::TopologyTransaction;
 pub use transaction::Transaction;
 pub use transaction_format::TransactionFormat;
 pub use transaction_shape::{AcsDelta, LedgerEffects, TransactionShape, TxShape};

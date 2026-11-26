@@ -3,6 +3,8 @@ use ledger_api_proto::com::daml::ledger::api::v2 as proto;
 use ledger_api_value::v2::errors::{IntoValueError as _, ValueError};
 use protobuf_utils::InvalidProtoField as _;
 
+use crate::v2::HasOffset;
+
 /// A completion represents the status of a submitted command on the ledger: it can be successful or
 /// failed.
 #[derive(Clone, Debug)]
@@ -62,6 +64,12 @@ pub struct Completion {
     /// The cost reported here is the one paid for ordering the confirmation request.
     pub paid_traffic_cost: i64,
     // TODO: implement missing fields
+}
+
+impl HasOffset for Completion {
+    fn offset(&self) -> i64 {
+        self.offset
+    }
 }
 
 impl TryFrom<proto::Completion> for Completion {
